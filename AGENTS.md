@@ -20,3 +20,6 @@
 > policies rely on and enables row-level security, so access rules are never
 > left out of the change that creates a table.
 <!-- TERRABAR:END -->
+
+- Stage-one marketplace data and package calculations live in a browser-safe mock module, with no backend imports, so preview interactions cannot affect real records.
+- Shared marketplace navigation surrounds the root Outlet; shareable information pages use separate leaf routes with their own metadata.

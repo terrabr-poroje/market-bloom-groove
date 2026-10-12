@@ -1,7 +1,8 @@
 # TERRABAR Roadmap
 
-- [ ] Inspect existing Supabase integration (read-only, report findings, wait for approval) — in progress
-- [ ] Receive buyer loads data file (Excel/CSV) from user
-- [ ] Propose DB tables (loads, suppliers, buyer groups) — needs explicit approval
-- [ ] Import data into database
-- [ ] Build smart load finder (AI search) per approved plan in .lovable/plan/
+- [x] Inspect existing integration (read-only findings reported)
+- [x] Build approved stage one: Persian RTL shell, search, mock loads, package calculator, roles and footer; verified desktop/mobile and mock interactions, no backend changes
+- [ ] Receive real loads data file — blocked on user file
+- [ ] Propose DB tables — blocked on data file and explicit approval
+- [ ] Import data — blocked on approved schema and user file
+- [ ] Build smart load finder — blocked on real data and approved access rules
