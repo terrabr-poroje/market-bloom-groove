@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowUpLeft, CheckCircle2, ChevronDown, Leaf, MapPin, PackageCheck, Search, SlidersHorizontal, Sprout, Store, Tractor, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ function Index() {
       </div></section>
       <section className="border-t border-border bg-background py-12 sm:py-16"><div className="site-container"><div className="text-center"><p className="mb-3 flex items-center justify-center gap-2 text-xs font-semibold text-primary"><Sprout className="size-4" />یک بازار، برای همه حلقه‌های زنجیره</p><h2 className="text-2xl font-extrabold sm:text-3xl">شما کجای این بازار هستید؟</h2><p className="mt-4 text-sm text-muted-foreground">از تولید تا خرید؛ ترابار نقطه اتصال کسب‌وکار شماست.</p></div><div className="mt-10 grid gap-8 md:grid-cols-3">
         {[{ icon: Tractor, title: 'تأمین‌کنندگان', sub: 'باغدار، کشاورز و سورتینگ', text: 'محصول باغ و مزرعه خود را با مشخصات روشن به بازار معرفی کنید و با خریداران ارتباط بگیرید.', color: 'bg-accent text-primary' }, { icon: Store, title: 'بارفروشان و حجره‌داران', sub: 'میادین میوه و تره‌بار', text: 'بارهای موجود در حجره را معرفی کنید و ویترین محصولات خود را در دسترس بازار قرار دهید.', color: 'bg-warning-soft text-warning' }, { icon: Users, title: 'خریداران عمده و خرد', sub: 'فروشگاه، کسب‌وکار و مصرف‌کننده', text: 'بارها را بر اساس مبدأ، کیفیت، بسته‌بندی و قیمت بررسی کنید و انتخاب مناسب‌تری داشته باشید.', color: 'bg-info-soft text-info' }].map(role => <div key={role.title} className="role-item border-t border-border pt-6"><div className={`mb-5 grid size-12 place-items-center rounded-lg ${role.color}`}><role.icon className="size-6" strokeWidth={1.7} /></div><h3 className="text-lg font-bold">{role.title}</h3><p className="mt-2 text-xs font-medium text-primary">{role.sub}</p><p className="mt-4 text-sm leading-8 text-muted-foreground">{role.text}</p></div>)}
-      </div><div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row"><p className="text-xs leading-6 text-muted-foreground">گروه‌های خریدار: خرده، عمده، ویژه و ویژه حرفه‌ای</p><Button asChild variant="link" className="px-0"><a href="/guide">آشنایی با مسیر معامله<ArrowUpLeft /></a></Button></div></div></section>
+      </div><div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row"><p className="text-xs leading-6 text-muted-foreground">گروه‌های خریدار: خرده، عمده، ویژه و ویژه حرفه‌ای</p><Button asChild variant="link" className="px-0"><Link to="/guide">آشنایی با مسیر معامله<ArrowUpLeft /></Link></Button></div></div></section>
     </>
   );
 }
