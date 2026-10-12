@@ -1,24 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, type FormEvent } from 'react';
+import { ArrowLeft, ArrowUpLeft, CheckCircle2, ChevronDown, Leaf, MapPin, PackageCheck, Search, SlidersHorizontal, Sprout, Store, Tractor, Users, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LoadCard } from '@/components/load-card';
+import { cities, faNumber, loads, pageHead, qualities } from '@/lib/marketplace';
+import heroImage from '@/assets/market-hero.jpg';
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => pageHead('بازار میوه و تره‌بار کرج و ایران', 'ترابار؛ بازار تخصصی خرید و فروش عمده و خرد میوه و تره‌بار. جست‌وجوی بار بر اساس شهر، محصول و درجه کیفیت.'),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const [city, setCity] = useState('');
+  const [category, setCategory] = useState('');
+  const [quality, setQuality] = useState('');
+  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState({ city: '', category: '', quality: '', query: '' });
+  const [sort, setSort] = useState('newest');
+  const normalizedQuery = filters.query.trim().replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s/g, '');
+  const filtered = loads.filter(load => (!filters.city || load.city === filters.city) && (!filters.category || load.category === filters.category) && (!filters.quality || load.quality === filters.quality) && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, '').includes(normalizedQuery))).sort((a, b) => sort === 'price' ? a.price - b.price : sort === 'stock' ? b.stock - a.stock : a.id - b.id);
+  function search(event: FormEvent) { event.preventDefault(); setFilters({ city, category, quality, query }); document.getElementById('market-loads')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }); }
+  function reset() { setCity(''); setCategory(''); setQuality(''); setQuery(''); setFilters({ city: '', category: '', quality: '', query: '' }); }
+  const active = Object.values(filters).some(Boolean);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <section className="market-hero relative isolate overflow-hidden bg-footer text-primary-foreground">
+        <img src={heroImage} alt="بار تازه پرتقال، گوجه و سبزیجات در بازار میوه و تره‌بار" width={1920} height={1024} fetchPriority="high" className="hero-image absolute inset-0 -z-20 h-full w-full object-cover" /><div className="hero-shade absolute inset-0 -z-10" />
+        <div className="site-container"><div className="hero-copy mr-auto max-w-[570px] py-16 sm:py-20"><span className="mb-5 inline-flex items-center gap-2 text-sm text-hero-muted"><span className="size-2 rounded-full bg-hero-mark" />بازاری تازه برای کسب‌وکار شما</span><h1 className="text-4xl font-extrabold leading-[1.55] sm:text-5xl">ترابار<span className="mt-1 block text-3xl font-bold leading-[1.65] sm:text-4xl">بازار میوه و تره‌بار ایران</span></h1><p className="mt-5 max-w-md text-sm leading-8 text-hero-muted sm:text-base">از باغ و مزرعه تا میدان و فروشگاه؛<br />بار مناسب را پیدا کنید، شفاف مقایسه کنید و مستقیم معامله کنید.</p><div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs text-hero-muted"><span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-hero-mark" />مشخصات شفاف بار</span><span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-hero-mark" />ارتباط با فروشنده</span><span className="flex items-center gap-1.5"><CheckCircle2 className="size-4 text-hero-mark" />عمده و خرد</span></div></div></div>
+      </section>
+      <section aria-label="جست‌وجوی بازار" className="relative border-b border-border bg-background"><div className="site-container py-6"><form onSubmit={search} className="search-grid grid gap-3 lg:grid-cols-[1.25fr_1fr_1fr_1fr_auto]">
+        <label className="search-field"><Search className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">چه باری نیاز دارید؟</span><input aria-label="جست‌وجوی محصول" placeholder="نام محصول یا رقم…" value={query} onChange={e => setQuery(e.target.value)} className="w-full min-w-0 bg-transparent py-1 text-sm outline-none" /></div></label>
+        <label className="search-field"><MapPin className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">شهر مبدأ بار</span><select aria-label="شهر مبدأ بار" value={city} onChange={e => setCity(e.target.value)} className="search-select"><option value="">همه شهرها</option>{cities.map(item => <option key={item}>{item}</option>)}</select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
+        <label className="search-field"><Leaf className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">دسته‌بندی محصول</span><select aria-label="دسته‌بندی محصول" value={category} onChange={e => setCategory(e.target.value)} className="search-select"><option value="">همه محصولات</option><option>میوه</option><option>صیفی‌جات</option><option>سبزیجات</option></select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
+        <label className="search-field"><SlidersHorizontal className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">درجه کیفیت</span><select aria-label="درجه کیفیت" value={quality} onChange={e => setQuality(e.target.value)} className="search-select"><option value="">همه درجه‌ها</option>{qualities.map(item => <option key={item}>{item}</option>)}</select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
+        <Button type="submit" className="h-[62px] px-7"><Search />جست‌وجوی بار</Button>
+      </form><div className="mt-4 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"><span className="ml-1">پرجست‌وجو:</span>{['پرتقال', 'سیب', 'گوجه‌فرنگی', 'پیاز'].map(product => <Button key={product} variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setQuery(product); setCity(''); setCategory(''); setQuality(''); setFilters({ city: '', category: '', quality: '', query: product }); }}>{product}</Button>)}</div></div></section>
+      <section id="market-loads" className="scroll-mt-5 bg-market-surface py-10 sm:py-12"><div className="site-container">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"><div className="min-w-0"><div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />تازه‌های بازار</div><h2 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h2><p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">تازه‌ترین محصولات، مستقیم از تأمین‌کنندگان و بارفروشان</p></div><span className="self-start rounded border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground sm:px-3">نسخه نمایشی</span></div>
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border pb-4"><div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground"><span aria-live="polite">{faNumber(filtered.length)} بار نمونه</span>{active && <Button variant="ghost" className="h-7 px-2 text-xs" onClick={reset}><X className="size-3" />حذف فیلترها</Button>}</div><label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground"><SlidersHorizontal className="size-3.5" /><select aria-label="مرتب‌سازی بارها" className="max-w-36 bg-transparent text-foreground outline-none" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">تازه‌ترین بارها</option><option value="price">کمترین قیمت</option><option value="stock">بیشترین موجودی</option></select></label></div>
+        {filtered.length ? <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{filtered.map(load => <LoadCard key={load.id} load={load} />)}</div> : <div className="py-16 text-center"><Search className="mx-auto mb-4 size-10 text-muted-foreground" /><h3 className="text-lg font-bold">باری با این مشخصات پیدا نشد</h3><p className="mt-3 text-sm text-muted-foreground">در این مرحله فقط چهار بار نمونه در بازار وجود دارد.</p><Button variant="outline" className="mt-5" onClick={reset}>نمایش همه بارها</Button></div>}
+        <div className="mt-7 flex items-center justify-center gap-2 text-xs text-muted-foreground"><PackageCheck className="size-4 text-primary" />قیمت‌ها، موجودی‌ها و زمان‌های نمایش‌داده‌شده نمونه هستند.</div>
+      </div></section>
+      <section className="border-t border-border bg-background py-12 sm:py-16"><div className="site-container"><div className="text-center"><p className="mb-3 flex items-center justify-center gap-2 text-xs font-semibold text-primary"><Sprout className="size-4" />یک بازار، برای همه حلقه‌های زنجیره</p><h2 className="text-2xl font-extrabold sm:text-3xl">شما کجای این بازار هستید؟</h2><p className="mt-4 text-sm text-muted-foreground">از تولید تا خرید؛ ترابار نقطه اتصال کسب‌وکار شماست.</p></div><div className="mt-10 grid gap-8 md:grid-cols-3">
+        {[{ icon: Tractor, title: 'تأمین‌کنندگان', sub: 'باغدار، کشاورز و سورتینگ', text: 'محصول باغ و مزرعه خود را با مشخصات روشن به بازار معرفی کنید و با خریداران ارتباط بگیرید.', color: 'bg-accent text-primary' }, { icon: Store, title: 'بارفروشان و حجره‌داران', sub: 'میادین میوه و تره‌بار', text: 'بارهای موجود در حجره را معرفی کنید و ویترین محصولات خود را در دسترس بازار قرار دهید.', color: 'bg-warning-soft text-warning' }, { icon: Users, title: 'خریداران عمده و خرد', sub: 'فروشگاه، کسب‌وکار و مصرف‌کننده', text: 'بارها را بر اساس مبدأ، کیفیت، بسته‌بندی و قیمت بررسی کنید و انتخاب مناسب‌تری داشته باشید.', color: 'bg-info-soft text-info' }].map(role => <div key={role.title} className="role-item border-t border-border pt-6"><div className={`mb-5 grid size-12 place-items-center rounded-lg ${role.color}`}><role.icon className="size-6" strokeWidth={1.7} /></div><h3 className="text-lg font-bold">{role.title}</h3><p className="mt-2 text-xs font-medium text-primary">{role.sub}</p><p className="mt-4 text-sm leading-8 text-muted-foreground">{role.text}</p></div>)}
+      </div><div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row"><p className="text-xs leading-6 text-muted-foreground">گروه‌های خریدار: خرده، عمده، ویژه و ویژه حرفه‌ای</p><Button asChild variant="link" className="px-0"><a href="/guide">آشنایی با مسیر معامله<ArrowUpLeft /></a></Button></div></div></section>
+    </>
   );
 }
