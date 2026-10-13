@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnnounceRouteImport } from './routes/announce'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GuideRouteImport } from './routes/guide'
@@ -25,6 +27,16 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnounceRoute = AnnounceRouteImport.update({
+  id: '/announce',
+  path: '/announce',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -56,6 +68,8 @@ const RulesRoute = RulesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
@@ -65,6 +79,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
@@ -75,6 +91,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
@@ -84,14 +102,32 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/auth' | '/contact' | '/guide' | '/membership' | '/rules'
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/announce'
+    | '/auth'
+    | '/contact'
+    | '/guide'
+    | '/membership'
+    | '/rules'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/about' | '/auth' | '/contact' | '/guide' | '/membership' | '/rules'
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/announce'
+    | '/auth'
+    | '/contact'
+    | '/guide'
+    | '/membership'
+    | '/rules'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
+    | '/announce'
     | '/auth'
     | '/contact'
     | '/guide'
@@ -102,6 +138,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
+  AnnounceRoute: typeof AnnounceRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   GuideRoute: typeof GuideRoute
@@ -123,6 +161,20 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/announce': {
+      id: '/announce'
+      path: '/announce'
+      fullPath: '/announce'
+      preLoaderRoute: typeof AnnounceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -166,6 +218,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
+  AnnounceRoute: AnnounceRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   GuideRoute: GuideRoute,
