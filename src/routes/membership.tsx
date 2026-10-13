@@ -22,7 +22,7 @@ function MembershipPage() {
   const [role, setRole] = useState<AppRole>('supplier');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [city, setCity] = useState(cities[0]);
+  const [city, setCity] = useState(cities[0] ?? 'کرج');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
