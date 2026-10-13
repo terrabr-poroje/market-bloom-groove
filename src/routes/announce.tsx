@@ -16,7 +16,7 @@ const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qu
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0], province: '', weight: '', stock: '', minimum: '', price: '', ready: 'آماده بارگیری', description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: '', weight: '', stock: '', minimum: '', price: '', ready: 'آماده بارگیری', description: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
