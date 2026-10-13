@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791861069243,
+      "tag": "0000_terrabar_core_schema",
+      "breakpoints": true
+    }
+  ]
 }
