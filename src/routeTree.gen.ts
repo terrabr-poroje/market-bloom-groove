@@ -11,8 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnnounceRouteImport } from './routes/announce'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GuideRouteImport } from './routes/guide'
+import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as RulesRouteImport } from './routes/rules'
 
 const IndexRoute = IndexRouteImport.update({
@@ -25,6 +29,21 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnounceRoute = AnnounceRouteImport.update({
+  id: '/announce',
+  path: '/announce',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -33,6 +52,11 @@ const ContactRoute = ContactRouteImport.update({
 const GuideRoute = GuideRouteImport.update({
   id: '/guide',
   path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembershipRoute = MembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RulesRoute = RulesRouteImport.update({
@@ -44,38 +68,82 @@ const RulesRoute = RulesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
+  '/membership': typeof MembershipRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
+  '/membership': typeof MembershipRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
+  '/announce': typeof AnnounceRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
+  '/membership': typeof MembershipRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/contact' | '/guide' | '/rules'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/announce'
+    | '/auth'
+    | '/contact'
+    | '/guide'
+    | '/membership'
+    | '/rules'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/contact' | '/guide' | '/rules'
-  id: '__root__' | '/' | '/about' | '/contact' | '/guide' | '/rules'
+  to:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/announce'
+    | '/auth'
+    | '/contact'
+    | '/guide'
+    | '/membership'
+    | '/rules'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/announce'
+    | '/auth'
+    | '/contact'
+    | '/guide'
+    | '/membership'
+    | '/rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
+  AnnounceRoute: typeof AnnounceRoute
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   GuideRoute: typeof GuideRoute
+  MembershipRoute: typeof MembershipRoute
   RulesRoute: typeof RulesRoute
 }
 
@@ -95,6 +163,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/announce': {
+      id: '/announce'
+      path: '/announce'
+      fullPath: '/announce'
+      preLoaderRoute: typeof AnnounceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -107,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/guide'
       fullPath: '/guide'
       preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membership': {
+      id: '/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof MembershipRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rules': {
@@ -122,8 +218,12 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
+  AnnounceRoute: AnnounceRoute,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   GuideRoute: GuideRoute,
+  MembershipRoute: MembershipRoute,
   RulesRoute: RulesRoute,
 }
 export const routeTree = rootRouteImport
