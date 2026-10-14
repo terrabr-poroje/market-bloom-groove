@@ -50,7 +50,7 @@ jobs:
           set -euo pipefail
           mkdir -p supabase/snapshots
           supabase db dump --linked --schema public --password "$SUPABASE_DB_PASSWORD" --file supabase/snapshots/production-public-schema.sql
-          supabase gen types typescript --linked --schema public --password "$SUPABASE_DB_PASSWORD" > supabase/database.types.ts
+          supabase gen types typescript --linked --schema public > supabase/database.types.ts
 
       - name: Open or update a review pull request
         uses: peter-evans/create-pull-request@v7
