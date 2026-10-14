@@ -1,32 +1,32 @@
 -- Terrabar city access and member-role foundation.
--- This migration corresponds to the structure already applied to the existing
--- Supabase project gznsxqeyhnuzglliijzz. Do not run against a different project.
+-- Mirrors the already-applied migration on Supabase project gznsxqeyhnuzglliijzz.
+-- Do not apply this file again to production; this is version-control history.
 
 CREATE TABLE IF NOT EXISTS public.cities (
-  city_name text PRIMARY KEY,
+  city_name text PRIMARY KEY CHECK (length(btrim(city_name)) > 0),
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS public.city_neighbors (
-  city_name text NOT NULL REFERENCES public.cities(city_name),
-  neighbor_city_name text NOT NULL REFERENCES public.cities(city_name),
+  city_name text NOT NULL REFERENCES public.cities(city_name) ON UPDATE CASCADE ON DELETE CASCADE,
+  neighbor_city_name text NOT NULL REFERENCES public.cities(city_name) ON UPDATE CASCADE ON DELETE CASCADE,
   is_enabled boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (city_name, neighbor_city_name),
-  CONSTRAINT city_neighbors_not_same_city CHECK (city_name <> neighbor_city_name)
+  CHECK (city_name <> neighbor_city_name)
 );
 
 CREATE TABLE IF NOT EXISTS public.admin_user_cities (
-  admin_user_id uuid NOT NULL REFERENCES public.admin_users(id),
-  city_name text NOT NULL REFERENCES public.cities(city_name),
+  admin_user_id uuid NOT NULL REFERENCES public.admin_users(id) ON DELETE CASCADE,
+  city_name text NOT NULL REFERENCES public.cities(city_name) ON UPDATE CASCADE ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (admin_user_id, city_name)
 );
 
 CREATE TABLE IF NOT EXISTS public.member_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  member_id uuid NOT NULL REFERENCES public.members(id),
+  member_id uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
   role_code text NOT NULL CHECK (
     role_code IN ('supplier', 'bar_seller', 'buyer', 'special_buyer', 'professional_buyer')
   ),
@@ -36,8 +36,9 @@ CREATE TABLE IF NOT EXISTS public.member_roles (
   approved_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (member_id, role_code),
-  CONSTRAINT member_roles_approval_consistent CHECK (
-    approval_status <> 'approved' OR (approved_by IS NOT NULL AND approved_at IS NOT NULL)
+  CHECK (
+    ((approval_status = 'approved') AND approved_by IS NOT NULL AND approved_at IS NOT NULL)
+    OR approval_status <> 'approved'
   )
 );
 
