@@ -33,3 +33,27 @@ Production Supabase project: `gznsxqeyhnuzglliijzz`
 8. Refresh `SCHEMA_BASELINE.md` after schema changes.
 
 This is a manual, reviewed workflow. GitHub and Supabase do not automatically synchronize both ways simply because they are connected to ChatGPT.
+
+
+## Automated GitHub Actions sync
+
+Three workflows have been added:
+
+- `.github/workflows/verify-supabase.yml`: validates the project reference and migration filenames on pushes and pull requests.
+- `.github/workflows/deploy-supabase-migrations.yml`: on changes to migrations on `main`, previews pending migrations and then applies them to the linked production project. This changes the production database only through new, versioned migrations; never use it for destructive resets.
+- `.github/workflows/capture-supabase-schema.yml`: nightly (and manually) exports the current `public` schema without row data, regenerates TypeScript types, and opens/updates a review PR. Dashboard-made schema changes are therefore captured for review rather than silently merged into production history.
+
+### One-time GitHub setup required
+
+In the private repository's **Settings → Secrets and variables → Actions → New repository secret**, add:
+
+- `SUPABASE_ACCESS_TOKEN`: a Supabase personal access token.
+- `SUPABASE_DB_PASSWORD`: the database password for the existing project `gznsxqeyhnuzglliijzz`.
+
+Never put either value in source files, commit messages, chat messages, or client-side app variables. Once these secrets are configured, the workflows can authenticate. The GitHub connector cannot read or create repository secrets, so this setup must be completed by the repository owner.
+
+### Rebuild and restore limits
+
+- `supabase/snapshots/production-public-schema.sql` is a schema-only snapshot; it contains no table rows and is not a replacement for versioned migrations.
+- The original Terrabar schema predates the current set of five migrations. A safe fresh-environment rebuild still needs a reviewed baseline migration/restore procedure and a clean, separate test project. Do **not** run `supabase db reset --linked` against production.
+- Auth provider settings, secrets, SMS credentials, and Storage objects are not included in the public-schema snapshot. They must be configured or restored separately.
