@@ -1,0 +1,3 @@
+-- Migration already applied to Supabase project gznsxqeyhnuzglliijzz.
+-- Special buyer access: active sale_type='special' listings in the member's
+-- own city and enabled neighboring cities. No role approval is required.
