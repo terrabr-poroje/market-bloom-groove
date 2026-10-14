@@ -1,0 +1,61 @@
+name: Verify Supabase migration repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify production project reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx 'project_id = "gznsxqeyhnuzglliijzz"' supabase/config.toml
+
+      - name: Verify migration file naming and uniqueness
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(supabase/migrations/*.sql)
+          if [ ! -e "${files[0]}" ]; then
+            echo "No SQL migrations found."
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            base="$(basename "$file")"
+            if ! [[ "$base" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+              echo "Invalid migration filename: $base"
+              exit 1
+            fi
+          done
+          versions="$(printf '%s\n' "${files[@]}" | sed -E 's#^.*/([0-9]{14})_.*#\1#' | sort)"
+          duplicates="$(printf '%s\n' "$versions" | uniq -d)"
+          if [ -n "$duplicates" ]; then
+            echo "Duplicate migration versions: $duplicates"
+            exit 1
+          fi
+
+      - name: Check that migrations are non-empty
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in supabase/migrations/*.sql; do
+            grep -q '[^[:space:]]' "$file" || { echo "Empty migration: $file"; exit 1; }
+          done
