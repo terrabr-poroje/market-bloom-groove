@@ -17,6 +17,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as MembershipRouteImport } from './routes/membership'
+import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as RulesRouteImport } from './routes/rules'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const MembershipRoute = MembershipRouteImport.update({
   path: '/membership',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RequestsRoute = RequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RulesRoute = RulesRouteImport.update({
   id: '/rules',
   path: '/rules',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
   '/membership': typeof MembershipRoute
+  '/requests': typeof RequestsRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
   '/membership': typeof MembershipRoute
+  '/requests': typeof RequestsRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/guide': typeof GuideRoute
   '/membership': typeof MembershipRoute
+  '/requests': typeof RequestsRoute
   '/rules': typeof RulesRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/guide'
     | '/membership'
+    | '/requests'
     | '/rules'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/guide'
     | '/membership'
+    | '/requests'
     | '/rules'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/guide'
     | '/membership'
+    | '/requests'
     | '/rules'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   GuideRoute: typeof GuideRoute
   MembershipRoute: typeof MembershipRoute
+  RequestsRoute: typeof RequestsRoute
   RulesRoute: typeof RulesRoute
 }
 
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembershipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/requests': {
+      id: '/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof RequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rules': {
       id: '/rules'
       path: '/rules'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   GuideRoute: GuideRoute,
   MembershipRoute: MembershipRoute,
+  RequestsRoute: RequestsRoute,
   RulesRoute: RulesRoute,
 }
 export const routeTree = rootRouteImport
