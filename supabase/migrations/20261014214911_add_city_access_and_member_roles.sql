@@ -79,6 +79,7 @@ USING (
     WHERE au.id = admin_user_cities.admin_user_id
       AND au.auth_user_id = (SELECT auth.uid())
       AND au.is_active = true
+      AND au.admin_role = 'city_manager'
   )
 );
 
