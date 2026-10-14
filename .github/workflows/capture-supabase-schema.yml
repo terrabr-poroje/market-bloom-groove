@@ -1,0 +1,72 @@
+name: Capture Supabase schema drift for review
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: terrabar-supabase-schema-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Require repository secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Missing GitHub Actions secret SUPABASE_ACCESS_TOKEN"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "Missing GitHub Actions secret SUPABASE_DB_PASSWORD"; exit 1; }
+
+      - name: Link to the existing Terrabar project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref gznsxqeyhnuzglliijzz --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Capture current public schema (no row data)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p supabase/snapshots
+          supabase db dump --linked --schema public --password "$SUPABASE_DB_PASSWORD" --file supabase/snapshots/production-public-schema.sql
+          supabase gen types typescript --linked --schema public --password "$SUPABASE_DB_PASSWORD" > supabase/database.types.ts
+
+      - name: Open or update a review pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/supabase-schema-snapshot
+          delete-branch: false
+          commit-message: "chore: capture current Supabase public schema"
+          title: "chore: review current Supabase schema snapshot"
+          body: |
+            Automated schema snapshot from the existing production Supabase project.
+
+            - Includes schema definitions only, not table rows or user data.
+            - Updates generated TypeScript database types.
+            - This PR does not apply SQL to production.
+            - Review the diff carefully before merging. Snapshot SQL is a reference/restore aid and must not be replayed on top of the existing production database.
+          add-paths: |
+            supabase/snapshots/production-public-schema.sql
+            supabase/database.types.ts
