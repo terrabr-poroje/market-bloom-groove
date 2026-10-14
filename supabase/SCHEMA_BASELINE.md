@@ -12,10 +12,11 @@
 | 20261014214911 | `add_city_access_and_member_roles` |
 | 20261014215700 | `special_buyer_city_access` |
 | 20261014221645 | `secure_admin_helper_functions` |
+| 20261014221826 | `loads_children_and_internal_rls` |
 
 ## Public tables
 
-Total: **19** tables. Total current policies: **13**.
+Total: **19** tables. Total current policies: **24**.
 
 ### `public.members`
 
@@ -47,7 +48,7 @@ Foreign keys:
 ### `public.loads`
 
 - RLS enabled: **yes**
-- Policies: **1** (`loads_special_buyer_city_access` SELECT)
+- Policies: **2** (`loads_owner_access` SELECT, `loads_special_buyer_city_access` SELECT)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -237,7 +238,7 @@ Primary key: `id`.
 ### `public.message_templates`
 
 - RLS enabled: **yes**
-- Policies: **0**
+- Policies: **1** (`message_templates_main_admin_manage` ALL)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -278,7 +279,7 @@ Foreign keys:
 ### `public.load_images`
 
 - RLS enabled: **yes**
-- Policies: **0**
+- Policies: **4** (`load_images_delete_owned_loads` DELETE, `load_images_insert_owned_loads` INSERT, `load_images_read_visible_loads` SELECT, `load_images_update_owned_loads` UPDATE)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -323,7 +324,7 @@ Foreign keys:
 ### `public.audit_logs`
 
 - RLS enabled: **yes**
-- Policies: **0**
+- Policies: **1** (`audit_logs_read_main_admin` SELECT)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -340,7 +341,7 @@ Primary key: `id`.
 ### `public.load_price_tiers`
 
 - RLS enabled: **yes**
-- Policies: **0**
+- Policies: **4** (`load_price_tiers_delete_owned_loads` DELETE, `load_price_tiers_insert_owned_loads` INSERT, `load_price_tiers_read_visible_loads` SELECT, `load_price_tiers_update_owned_loads` UPDATE)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -468,6 +469,18 @@ Foreign keys:
   WHERE ((au.id = admin_user_cities.admin_user_id) AND (au.auth_user_id = ( SELECT auth.uid() AS uid)) AND (au.is_active = true) AND (au.admin_role = 'city_manager'::text)))))`
 - WITH CHECK: `—`
 
+### `admin_users.admin_users_read_own_active`
+- Command: `SELECT`
+- Roles: `{authenticated}`
+- USING: `((auth_user_id = ( SELECT auth.uid() AS uid)) AND (is_active = true))`
+- WITH CHECK: `—`
+
+### `audit_logs.audit_logs_read_main_admin`
+- Command: `SELECT`
+- Roles: `{authenticated}`
+- USING: `terrabar_is_main_admin()`
+- WITH CHECK: `—`
+
 ### `cities.cities_main_admin_manage`
 - Command: `ALL`
 - Roles: `{authenticated}`
@@ -490,6 +503,90 @@ Foreign keys:
 - Command: `SELECT`
 - Roles: `{authenticated}`
 - USING: `(is_enabled OR terrabar_is_main_admin())`
+- WITH CHECK: `—`
+
+### `load_images.load_images_delete_owned_loads`
+- Command: `DELETE`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_images.load_id)))`
+- WITH CHECK: `—`
+
+### `load_images.load_images_insert_owned_loads`
+- Command: `INSERT`
+- Roles: `{authenticated}`
+- USING: `—`
+- WITH CHECK: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_images.load_id)))`
+
+### `load_images.load_images_read_visible_loads`
+- Command: `SELECT`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM loads l
+  WHERE (l.id = load_images.load_id)))`
+- WITH CHECK: `—`
+
+### `load_images.load_images_update_owned_loads`
+- Command: `UPDATE`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_images.load_id)))`
+- WITH CHECK: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_images.load_id)))`
+
+### `load_price_tiers.load_price_tiers_delete_owned_loads`
+- Command: `DELETE`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_price_tiers.load_id)))`
+- WITH CHECK: `—`
+
+### `load_price_tiers.load_price_tiers_insert_owned_loads`
+- Command: `INSERT`
+- Roles: `{authenticated}`
+- USING: `—`
+- WITH CHECK: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_price_tiers.load_id)))`
+
+### `load_price_tiers.load_price_tiers_read_visible_loads`
+- Command: `SELECT`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM loads l
+  WHERE (l.id = load_price_tiers.load_id)))`
+- WITH CHECK: `—`
+
+### `load_price_tiers.load_price_tiers_update_owned_loads`
+- Command: `UPDATE`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_price_tiers.load_id)))`
+- WITH CHECK: `(EXISTS ( SELECT 1
+   FROM (loads l
+     JOIN members m ON (((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = l.member_id) OR (m.id = l.owner_member_id)))))
+  WHERE (l.id = load_price_tiers.load_id)))`
+
+### `loads.loads_owner_access`
+- Command: `SELECT`
+- Roles: `{authenticated}`
+- USING: `(EXISTS ( SELECT 1
+   FROM members m
+  WHERE ((m.auth_user_id = ( SELECT auth.uid() AS uid)) AND ((m.id = loads.member_id) OR (m.id = loads.owner_member_id)))))`
 - WITH CHECK: `—`
 
 ### `loads.loads_special_buyer_city_access`
@@ -538,6 +635,12 @@ Foreign keys:
 - USING: `(auth_user_id = ( SELECT auth.uid() AS uid))`
 - WITH CHECK: `—`
 
+### `message_templates.message_templates_main_admin_manage`
+- Command: `ALL`
+- Roles: `{authenticated}`
+- USING: `terrabar_is_main_admin()`
+- WITH CHECK: `terrabar_is_main_admin()`
+
 
 ## Public functions
 
@@ -547,9 +650,14 @@ Foreign keys:
 | `terrabar_is_city_manager` | `target_city text` | no | no | yes |
 | `terrabar_is_main_admin` | `` | no | no | yes |
 
+## Storage buckets
+
+- `terrabar-load-images`: private, file limit 10485760 bytes, allowed types: image/jpeg, image/png, image/webp
+
 ## Security follow-up items
 
-- 13 public tables currently have RLS enabled but no policies.
-- `terrabar_is_city_manager(text)` and `terrabar_is_main_admin()` now use SECURITY INVOKER and are executable only by authenticated users. `admin_users` has a SELECT policy limited to the active user's own row, so these helpers can evaluate their checks without SECURITY DEFINER.
-- No Storage policies were found during the audit.
-- This inventory does not include row data, auth users, secrets, API keys, or environment variables.
+- 8 public tables have RLS enabled but no policies. Some are intentionally service-role-only integration tables; `orders` and `purchase_requests` need explicit participant/role rules before enabling client access.
+- The two Terrabar admin helper functions now use SECURITY INVOKER and can be executed by authenticated users only; the `admin_users` SELECT policy limits visibility to the active user's own row.
+- The private Storage bucket currently has no Storage policies; upload/read rules must be implemented with the exact object-path convention before image uploads are enabled.
+- Leaked-password protection remains disabled in Supabase Auth.
+- This inventory excludes row data, auth users, secrets, API keys, and environment variables.
