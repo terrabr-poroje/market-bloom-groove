@@ -11,10 +11,11 @@
 | 20261014211818 | `restrict_rls_auto_enable_execution` |
 | 20261014214911 | `add_city_access_and_member_roles` |
 | 20261014215700 | `special_buyer_city_access` |
+| 20261014221645 | `secure_admin_helper_functions` |
 
 ## Public tables
 
-Total: **19** tables. Total current policies: **12**.
+Total: **19** tables. Total current policies: **13**.
 
 ### `public.members`
 
@@ -358,7 +359,7 @@ Foreign keys:
 ### `public.admin_users`
 
 - RLS enabled: **yes**
-- Policies: **0**
+- Policies: **1** (`admin_users_read_own_active` SELECT)
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -543,12 +544,12 @@ Foreign keys:
 | Function | Arguments | SECURITY DEFINER | anon EXECUTE | authenticated EXECUTE |
 |---|---|---:|---:|---:|
 | `rls_auto_enable` | `` | yes | no | no |
-| `terrabar_is_city_manager` | `target_city text` | yes | no | yes |
-| `terrabar_is_main_admin` | `` | yes | no | yes |
+| `terrabar_is_city_manager` | `target_city text` | no | no | yes |
+| `terrabar_is_main_admin` | `` | no | no | yes |
 
 ## Security follow-up items
 
 - 13 public tables currently have RLS enabled but no policies.
-- `terrabar_is_city_manager(text)` and `terrabar_is_main_admin()` are SECURITY DEFINER and executable by authenticated users. They are referenced by RLS policies; review their bodies and replace dependencies before revoking access.
+- `terrabar_is_city_manager(text)` and `terrabar_is_main_admin()` now use SECURITY INVOKER and are executable only by authenticated users. `admin_users` has a SELECT policy limited to the active user's own row, so these helpers can evaluate their checks without SECURITY DEFINER.
 - No Storage policies were found during the audit.
 - This inventory does not include row data, auth users, secrets, API keys, or environment variables.
