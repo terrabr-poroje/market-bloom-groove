@@ -171,6 +171,7 @@ function AnnouncePage() {
       quantity: packageWeight * packageCount,
       count: packageCount,
       package_type: form.packageType,
+      package_weight: packageWeight,
       unit: 'kg',
       min_quantity: minimumPackages * packageWeight,
       min_order_quantity: minimumPackages,
