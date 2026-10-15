@@ -30,10 +30,90 @@ WITH CHECK (
       AND mr.approval_status = 'approved'
       AND mr.role_code IN ('supplier', 'bar_seller')
   )
+  AND quantity > 0
+  AND price > 0
+  AND count > 0
+  AND min_order_quantity > 0
+  AND min_order_quantity <= count
+  AND min_quantity > 0
+  AND min_quantity <= quantity
 );
 
 GRANT INSERT ON TABLE public.members TO authenticated;
 GRANT INSERT ON TABLE public.loads TO authenticated;
+
+-- Active marketplace visibility follows the approved city-access rules.
+-- A normal buyer sees their own city; a special buyer sees their city and
+-- enabled neighboring cities; a professional buyer has no city filter.
+-- City managers are restricted to their assigned cities; main admins see all.
+DROP POLICY IF EXISTS loads_special_buyer_city_access ON public.loads;
+DROP POLICY IF EXISTS loads_marketplace_city_access ON public.loads;
+CREATE POLICY loads_marketplace_city_access
+ON public.loads
+FOR SELECT
+TO authenticated
+USING (
+  status = 'active'
+  AND (
+    public.terrabar_is_main_admin()
+    OR EXISTS (
+      SELECT 1
+      FROM public.admin_users AS au
+      LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+      WHERE au.auth_user_id = (SELECT auth.uid())
+        AND au.admin_role = 'city_manager'
+        AND au.is_active = true
+        AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM public.members AS m
+      WHERE m.auth_user_id = (SELECT auth.uid())
+        AND (
+          EXISTS (
+            SELECT 1 FROM public.member_roles AS mr
+            WHERE mr.member_id = m.id
+              AND mr.approval_status = 'approved'
+              AND mr.role_code = 'professional_buyer'
+          )
+          OR (
+            m.city = public.loads.city
+            AND (
+              m.role = 'buyer'
+              OR EXISTS (
+                SELECT 1 FROM public.member_roles AS mr
+                WHERE mr.member_id = m.id
+                  AND mr.approval_status = 'approved'
+                  AND mr.role_code IN ('buyer', 'special_buyer')
+              )
+            )
+          )
+          OR (
+            EXISTS (
+              SELECT 1 FROM public.member_roles AS mr
+              WHERE mr.member_id = m.id
+                AND mr.approval_status = 'approved'
+                AND mr.role_code = 'special_buyer'
+            )
+            AND EXISTS (
+              SELECT 1 FROM public.city_neighbors AS cn
+              WHERE cn.is_enabled = true
+                AND (
+                  (cn.city_name = m.city AND cn.neighbor_city_name = public.loads.city)
+                  OR (cn.neighbor_city_name = m.city AND cn.city_name = public.loads.city)
+                )
+            )
+          )
+          OR EXISTS (
+            SELECT 1 FROM public.member_roles AS mr
+            WHERE mr.member_id = m.id
+              AND mr.approval_status = 'approved'
+              AND mr.role_code IN ('supplier', 'bar_seller')
+          )
+        )
+    )
+  )
+);
 
 -- Main admins need to review pending loads in the management screen.
 DROP POLICY IF EXISTS loads_main_admin_review_select ON public.loads;
