@@ -17,6 +17,10 @@ const statusLabels: Record<string, string> = { pending: 'در انتظار بر�
 
 type Request = { id: string; role_code: string; approval_status: string; created_at: string };
 
+// UI role labels are user-friendly; the production database requires bar_seller.
+const roleToCode: Partial<Record<AppRole, string>> = { supplier: 'supplier', seller: 'bar_seller', buyer: 'buyer' };
+const roleFromCode = (code: string): AppRole => code === 'bar_seller' ? 'seller' : code as AppRole;
+
 function MembershipPage() {
   const { user, loading } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
@@ -68,7 +72,7 @@ function MembershipPage() {
 
     const { error: roleInsertError } = await (supabase as any).from('member_roles').insert({
       member_id: memberId,
-      role_code: role,
+      role_code: roleToCode[role] ?? role,
       approval_status: 'pending',
       approved_by: null,
       approved_at: null,
@@ -125,7 +129,7 @@ function MembershipPage() {
             {requests.map(request => (
               <li key={request.id} className="rounded-lg border border-border p-4 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <strong>{(roleLabels[request.role_code as AppRole] ?? request.role_code)}</strong>
+                  <strong>{(roleLabels[roleFromCode(request.role_code)] ?? request.role_code)}</strong>
                   <span className={`flex items-center gap-1 text-xs ${request.approval_status === 'approved' ? 'text-primary' : request.approval_status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {request.approval_status === 'approved' ? <CheckCircle2 className="size-4" /> : request.approval_status === 'rejected' ? <XCircle className="size-4" /> : <Clock3 className="size-4" />}
                     {statusLabels[request.approval_status]}
