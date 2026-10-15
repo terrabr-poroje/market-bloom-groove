@@ -70,16 +70,51 @@ function MembershipPage() {
       memberId = newMember.id;
     }
 
-    const { error: roleInsertError } = await (supabase as any).from('member_roles').insert({
-      member_id: memberId,
-      role_code: roleToCode[role] ?? role,
-      approval_status: 'pending',
-      approved_by: null,
-      approved_at: null,
-    });
-    if (roleInsertError) {
-      setError(roleInsertError.code === '23505' ? 'این درخواست نقش قبلاً ثبت شده است.' : 'ثبت درخواست عضویت انجام نشد؛ دوباره تلاش کنید.');
-    } else { setSaved(true); refresh(); }
+    const requestedRoleCode = roleToCode[role] ?? role;
+    const { data: existingRequest, error: requestLookupError } = await (supabase as any)
+      .from('member_roles')
+      .select('id, approval_status')
+      .eq('member_id', memberId)
+      .eq('role_code', requestedRoleCode)
+      .maybeSingle();
+
+    if (requestLookupError) {
+      setError('بررسی درخواست قبلی انجام نشد؛ کمی بعد دوباره تلاش کنید.');
+      setBusy(false);
+      return;
+    }
+
+    if (existingRequest?.approval_status === 'rejected') {
+      const { error: resubmitError } = await (supabase as any)
+        .from('member_roles')
+        .update({ approval_status: 'pending', approved_by: null, approved_at: null })
+        .eq('id', existingRequest.id)
+        .eq('approval_status', 'rejected');
+      if (resubmitError) {
+        setError('ارسال دوباره درخواست انجام نشد؛ کمی بعد تلاش کنید.');
+      } else {
+        setSaved(true);
+        refresh();
+      }
+    } else if (existingRequest) {
+      setError(existingRequest.approval_status === 'approved'
+        ? 'این نقش قبلاً تأیید شده است.'
+        : 'درخواست این نقش قبلاً ثبت شده و در انتظار بررسی است.');
+    } else {
+      const { error: roleInsertError } = await (supabase as any).from('member_roles').insert({
+        member_id: memberId,
+        role_code: requestedRoleCode,
+        approval_status: 'pending',
+        approved_by: null,
+        approved_at: null,
+      });
+      if (roleInsertError) {
+        setError(roleInsertError.code === '23505' ? 'این درخواست نقش قبلاً ثبت شده است.' : 'ثبت درخواست عضویت انجام نشد؛ دوباره تلاش کنید.');
+      } else {
+        setSaved(true);
+        refresh();
+      }
+    }
     setBusy(false);
   }
 
