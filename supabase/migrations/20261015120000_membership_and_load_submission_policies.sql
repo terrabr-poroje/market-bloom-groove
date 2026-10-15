@@ -345,3 +345,66 @@ WITH CHECK (
       AND m.auth_user_id = (SELECT auth.uid())
   )
 );
+
+
+-- Direct multi-product sourcing requests use the existing purchase_requests table.
+-- A direct sourcing request has no load_id and is routed to the requester's city.
+DROP POLICY IF EXISTS purchase_requests_read_authorized ON public.purchase_requests;
+CREATE POLICY purchase_requests_read_authorized
+ON public.purchase_requests
+FOR SELECT
+TO authenticated
+USING (
+  public.terrabar_is_main_admin()
+  OR EXISTS (
+    SELECT 1
+    FROM public.members AS buyer
+    WHERE buyer.id = public.purchase_requests.buyer_member_id
+      AND buyer.auth_user_id = (SELECT auth.uid())
+  )
+  OR EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (
+        auc.city_name = public.purchase_requests.destination_city
+        OR au.city = public.purchase_requests.destination_city
+      )
+  )
+);
+
+DROP POLICY IF EXISTS purchase_requests_insert_own_direct_order ON public.purchase_requests;
+CREATE POLICY purchase_requests_insert_own_direct_order
+ON public.purchase_requests
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  status = 'new'
+  AND load_id IS NULL
+  AND buyer_member_id IS NOT NULL
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS buyer
+    WHERE buyer.id = public.purchase_requests.buyer_member_id
+      AND buyer.auth_user_id = (SELECT auth.uid())
+      AND COALESCE(buyer.role, '') IN ('buyer', 'special_buyer', 'professional_buyer')
+      AND (
+        public.purchase_requests.destination_city IS NULL
+        OR public.purchase_requests.destination_city = buyer.city
+      )
+  )
+);
+
+-- Client access is restricted to the exact fields used by the direct-order form.
+REVOKE ALL PRIVILEGES ON TABLE public.purchase_requests FROM anon, authenticated;
+GRANT SELECT (
+  id, buyer_member_id, product_type, quantity, quantity_unit, destination_city,
+  quality_requirements, needed_by, notes, status, created_at, updated_at, load_id
+) ON TABLE public.purchase_requests TO authenticated;
+GRANT INSERT (
+  buyer_member_id, product_type, quantity, quantity_unit, destination_city,
+  quality_requirements, needed_by, notes, status, load_id
+) ON TABLE public.purchase_requests TO authenticated;
