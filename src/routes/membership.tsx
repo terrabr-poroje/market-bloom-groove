@@ -30,7 +30,7 @@ function MembershipPage() {
 
   function refresh() {
     if (!user) return;
-    supabase.from('member_roles').select('id, role_code, approval_status, created_at, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
+    (supabase as any).from('member_roles').select('id, role_code, approval_status, created_at, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
       .then(({ data }) => setRequests((data ?? []) as unknown as Request[]));
   }
   useEffect(refresh, [user]);
@@ -41,7 +41,7 @@ function MembershipPage() {
     setBusy(true);
     setError('');
     // Create or reuse the caller's member profile in the production schema.
-    const { data: existingMember, error: lookupError } = await supabase
+    const { data: existingMember, error: lookupError } = await (supabase as any)
       .from('members').select('id').eq('auth_user_id', user.id).maybeSingle();
 
     if (lookupError) {
@@ -52,7 +52,7 @@ function MembershipPage() {
 
     let memberId = existingMember?.id;
     if (!memberId) {
-      const { data: newMember, error: memberInsertError } = await supabase
+      const { data: newMember, error: memberInsertError } = await (supabase as any)
         .from('members')
         .insert({ auth_user_id: user.id, full_name: fullName.trim(), phone: phone.trim(), city, role, verification_status: 'pending', products: description.trim() || null })
         .select('id')
@@ -65,7 +65,7 @@ function MembershipPage() {
       memberId = newMember.id;
     }
 
-    const { error: roleInsertError } = await supabase.from('member_roles').insert({
+    const { error: roleInsertError } = await (supabase as any).from('member_roles').insert({
       member_id: memberId,
       role_code: role,
       approval_status: 'pending',
