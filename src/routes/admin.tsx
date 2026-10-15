@@ -110,7 +110,7 @@ function AdminPage() {
             <div key={load.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-5">
               <div>
                 <strong>{load.name} {load.engine}</strong>
-                <span className="mr-2 rounded bg-secondary px-2 py-0.5 text-xs">{qualityLabels[load.quality]}</span>
+                <span className="mr-2 rounded bg-secondary px-2 py-0.5 text-xs">{qualityLabels[load.quality ?? 'standard']}</span>
                 <p className="mt-1 text-xs text-muted-foreground">{load.city} · {faNumber(load.count ?? load.quantity)} بسته · هر کیلو {faNumber(load.price)} تومان</p>
               </div>
               <div className="flex gap-2">
