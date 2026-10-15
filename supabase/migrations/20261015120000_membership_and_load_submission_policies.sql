@@ -408,3 +408,26 @@ GRANT INSERT (
   buyer_member_id, product_type, quantity, quantity_unit, destination_city,
   quality_requirements, needed_by, notes, status, load_id
 ) ON TABLE public.purchase_requests TO authenticated;
+
+
+-- Owners can deactivate their own listings, but cannot approve or reactivate them.
+DROP POLICY IF EXISTS loads_owner_deactivate_update ON public.loads;
+CREATE POLICY loads_owner_deactivate_update
+ON public.loads
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.members AS owner
+    WHERE owner.auth_user_id = (SELECT auth.uid())
+      AND (owner.id = public.loads.member_id OR owner.id = public.loads.owner_member_id)
+  )
+)
+WITH CHECK (
+  status IN ('inactive', 'pending')
+  AND EXISTS (
+    SELECT 1 FROM public.members AS owner
+    WHERE owner.auth_user_id = (SELECT auth.uid())
+      AND (owner.id = public.loads.member_id OR owner.id = public.loads.owner_member_id)
+  )
+);
