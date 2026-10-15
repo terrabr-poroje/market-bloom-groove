@@ -126,7 +126,7 @@ function MembershipPage() {
                 <div className="flex items-center justify-between gap-2">
                   <strong>{(roleLabels[request.role_code as AppRole] ?? request.role_code)}</strong>
                   <span className={`flex items-center gap-1 text-xs ${request.approval_status === 'approved' ? 'text-primary' : request.approval_status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {request.status === 'approved' ? <CheckCircle2 className="size-4" /> : request.status === 'rejected' ? <XCircle className="size-4" /> : <Clock3 className="size-4" />}
+                    {request.approval_status === 'approved' ? <CheckCircle2 className="size-4" /> : request.approval_status === 'rejected' ? <XCircle className="size-4" /> : <Clock3 className="size-4" />}
                     {statusLabels[request.approval_status]}
                   </span>
                 </div>
