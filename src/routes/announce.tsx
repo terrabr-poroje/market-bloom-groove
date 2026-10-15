@@ -15,9 +15,11 @@ export const Route = createFileRoute("/announce")({
 const qualityValues = ['premium', 'standard', 'economy', 'negotiated'] as const;
 const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qualityValues[index]]));
 type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; quantity: number; count: number | null; price: number; status: string; created_at: string };
-type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; notes: string | null; created_at: string };
+type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
 const orderStatusLabels: Record<string, string> = { pending: 'در انتظار پاسخ شما', accepted: 'تأیید شده توسط فروشنده', rejected: 'رد شده توسط فروشنده' };
+const paymentStatusLabels: Record<string, string> = { unpaid: 'پرداخت‌نشده', pending: 'در انتظار تأیید پرداخت', paid: 'پرداخت تأییدشده', failed: 'پرداخت ناموفق', refunded: 'بازپرداخت‌شده' };
+const deliveryStatusLabels: Record<string, string> = { awaiting_payment: 'در انتظار پرداخت', awaiting_dispatch: 'آماده ارسال', shipped: 'بار ارسال شده', delivered: 'تحویل گرفته شده', disputed: 'در حال بررسی اختلاف' };
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
@@ -42,7 +44,7 @@ function AnnouncePage() {
       if (!member) { setOwnedLoads([]); setIncomingOrders([]); setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
       const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
         (supabase as any).from('loads').select('id, name, product_type, engine, city, quantity, count, price, status, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
-        (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
+        (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
       ]);
       if (!active) return;
       if (listError) setManageError('فهرست بارهای شما دریافت نشد؛ دسترسی مشاهده را بررسی کنید.');
@@ -175,7 +177,7 @@ function AnnouncePage() {
               {incomingOrders.map(order => (
                 <li key={order.id} className="rounded-lg border border-border p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div><p className="font-bold">{order.customer_name} · {order.customer_city}</p><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {faNumber(Number(order.total_price))} تومان · {order.delivery_type === "pickup" ? "تحویل حضوری" : "نیازمند حمل"}</p>{order.delivery_address && <p className="mt-1 text-xs text-muted-foreground">نشانی: {order.delivery_address}</p>}{order.notes && <p className="mt-1 text-xs text-muted-foreground">توضیح: {order.notes}</p>}</div>
+                    <div><p className="font-bold">{order.customer_name} · {order.customer_city}</p><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {faNumber(Number(order.total_price))} تومان · {order.delivery_type === "pickup" ? "تحویل حضوری" : "نیازمند حمل"}</p><p className="mt-1 text-xs text-muted-foreground">پرداخت: {paymentStatusLabels[order.payment_status] ?? "نامشخص"} · تحویل: {deliveryStatusLabels[order.delivery_status] ?? "در انتظار به‌روزرسانی"}</p>{order.delivery_address && <p className="mt-1 text-xs text-muted-foreground">نشانی: {order.delivery_address}</p>}{order.notes && <p className="mt-1 text-xs text-muted-foreground">توضیح: {order.notes}</p>}</div>
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderStatusLabels[order.status] ?? order.status}</span>
                   </div>
                   {order.status === "pending" && <div className="mt-3 flex gap-2"><Button type="button" size="sm" disabled={busyLoadId === order.id} onClick={() => void respondToOrder(order.id, "accepted")}>تأیید سفارش</Button><Button type="button" size="sm" variant="outline" disabled={busyLoadId === order.id} onClick={() => void respondToOrder(order.id, "rejected")}>رد سفارش</Button></div>}
