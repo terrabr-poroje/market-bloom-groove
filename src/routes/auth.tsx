@@ -48,6 +48,7 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [authMethod, setAuthMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
@@ -66,8 +67,14 @@ function AuthPage() {
     setError("");
     setNotice("");
     const normalizedPhone = normalizeIranPhone(phone);
-    if (!/^\+\d{10,15}$/.test(normalizedPhone)) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (authMethod === "phone" && !/^\+\d{10,15}$/.test(normalizedPhone)) {
       setError("شماره موبایل را با قالب معتبر وارد کنید؛ نمونه: 09123456789");
+      setBusy(false);
+      return;
+    }
+    if (authMethod === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError("یک ایمیل معتبر وارد کنید.");
       setBusy(false);
       return;
     }
@@ -92,9 +99,10 @@ function AuthPage() {
     if (otpError) {
       setError("ارسال کد انجام نشد. فعال‌بودن ورود پیامکی و تنظیمات ارائه‌دهنده پیامک در Supabase را بررسی کنید.");
     } else {
-      setPhone(normalizedPhone);
+      if (authMethod === "phone") setPhone(normalizedPhone);
+      else setEmail(normalizedEmail);
       setCodeSent(true);
-      setNotice("کد یک‌بارمصرف ارسال شد. پیامک را بررسی کنید.");
+      setNotice(authMethod === "phone" ? "کد یک‌بارمصرف پیامکی ارسال شد." : "کد تأیید به ایمیل شما ارسال شد؛ صندوق ورودی و پوشه هرزنامه را بررسی کنید.");
     }
     setBusy(false);
   }
@@ -105,11 +113,10 @@ function AuthPage() {
     setError("");
     setNotice("");
     const normalizedPhone = normalizeIranPhone(phone);
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      phone: normalizedPhone,
-      token: code.trim(),
-      type: "sms",
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data, error: verifyError } = authMethod === "phone"
+      ? await supabase.auth.verifyOtp({ phone: normalizedPhone, token: code.trim(), type: "sms" })
+      : await supabase.auth.verifyOtp({ email: normalizedEmail, token: code.trim(), type: "email" });
     if (verifyError || !data.user) {
       setError("کد تأیید معتبر نیست یا منقضی شده است؛ دوباره بررسی کنید.");
       setBusy(false);
@@ -137,7 +144,7 @@ function AuthPage() {
           .insert({
             auth_user_id: data.user.id,
             full_name: fullName.trim(),
-            phone: normalizedPhone,
+            phone: authMethod === "phone" ? normalizedPhone : null,
             city,
             role: memberRole,
             verification_status: "pending",
@@ -245,14 +252,23 @@ function AuthPage() {
                   <label className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 accent-primary" /><span>قوانین و مقررات ترابار را می‌پذیرم.</span></label>
                 </>
               )}
-              <label className="field-label">شماره موبایل<input required dir="ltr" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09123456789" /></label>
+              <fieldset className="grid gap-2">
+                <legend className="text-sm font-bold">روش ورود یا ثبت‌نام را انتخاب کنید</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => { setAuthMethod("phone"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-lg border p-3 text-sm font-semibold ${authMethod === "phone" ? "border-primary bg-accent/50" : "border-border"}`}>شماره موبایل</button>
+                  <button type="button" onClick={() => { setAuthMethod("email"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-lg border p-3 text-sm font-semibold ${authMethod === "email" ? "border-primary bg-accent/50" : "border-border"}`}>ایمیل</button>
+                </div>
+              </fieldset>
+              {authMethod === "phone"
+                ? <label className="field-label">شماره موبایل<input required dir="ltr" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09123456789" /></label>
+                : <label className="field-label">ایمیل<input required type="email" dir="ltr" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /><span className="text-xs font-normal text-muted-foreground">می‌توانید بدون شماره موبایل با ایمیل ثبت‌نام کنید.</span></label>}
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
               <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد تأیید"}<Phone className="mr-2 size-4" /></Button>
             </form>
           ) : (
             <form onSubmit={verifyCode} className="mt-6 grid gap-4">
-              <div className="rounded-lg bg-accent/40 p-4 text-sm"><p className="font-semibold">کد تأیید برای {phone} ارسال شد</p><p className="mt-1 text-xs text-muted-foreground">کد پیامک‌شده را وارد کنید تا {mode === "signup" ? "ثبت‌نام" : "ورود"} کامل شود.</p></div>
+              <div className="rounded-lg bg-accent/40 p-4 text-sm"><p className="font-semibold">کد تأیید برای {authMethod === "phone" ? phone : email} ارسال شد</p><p className="mt-1 text-xs text-muted-foreground">کد دریافت‌شده را وارد کنید تا {mode === "signup" ? "ثبت‌نام" : "ورود"} کامل شود.</p></div>
               <label className="field-label">کد یک‌بارمصرف<input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={4} maxLength={8} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} className="field-input text-center text-lg tracking-[0.4em]" placeholder="------" /></label>
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
