@@ -43,7 +43,6 @@ function AdminPage() {
       .update({ approval_status: 'approved', approved_by: user!.id, approved_at: new Date().toISOString() })
       .eq('id', request.id);
     if (error) { window.alert('تأیید عضویت انجام نشد؛ دسترسی مدیر را بررسی کنید.'); return; }
-    await (supabase as any).from('members').update({ verification_status: 'approved' }).eq('id', request.member_id);
     refresh();
   }
   async function rejectRequest(request: MemberRequest) {
