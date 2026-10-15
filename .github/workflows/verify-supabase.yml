@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          migration="supabase/migrations/20261015120000_membership_and_load_submission_policies.sql"
+          migration="supabase/migrations/20261015211128_membership_and_load_submission_policies.sql"
           test -f "$migration"
           grep -Fq 'CREATE POLICY loads_select_authorized' "$migration"
           grep -Fq 'CREATE POLICY loads_city_manager_review_update' "$migration"
