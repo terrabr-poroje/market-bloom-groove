@@ -16,6 +16,8 @@ export const Route = createFileRoute("/requests")({
 type PurchaseMode = "retail" | "wholesale" | "special" | "professional";
 type DirectOrderItem = { product: string; variety: string; quantity: string; unit: "kg" | "package" | "ton"; quality: string };
 type MyDirectRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
+type MyOrder = { id: string; load_id: string; quantity: number; unit: string; total_price: number | null; delivery_type: string | null; delivery_address: string | null; status: string; notes: string | null; created_at: string };
+const orderStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید فروشنده', accepted: 'تأیید فروشنده؛ در انتظار پرداخت', rejected: 'رد شده توسط فروشنده', paid: 'پرداخت‌شده', shipped: 'بار ارسال شده', bar_sent: 'بار ارسال شده', delivered: 'تحویل گرفته شده', received: 'تحویل گرفته شده', completed: 'تکمیل‌شده', cancelled: 'لغوشده' };
 const directStatusLabels: Record<string, string> = { new: "ثبت‌شده", in_review: "در حال بررسی", sourcing: "در حال تأمین", offer_ready: "پیشنهاد تأمین آماده", rejected: "ردشده", cancelled: "لغوشده", completed: "تکمیل‌شده" };
 const purchaseModes: { value: PurchaseMode; label: string; description: string; saleTypes: string[] }[] = [
   { value: "retail", label: "خرده", description: "خرید در سطح خرده طبق شرایط آگهی", saleTypes: ["regular", "retail"] },
@@ -28,6 +30,7 @@ const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: 
 function Requests() {
   const { user } = useAuth();
   const [myDirectRequests, setMyDirectRequests] = useState<MyDirectRequest[]>([]);
+  const [myOrders, setMyOrders] = useState<MyOrder[]>([]);
   const [loadingMyRequests, setLoadingMyRequests] = useState(false);
   const [myRequestError, setMyRequestError] = useState("");
   const [liveLoads, setLiveLoads] = useState<Load[]>([]);
@@ -105,12 +108,19 @@ function Requests() {
         return;
       }
       setLoadingMyRequests(true);
-      const { data, error } = await (supabase as any).from("purchase_requests")
-        .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")
-        .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false });
+      const [{ data, error }, { data: ordersData, error: ordersError }] = await Promise.all([
+        (supabase as any).from("purchase_requests")
+          .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")
+          .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false }),
+        (supabase as any).from("orders")
+          .select("id, load_id, quantity, unit, total_price, delivery_type, delivery_address, status, notes, created_at")
+          .eq("buyer_member_id", member.id).order("created_at", { ascending: false }),
+      ]);
       if (!active) return;
-      if (error) setMyRequestError("پیگیری درخواست‌ها ممکن نیست؛ سیاست‌های خواندن درخواست باید در Supabase فعال باشد.");
+      if (error) setMyRequestError("پیگیری درخواست سفارش ممکن نیست؛ سیاست‌های خواندن درخواست باید در Supabase فعال باشد.");
       else setMyDirectRequests((data ?? []) as MyDirectRequest[]);
+      if (ordersError) setMyRequestError("فهرست خریدهای شما دریافت نشد؛ ممکن است دسترسی سفارش هنوز فعال نشده باشد.");
+      else setMyOrders((ordersData ?? []) as MyOrder[]);
       setLoadingMyRequests(false);
     }
     void fetchMyDirectRequests();
@@ -286,6 +296,16 @@ function Requests() {
               </ul>
             )}
             {myRequestError && <p role="alert" className="mt-3 text-sm text-destructive">{myRequestError}</p>}
+            <h3 className="mt-7 text-lg font-bold">خریدهای من</h3>
+            {!user ? <p className="mt-3 text-sm text-muted-foreground">برای مشاهده سفارش‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت سفارش‌ها…</p> : myOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز سفارشی ثبت نکرده‌اید.</p> : (
+              <ul className="mt-4 grid gap-3">
+                {myOrders.map(order => <li key={order.id} className="rounded-lg border border-border bg-card p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>سفارش {order.id.slice(0, 8)}</strong><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {order.total_price == null ? "مبلغ در انتظار بررسی" : faNumber(Number(order.total_price)) + " تومان"} · {order.delivery_type === "pickup" ? "تحویل حضوری" : "حمل"}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderStatusLabels[order.status] ?? order.status}</span></div>
+                  {order.delivery_address && <p className="mt-2 text-xs text-muted-foreground">نشانی تحویل: {order.delivery_address}</p>}
+                  {order.notes && <p className="mt-2 text-xs text-muted-foreground">توضیحات: {order.notes}</p>}
+                </li>)}
+              </ul>
+            )}
           </div>
         </div>
       </section>
