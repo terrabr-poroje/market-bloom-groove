@@ -28,6 +28,21 @@ function AnnouncePage() {
     if (!user) return;
     setBusy(true);
     setError('');
+
+    const packageWeight = Number(form.weight);
+    const packageCount = Number(form.stock);
+    const minimumPackages = Number(form.minimum);
+    const pricePerKg = Number(form.price);
+    if (!form.product.trim() || !form.variety.trim() || !form.province.trim() ||
+        !Number.isFinite(packageWeight) || packageWeight <= 0 ||
+        !Number.isInteger(packageCount) || packageCount < 1 ||
+        !Number.isInteger(minimumPackages) || minimumPackages < 1 || minimumPackages > packageCount ||
+        !Number.isFinite(pricePerKg) || pricePerKg <= 0) {
+      setError('اطلاعات بار معتبر نیست. وزن و قیمت باید مثبت باشند و حداقل سفارش از موجودی بیشتر نباشد.');
+      setBusy(false);
+      return;
+    }
+
     // Resolve the approved member record first; loads.member_id references members.id,
     // not auth.users.id. The production schema uses its own canonical column names.
     const { data: member, error: memberError } = await (supabase as any)
@@ -54,9 +69,9 @@ function AnnouncePage() {
       quantity: packageWeight * packageCount,
       count: packageCount,
       unit: 'kg',
-      min_quantity: Number(form.minimum) * packageWeight,
-      min_order_quantity: Number(form.minimum),
-      price: Number(form.price),
+      min_quantity: minimumPackages * packageWeight,
+      min_order_quantity: minimumPackages,
+      price: pricePerKg,
       price_unit: 'toman_per_kg',
       ready_date: form.ready,
       description: form.description.trim() || null,
