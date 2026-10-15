@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
-export type AppRole = 'admin' | 'supplier' | 'seller' | 'buyer';
+export type AppRole = 'admin' | 'city_manager' | 'supplier' | 'seller' | 'buyer';
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -10,19 +11,74 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
       setSession(data.session);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
-    return () => sub.subscription.unsubscribe();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (active) setSession(next);
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (!session) { setRoles([]); return; }
-    supabase.from('user_roles').select('role').then(({ data }) => {
-      setRoles(((data ?? []) as { role: AppRole }[]).map(row => row.role));
-    });
+    let active = true;
+
+    async function loadRoles() {
+      if (!session?.user) {
+        setRoles([]);
+        return;
+      }
+
+      // Production schema uses members + member_roles, not user_roles.
+      const [{ data: memberRoleRows, error: memberRoleError }, { data: adminRows, error: adminError }] =
+        await Promise.all([
+          (supabase as any)
+            .from('member_roles')
+            .select('role_code, approval_status, members!inner(auth_user_id)')
+            .eq('approval_status', 'approved')
+            .eq('members.auth_user_id', session.user.id),
+          (supabase as any)
+            .from('admin_users')
+            .select('admin_role')
+            .eq('auth_user_id', session.user.id)
+            .eq('is_active', true),
+        ]);
+
+      if (!active) return;
+
+      const nextRoles = new Set<AppRole>();
+      if (!memberRoleError) {
+        for (const row of memberRoleRows ?? []) {
+          const roleCode = String(row.role_code).toLowerCase();
+          if (roleCode === 'supplier') nextRoles.add('supplier');
+          if (roleCode === 'seller' || roleCode === 'bar_seller') nextRoles.add('seller');
+          if (roleCode === 'buyer' || roleCode === 'special_buyer' || roleCode === 'professional_buyer') nextRoles.add('buyer');
+        }
+      }
+
+      // Only the main administrator receives the global admin UI role.
+      if (!adminError) {
+        const adminRoleCodes = (adminRows ?? []).map(row => String(row.admin_role).toLowerCase());
+        if (adminRoleCodes.some(code => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
+          nextRoles.add('admin');
+        }
+        if (adminRoleCodes.includes('city_manager')) nextRoles.add('city_manager');
+      }
+
+      setRoles([...nextRoles]);
+    }
+
+    void loadRoles();
+    return () => { active = false; };
   }, [session]);
 
   return {
@@ -31,7 +87,7 @@ export function useAuth() {
     roles,
     loading,
     isAdmin: roles.includes('admin'),
-    canAnnounce: roles.includes('supplier') || roles.includes('seller') || roles.includes('admin'),
+    canAnnounce: roles.includes('supplier') || roles.includes('seller'),
   };
 }
 

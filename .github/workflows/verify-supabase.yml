@@ -59,3 +59,29 @@ jobs:
           for file in supabase/migrations/*.sql; do
             grep -q '[^[:space:]]' "$file" || { echo "Empty migration: $file"; exit 1; }
           done
+
+      - name: Check critical RLS and least-privilege guardrails
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration="supabase/migrations/20261015211128_membership_and_load_submission_policies.sql"
+          test -f "$migration"
+          grep -Fq 'CREATE POLICY loads_select_authorized' "$migration"
+          grep -Fq 'CREATE POLICY loads_city_manager_review_update' "$migration"
+          grep -Fq 'CREATE POLICY members_city_manager_read_assigned_city' "$migration"
+          grep -Fq "mr.role_code = 'professional_buyer'" "$migration"
+          grep -Fq "mr.role_code = 'special_buyer'" "$migration"
+          grep -Fq "mr.role_code IN ('supplier', 'bar_seller')" "$migration"
+          grep -Fq 'REVOKE ALL PRIVILEGES ON TABLE public.members, public.member_roles, public.loads' "$migration"
+          grep -Fq 'GRANT UPDATE (status) ON TABLE public.loads TO authenticated' "$migration"
+          grep -Fq 'GRANT UPDATE (approval_status, approved_by, approved_at)' "$migration"
+          grep -Fq 'CREATE POLICY purchase_requests_read_authorized' "$migration"
+          grep -Fq 'CREATE POLICY purchase_requests_insert_own_direct_order' "$migration"
+          grep -Fq 'CREATE POLICY loads_owner_deactivate_update' "$migration"
+          grep -Fq 'CREATE POLICY orders_read_authorized' "$migration"
+          grep -Fq 'CREATE POLICY orders_insert_buyer_pending_request' "$migration"
+          grep -Fq 'CREATE POLICY orders_seller_review_update' "$migration"
+          grep -Fq 'REVOKE ALL PRIVILEGES ON TABLE public.orders FROM anon, authenticated' "$migration"
+          grep -Fq 'REVOKE ALL PRIVILEGES ON TABLE public.purchase_requests FROM anon, authenticated' "$migration"
+          grep -Fq 'GRANT INSERT (' "$migration"
+          echo "Static guardrail checks passed. This is not a live RLS runtime test."
