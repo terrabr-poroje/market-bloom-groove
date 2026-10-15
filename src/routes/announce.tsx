@@ -15,7 +15,9 @@ export const Route = createFileRoute("/announce")({
 const qualityValues = ['premium', 'standard', 'economy', 'negotiated'] as const;
 const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qualityValues[index]]));
 type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; quantity: number; count: number | null; price: number; status: string; created_at: string };
+type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
+const orderStatusLabels: Record<string, string> = { pending: 'در انتظار پاسخ شما', accepted: 'تأیید شده توسط فروشنده', rejected: 'رد شده توسط فروشنده' };
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
@@ -24,6 +26,8 @@ function AnnouncePage() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [ownedLoads, setOwnedLoads] = useState<OwnedLoad[]>([]);
+  const [incomingOrders, setIncomingOrders] = useState<IncomingOrder[]>([]);
+  const [loadingIncomingOrders, setLoadingIncomingOrders] = useState(true);
   const [loadingOwnedLoads, setLoadingOwnedLoads] = useState(true);
   const [manageError, setManageError] = useState('');
   const [busyLoadId, setBusyLoadId] = useState('');
@@ -32,23 +36,34 @@ function AnnouncePage() {
   useEffect(() => {
     let active = true;
     async function fetchOwnedLoads() {
-      if (!user) { setLoadingOwnedLoads(false); return; }
+      if (!user) { setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
       const { data: member } = await (supabase as any).from('members').select('id').eq('auth_user_id', user.id).maybeSingle();
       if (!active) return;
-      if (!member) { setOwnedLoads([]); setLoadingOwnedLoads(false); return; }
-      const { data, error: listError } = await (supabase as any)
-        .from('loads')
-        .select('id, name, product_type, engine, city, quantity, count, price, status, created_at')
-        .or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id)
-        .order('created_at', { ascending: false });
+      if (!member) { setOwnedLoads([]); setIncomingOrders([]); setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
+      const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
+        (supabase as any).from('loads').select('id, name, product_type, engine, city, quantity, count, price, status, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
+        (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
+      ]);
       if (!active) return;
       if (listError) setManageError('فهرست بارهای شما دریافت نشد؛ دسترسی مشاهده را بررسی کنید.');
       else setOwnedLoads((data ?? []) as OwnedLoad[]);
+      if (orderListError) setManageError('فهرست درخواست‌های سفارش دریافت نشد؛ ممکن است سیاست‌های سفارش هنوز روی دیتابیس اعمال نشده باشند.');
+      else setIncomingOrders((orderData ?? []) as IncomingOrder[]);
       setLoadingOwnedLoads(false);
+      setLoadingIncomingOrders(false);
     }
     void fetchOwnedLoads();
     return () => { active = false; };
   }, [user?.id]);
+
+  async function respondToOrder(orderId: string, status: 'accepted' | 'rejected') {
+    setBusyLoadId(orderId);
+    setManageError('');
+    const { error: responseError } = await (supabase as any).from('orders').update({ status }).eq('id', orderId).eq('status', 'pending');
+    if (responseError) setManageError('ثبت پاسخ به سفارش انجام نشد؛ دسترسی فروشنده را بررسی کنید.');
+    else setIncomingOrders(items => items.map(item => item.id === orderId ? { ...item, status } : item));
+    setBusyLoadId('');
+  }
 
   async function deactivateLoad(loadId: string) {
     setBusyLoadId(loadId);
@@ -153,6 +168,22 @@ function AnnouncePage() {
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
         <p className="mt-2 text-sm text-muted-foreground">بار شما پس از بررسی و تأیید مدیر در بازار منتشر می‌شود.</p>
+        <div className="mt-6 border-t border-border pt-5">
+          <h2 className="text-lg font-bold">درخواست‌های سفارش برای بارهای من</h2>
+          {loadingIncomingOrders ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت درخواست‌ها…</p> : incomingOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">درخواست سفارشی برای بارهای شما ثبت نشده است.</p> : (
+            <ul className="mt-3 grid gap-3">
+              {incomingOrders.map(order => (
+                <li key={order.id} className="rounded-lg border border-border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div><p className="font-bold">{order.customer_name} · {order.customer_city}</p><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {faNumber(Number(order.total_price))} تومان · {order.delivery_type === "pickup" ? "تحویل حضوری" : "نیازمند حمل"}</p>{order.delivery_address && <p className="mt-1 text-xs text-muted-foreground">نشانی: {order.delivery_address}</p>}{order.notes && <p className="mt-1 text-xs text-muted-foreground">توضیح: {order.notes}</p>}</div>
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderStatusLabels[order.status] ?? order.status}</span>
+                  </div>
+                  {order.status === "pending" && <div className="mt-3 flex gap-2"><Button type="button" size="sm" disabled={busyLoadId === order.id} onClick={() => void respondToOrder(order.id, "accepted")}>تأیید سفارش</Button><Button type="button" size="sm" variant="outline" disabled={busyLoadId === order.id} onClick={() => void respondToOrder(order.id, "rejected")}>رد سفارش</Button></div>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className="mt-6 border-t border-border pt-5">
           <h2 className="text-lg font-bold">مدیریت بارهای من</h2>
           {loadingOwnedLoads ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت بارهای شما…</p> : ownedLoads.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز باری برای این حساب ثبت نشده است.</p> : (
