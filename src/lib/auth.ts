@@ -40,12 +40,12 @@ export function useAuth() {
       // Production schema uses members + member_roles, not user_roles.
       const [{ data: memberRoleRows, error: memberRoleError }, { data: adminRows, error: adminError }] =
         await Promise.all([
-          supabase
+          (supabase as any)
             .from('member_roles')
             .select('role_code, approval_status, members!inner(auth_user_id)')
             .eq('approval_status', 'approved')
             .eq('members.auth_user_id', session.user.id),
-          supabase
+          (supabase as any)
             .from('admin_users')
             .select('admin_role')
             .eq('auth_user_id', session.user.id)
