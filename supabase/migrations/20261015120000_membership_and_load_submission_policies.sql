@@ -114,13 +114,19 @@ USING (
             )
           )
 
-          -- Approved special buyers: own city and enabled neighboring cities.
+          -- Special buyers may see special inventory in their own city and
+          -- enabled neighboring cities. A member may be classified directly
+          -- on members.role; otherwise the special_buyer role must be approved.
           OR (
-            EXISTS (
-              SELECT 1 FROM public.member_roles AS mr
-              WHERE mr.member_id = m.id
-                AND mr.role_code = 'special_buyer'
-                AND mr.approval_status = 'approved'
+            public.loads.sale_type = 'special'
+            AND (
+              m.role = 'special_buyer'
+              OR EXISTS (
+                SELECT 1 FROM public.member_roles AS mr
+                WHERE mr.member_id = m.id
+                  AND mr.role_code = 'special_buyer'
+                  AND mr.approval_status = 'approved'
+              )
             )
             AND (
               public.loads.city = m.city
@@ -189,6 +195,14 @@ WITH CHECK (
       AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
   )
 );
+
+-- Main admins need member visibility for global membership review.
+DROP POLICY IF EXISTS members_main_admin_read_all ON public.members;
+CREATE POLICY members_main_admin_read_all
+ON public.members
+FOR SELECT
+TO authenticated
+USING (public.terrabar_is_main_admin());
 
 -- City managers can read member profiles only in their assigned cities.
 DROP POLICY IF EXISTS members_city_manager_read_assigned_city ON public.members;
