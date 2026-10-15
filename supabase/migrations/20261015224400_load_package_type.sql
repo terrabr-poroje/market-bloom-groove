@@ -1,1 +1,0 @@
-alter table public.loads add column if not exists package_type text not null default 'کارتن';
