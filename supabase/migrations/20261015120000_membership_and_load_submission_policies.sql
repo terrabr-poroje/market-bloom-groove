@@ -132,5 +132,81 @@ TO authenticated
 USING (public.terrabar_is_main_admin())
 WITH CHECK (public.terrabar_is_main_admin());
 
+-- Regular buyers see active regular listings only in their registered city.
+DROP POLICY IF EXISTS loads_regular_buyer_city_access ON public.loads;
+CREATE POLICY loads_regular_buyer_city_access
+ON public.loads
+FOR SELECT
+TO authenticated
+USING (
+  status = 'active'
+  AND COALESCE(sale_type, 'regular') = 'regular'
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.member_roles AS mr ON mr.member_id = m.id
+    WHERE m.auth_user_id = (SELECT auth.uid())
+      AND m.city = public.loads.city
+      AND mr.role_code = 'buyer'
+  )
+);
+
+-- Special buyers must have an approved special_buyer role; city access is
+-- restricted to their own city and enabled neighboring-city relationships.
+DROP POLICY IF EXISTS loads_special_buyer_city_access ON public.loads;
+CREATE POLICY loads_special_buyer_city_access
+ON public.loads
+FOR SELECT
+TO authenticated
+USING (
+  status = 'active'
+  AND sale_type = 'special'
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.member_roles AS mr ON mr.member_id = m.id
+    WHERE m.auth_user_id = (SELECT auth.uid())
+      AND mr.role_code = 'special_buyer'
+      AND mr.approval_status = 'approved'
+      AND (
+        public.loads.city = m.city
+        OR EXISTS (
+          SELECT 1 FROM public.city_neighbors AS cn
+          WHERE cn.city_name = m.city
+            AND cn.neighbor_city_name = public.loads.city
+            AND cn.is_enabled = true
+        )
+        OR EXISTS (
+          SELECT 1 FROM public.city_neighbors AS cn
+          WHERE cn.city_name = public.loads.city
+            AND cn.neighbor_city_name = m.city
+            AND cn.is_enabled = true
+        )
+      )
+  )
+);
+
+-- Professional buyers may see active listings without a city restriction.
+DROP POLICY IF EXISTS loads_professional_buyer_access ON public.loads;
+CREATE POLICY loads_professional_buyer_access
+ON public.loads
+FOR SELECT
+TO authenticated
+USING (
+  status = 'active'
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.member_roles AS mr ON mr.member_id = m.id
+    WHERE m.auth_user_id = (SELECT auth.uid())
+      AND mr.role_code = 'professional_buyer'
+      AND mr.approval_status = 'approved'
+  )
+);
+
+-- These tables contain account and marketplace data; anonymous grants are not
+-- needed for the authenticated membership and listing flows.
+REVOKE ALL ON TABLE public.members, public.member_roles, public.loads FROM anon;
+
 GRANT INSERT ON TABLE public.member_roles TO authenticated;
 GRANT UPDATE (status) ON TABLE public.loads TO authenticated;
