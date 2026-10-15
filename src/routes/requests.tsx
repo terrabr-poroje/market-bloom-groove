@@ -55,6 +55,7 @@ function Requests() {
   useEffect(() => {
     let active = true;
     async function fetchLoads() {
+      if (!cityAccessReady) return;
       const { data, error } = await (supabase as any)
         .from("loads")
         .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count")
@@ -96,7 +97,7 @@ function Requests() {
     }
     void fetchLoads();
     return () => { active = false; };
-  }, []);
+  }, [cityAccessReady]);
 
   useEffect(() => {
     let active = true;
@@ -138,8 +139,9 @@ function Requests() {
   const filtered = displayLoads
     .filter(load => {
       const saleType = String((load as Load & { saleType?: string }).saleType || "regular");
-      return selectedMode.saleTypes.includes(saleType)
-        && (!filters.city || load.city === filters.city)
+      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city);
+      return cityAllowed
+        && selectedMode.saleTypes.includes(saleType)
         && (!filters.category || load.category === filters.category)
         && (!filters.quality || load.quality === filters.quality)
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
