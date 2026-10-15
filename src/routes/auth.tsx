@@ -90,15 +90,22 @@ function AuthPage() {
       return;
     }
 
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      phone: normalizedPhone,
-      options: {
-        shouldCreateUser: mode === "signup",
-        data: mode === "signup" ? { full_name: fullName.trim(), city, requested_role: role } : undefined,
-      },
-    });
+    const authOptions = {
+      shouldCreateUser: mode === "signup",
+      data: mode === "signup"
+        ? {
+            full_name: fullName.trim(),
+            city,
+            requested_role: role,
+            ...(authMethod === "phone" ? { phone: normalizedPhone } : { email: normalizedEmail }),
+          }
+        : undefined,
+    };
+    const { error: otpError } = authMethod === "phone"
+      ? await supabase.auth.signInWithOtp({ phone: normalizedPhone, options: authOptions })
+      : await supabase.auth.signInWithOtp({ email: normalizedEmail, options: authOptions });
     if (otpError) {
-      setError("ارسال کد انجام نشد. فعال‌بودن ورود پیامکی و تنظیمات ارائه‌دهنده پیامک در Supabase را بررسی کنید.");
+      setError(authMethod === "phone" ? "ارسال کد انجام نشد. فعال‌بودن ورود پیامکی و تنظیمات ارائه‌دهنده پیامک در Supabase را بررسی کنید." : "ارسال کد ایمیل انجام نشد. فعال‌بودن Email OTP و قالب کد یک‌بارمصرف در تنظیمات Supabase را بررسی کنید.");
     } else {
       if (authMethod === "phone") setPhone(normalizedPhone);
       else setEmail(normalizedEmail);
