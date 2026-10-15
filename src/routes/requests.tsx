@@ -31,6 +31,10 @@ const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: 
 
 function Requests() {
   const { user } = useAuth();
+  const [profileCity, setProfileCity] = useState("");
+  const [allowedCities, setAllowedCities] = useState<string[]>([]);
+  const [cityAccess, setCityAccess] = useState<"own" | "nearby" | "all" | "assigned" | "unavailable">("unavailable");
+  const [cityAccessReady, setCityAccessReady] = useState(false);
   const [myDirectRequests, setMyDirectRequests] = useState<MyDirectRequest[]>([]);
   const [myOrders, setMyOrders] = useState<MyOrder[]>([]);
   const [loadingMyRequests, setLoadingMyRequests] = useState(false);
@@ -51,6 +55,43 @@ function Requests() {
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [orderSaved, setOrderSaved] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function resolveCityAccess() {
+      setCityAccessReady(false);
+      if (!user) { setProfileCity(""); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
+      const { data: member, error } = await (supabase as any).from("members").select("city").eq("auth_user_id", user.id).maybeSingle();
+      if (!active) return;
+      if (error || !member?.city) { setProfileCity(""); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
+      const ownCity = String(member.city).trim();
+      setProfileCity(ownCity);
+      const [{ data: roleRows }, { data: adminRows }] = await Promise.all([
+        (supabase as any).from("member_roles").select("role_code, approval_status, members!inner(auth_user_id)").eq("members.auth_user_id", user.id).eq("approval_status", "approved"),
+        (supabase as any).from("admin_users").select("id, admin_role, city").eq("auth_user_id", user.id).eq("is_active", true),
+      ]);
+      if (!active) return;
+      const roles = (roleRows ?? []).map((r: any) => String(r.role_code).toLowerCase());
+      const adminRoles = (adminRows ?? []).map((r: any) => String(r.admin_role).toLowerCase());
+      if (adminRoles.some((r: string) => ["main_admin", "main-administrator", "admin"].includes(r)) || roles.includes("professional_buyer")) {
+        setAllowedCities([]); setCityAccess("all");
+      } else if (adminRoles.includes("city_manager")) {
+        const ids = (adminRows ?? []).filter((r: any) => String(r.admin_role).toLowerCase() === "city_manager").map((r: any) => r.id);
+        const { data: assigned } = await (supabase as any).from("admin_user_cities").select("city_name, admin_user_id").in("admin_user_id", ids);
+        if (!active) return;
+        setAllowedCities([...new Set([...(assigned ?? []).map((r: any) => String(r.city_name)), ...((adminRows ?? []).map((r: any) => r.city).filter(Boolean) as string[])])]);
+        setCityAccess("assigned");
+      } else if (roles.includes("special_buyer")) {
+        const { data: neighbors } = await (supabase as any).from("city_neighbors").select("city_name, neighbor_city_name").eq("is_enabled", true);
+        if (!active) return;
+        const nearby = (neighbors ?? []).filter((r: any) => r.city_name === ownCity || r.neighbor_city_name === ownCity).map((r: any) => r.city_name === ownCity ? String(r.neighbor_city_name) : String(r.city_name));
+        setAllowedCities([...new Set([ownCity, ...nearby])]); setCityAccess("nearby");
+      } else { setAllowedCities([ownCity]); setCityAccess("own"); }
+      setCityAccessReady(true);
+    }
+    void resolveCityAccess();
+    return () => { active = false; };
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -233,7 +274,7 @@ function Requests() {
 
           <form onSubmit={search} className="search-grid grid gap-3 lg:grid-cols-[1.25fr_1fr_1fr_1fr_auto]">
             <label className="search-field"><Search className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">چه باری نیاز دارید؟</span><input aria-label="جست‌وجوی محصول" placeholder="نام محصول یا رقم…" value={query} onChange={e => setQuery(e.target.value)} className="w-full min-w-0 bg-transparent py-1 text-sm outline-none" /></div></label>
-            <div className="search-field" aria-label="شهر حساب کاربری"><MapPin className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">شهر مبدأ بار</span><span className="block py-1 text-sm font-semibold">بر اساس شهر ثبت‌شده حساب شما</span><span className="block text-[10px] text-muted-foreground">تغییر شهر از این بخش امکان‌پذیر نیست.</span></div></div>
+            <div className="search-field" aria-label="شهر حساب کاربری"><MapPin className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">شهر ثبت‌شده حساب شما</span><span className="block truncate py-1 text-sm font-semibold">{!cityAccessReady ? "در حال بررسی شهر و سطح دسترسی…" : profileCity || "ورود و تکمیل شهر حساب لازم است"}</span><span className="block text-[10px] text-muted-foreground">{cityAccess === "nearby" ? "شهر خودتان و شهرهای همسایه مجاز" : cityAccess === "all" ? "دسترسی به همه شهرها طبق سطح حساب" : cityAccess === "assigned" ? "فقط شهرهای واگذارشده به مدیر" : cityAccess === "own" ? "فقط بارهای شهر ثبت‌شده شما" : "برای مشاهده بارهای مجاز وارد حساب شوید"}</span></div></div>
             <label className="search-field"><Leaf className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">دسته‌بندی محصول</span><select aria-label="دسته‌بندی محصول" value={category} onChange={e => setCategory(e.target.value)} className="search-select"><option value="">همه محصولات</option><option>میوه</option><option>صیفی‌جات</option><option>سبزیجات</option></select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
             <label className="search-field"><SlidersHorizontal className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">درجه کیفیت</span><select aria-label="درجه کیفیت" value={quality} onChange={e => setQuality(e.target.value)} className="search-select"><option value="">همه درجه‌ها</option>{qualities.map(item => <option key={item}>{item}</option>)}</select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
             <Button type="submit" className="h-[62px] px-7"><Search />جست‌وجوی بار</Button>
