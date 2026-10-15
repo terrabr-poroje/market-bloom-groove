@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { cities, faNumber, pageHead, qualities } from '@/lib/marketplace';
 
 export const Route = createFileRoute("/announce")({
-  head: () => pageHead('اعلام بار', 'ثبت بار جدید در بازار ترابار؛ پس از تأیید مدیر در بازار منتشر می‌شود.'),
+  head: () => pageHead('اعلام بار', 'ثبت و انتشار فوری بار برای اعضای تأییدشده ترابار.'),
   component: AnnouncePage,
 });
 
@@ -127,7 +127,7 @@ function AnnouncePage() {
       price_unit: 'toman_per_kg',
       ready_date: form.ready,
       description: form.description.trim() || null,
-      status: 'pending',
+      status: 'active',
       role: 'seller',
       seller_type: 'seller',
       member_id: member.id,
@@ -167,7 +167,7 @@ function AnnouncePage() {
     <section className="bg-market-surface py-12"><div className="site-container max-w-2xl">
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
-        <p className="mt-2 text-sm text-muted-foreground">بار شما پس از بررسی و تأیید مدیر در بازار منتشر می‌شود.</p>
+        <p className="mt-2 text-sm text-muted-foreground">پس از تأیید عضویت، بار شما بلافاصله منتشر می‌شود؛ محدودیت‌های نقش و شهر در سیستم کنترل می‌شوند.</p>
         <div className="mt-6 border-t border-border pt-5">
           <h2 className="text-lg font-bold">درخواست‌های سفارش برای بارهای من</h2>
           {loadingIncomingOrders ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت درخواست‌ها…</p> : incomingOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">درخواست سفارشی برای بارهای شما ثبت نشده است.</p> : (
@@ -205,7 +205,7 @@ function AnnouncePage() {
           {manageError && <p role="alert" className="mt-3 text-sm text-destructive">{manageError}</p>}
         </div>
         {saved ? (
-          <div className="mt-8 text-center"><CheckCircle2 className="mx-auto mb-3 size-12 text-primary" /><p className="font-bold">بار شما ثبت شد و در انتظار تأیید مدیر است</p><p className="mt-2 text-sm text-muted-foreground">پس از تأیید، در فهرست بارهای بازار نمایش داده می‌شود.</p><Button asChild className="mt-6"><Link to="/">بازگشت به بازار</Link></Button></div>
+          <div className="mt-8 text-center"><CheckCircle2 className="mx-auto mb-3 size-12 text-primary" /><p className="font-bold">بار شما با موفقیت منتشر شد</p><p className="mt-2 text-sm text-muted-foreground">آگهی شما اکنون در فهرست بارهای فعال بازار نمایش داده می‌شود.</p><Button asChild className="mt-6"><Link to="/">بازگشت به بازار</Link></Button></div>
         ) : (
           <form onSubmit={submit} className="mt-6 grid gap-4">
             <div className="grid grid-cols-2 gap-3">
@@ -228,7 +228,7 @@ function AnnouncePage() {
             <label className="field-label">قیمت هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => set('price')(e.target.value)} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
             <label className="field-label">توضیحات<textarea value={form.description} onChange={e => set('description')(e.target.value)} className="field-input min-h-20 resize-y" placeholder="جزئیات بسته‌بندی، کیفیت، شرایط تحویل…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={busy}>{busy ? 'در حال ثبت…' : 'ثبت بار و ارسال برای تأیید مدیر'}</Button>
+            <Button type="submit" disabled={busy}>{busy ? 'در حال ثبت…' : 'ثبت و انتشار بار'}</Button>
           </form>
         )}
       </div>

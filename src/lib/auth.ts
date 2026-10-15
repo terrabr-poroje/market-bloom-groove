@@ -87,7 +87,7 @@ export function useAuth() {
     roles,
     loading,
     isAdmin: roles.includes('admin'),
-    canAnnounce: roles.includes('supplier') || roles.includes('seller') || roles.includes('admin'),
+    canAnnounce: roles.includes('supplier') || roles.includes('seller'),
   };
 }
 
