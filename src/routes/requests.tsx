@@ -65,7 +65,8 @@ function Requests() {
     void fetchLoads();
     return () => { active = false; };
   }, []);
-  const displayLoads = useMemo(() => [...liveLoads, ...sampleLoads], [liveLoads]);
+  // Demo listings are useful during local design, but must never appear as real marketplace inventory in production.
+  const displayLoads = useMemo(() => import.meta.env.DEV ? [...liveLoads, ...sampleLoads] : liveLoads, [liveLoads]);
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [quality, setQuality] = useState('');
