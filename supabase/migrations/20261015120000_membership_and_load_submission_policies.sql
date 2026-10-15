@@ -316,3 +316,32 @@ GRANT INSERT (
 GRANT UPDATE (approval_status, approved_by, approved_at)
 ON TABLE public.member_roles TO authenticated;
 GRANT UPDATE (status) ON TABLE public.loads TO authenticated;
+
+
+-- Let a member resubmit a previously rejected role request without creating
+-- a duplicate (member_id, role_code) row. This does not allow self-approval.
+DROP POLICY IF EXISTS member_roles_resubmit_rejected_self ON public.member_roles;
+CREATE POLICY member_roles_resubmit_rejected_self
+ON public.member_roles
+FOR UPDATE
+TO authenticated
+USING (
+  approval_status = 'rejected'
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    WHERE m.id = public.member_roles.member_id
+      AND m.auth_user_id = (SELECT auth.uid())
+  )
+)
+WITH CHECK (
+  approval_status = 'pending'
+  AND approved_by IS NULL
+  AND approved_at IS NULL
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    WHERE m.id = public.member_roles.member_id
+      AND m.auth_user_id = (SELECT auth.uid())
+  )
+);
