@@ -2,6 +2,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadCard } from "@/components/load-card";
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/requests")({
 
 type PurchaseMode = "retail" | "wholesale" | "special" | "professional";
 type DirectOrderItem = { product: string; variety: string; quantity: string; unit: "kg" | "package" | "ton"; quality: string };
+type MyDirectRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
+const directStatusLabels: Record<string, string> = { new: "ثبت‌شده", in_review: "در حال بررسی", sourcing: "در حال تأمین", offer_ready: "پیشنهاد تأمین آماده", rejected: "ردشده", cancelled: "لغوشده", completed: "تکمیل‌شده" };
 const purchaseModes: { value: PurchaseMode; label: string; description: string; saleTypes: string[] }[] = [
   { value: "retail", label: "خرده", description: "خرید در سطح خرده طبق شرایط آگهی", saleTypes: ["regular", "retail"] },
   { value: "wholesale", label: "عمده", description: "خرید عمده بر اساس حداقل سفارش فروشنده", saleTypes: ["wholesale", "regular"] },
@@ -86,7 +89,7 @@ function Requests() {
     return () => { active = false; };
   }, []);
 
-  const displayLoads = useMemo(
+  useEffect(() => {\n    let active = true;\n    async function fetchMyDirectRequests() {\n      if (!user) return;\n      const { data: member, error: memberError } = await (supabase as any).from("members").select("id").eq("auth_user_id", user.id).maybeSingle();\n      if (!active) return;\n      if (memberError || !member) { setMyRequestError("پروفایل خریدار پیدا نشد؛ ابتدا ثبت‌نام را کامل کنید."); return; }\n      setLoadingMyRequests(true);\n      const { data, error } = await (supabase as any).from("purchase_requests")\n        .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")\n        .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false });\n      if (!active) return;\n      if (error) setMyRequestError("پیگیری درخواست‌ها ممکن نیست؛ سیاست‌های خواندن درخواست باید در Supabase فعال باشد.");\n      else setMyDirectRequests((data ?? []) as MyDirectRequest[]);\n      setLoadingMyRequests(false);\n    }\n    void fetchMyDirectRequests();\n    return () => { active = false; };\n  }, [user?.id]);\n\n  const displayLoads = useMemo(
     () => import.meta.env.DEV ? [...liveLoads, ...sampleLoads] : liveLoads,
     [liveLoads],
   );
