@@ -11,16 +11,6 @@ FOR INSERT
 TO authenticated
 WITH CHECK (auth_user_id = (SELECT auth.uid()));
 
--- A signed-in user may update only their own profile. This supports correcting
--- contact/city details but does not grant access to another member's row.
-DROP POLICY IF EXISTS members_update_own_profile ON public.members;
-CREATE POLICY members_update_own_profile
-ON public.members
-FOR UPDATE
-TO authenticated
-USING (auth_user_id = (SELECT auth.uid()))
-WITH CHECK (auth_user_id = (SELECT auth.uid()));
-
 -- Only members with an approved supplier/bar-seller role may submit a load.
 -- The submitted member_id must be the caller's own member profile.
 -- Loads are created as pending and still require the existing admin review flow.
@@ -44,3 +34,23 @@ WITH CHECK (
 
 GRANT INSERT, UPDATE ON TABLE public.members TO authenticated;
 GRANT INSERT ON TABLE public.loads TO authenticated;
+
+-- Main admins need to review pending loads in the management screen.
+DROP POLICY IF EXISTS loads_main_admin_review_select ON public.loads;
+CREATE POLICY loads_main_admin_review_select
+ON public.loads
+FOR SELECT
+TO authenticated
+USING (public.terrabar_is_main_admin());
+
+-- Main admins may only change load review status through this policy.
+DROP POLICY IF EXISTS loads_main_admin_review_update ON public.loads;
+CREATE POLICY loads_main_admin_review_update
+ON public.loads
+FOR UPDATE
+TO authenticated
+USING (public.terrabar_is_main_admin())
+WITH CHECK (public.terrabar_is_main_admin());
+
+GRANT INSERT ON TABLE public.member_roles TO authenticated;
+GRANT UPDATE (status) ON TABLE public.loads TO authenticated;
