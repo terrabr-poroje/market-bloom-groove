@@ -505,10 +505,10 @@ WITH CHECK (
     WHERE l.id = public.orders.load_id
       AND l.status = 'active'
       AND l.member_id = public.orders.seller_member_id
-      AND quantity >= COALESCE(l.min_order_quantity, 1)
-      AND quantity <= COALESCE(l.count, 0)
-      AND price = l.price
-      AND total_price = quantity * GREATEST(1, round(l.quantity / NULLIF(l.count, 0))) * l.price
+      AND public.orders.quantity >= COALESCE(l.min_order_quantity, 1)
+      AND public.orders.quantity <= COALESCE(l.count, 0)
+      AND public.orders.price = l.price
+      AND public.orders.total_price = public.orders.quantity * GREATEST(1, round(l.quantity / NULLIF(l.count, 0))) * l.price
   )
 );
 
