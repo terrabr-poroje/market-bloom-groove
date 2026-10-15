@@ -26,6 +26,10 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
 
 function Requests() {
+  const { user } = useAuth();
+  const [myDirectRequests, setMyDirectRequests] = useState<MyDirectRequest[]>([]);
+  const [loadingMyRequests, setLoadingMyRequests] = useState(false);
+  const [myRequestError, setMyRequestError] = useState("");
   const [liveLoads, setLiveLoads] = useState<Load[]>([]);
   const [loadingLoads, setLoadingLoads] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -89,7 +93,31 @@ function Requests() {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {\n    let active = true;\n    async function fetchMyDirectRequests() {\n      if (!user) return;\n      const { data: member, error: memberError } = await (supabase as any).from("members").select("id").eq("auth_user_id", user.id).maybeSingle();\n      if (!active) return;\n      if (memberError || !member) { setMyRequestError("پروفایل خریدار پیدا نشد؛ ابتدا ثبت‌نام را کامل کنید."); return; }\n      setLoadingMyRequests(true);\n      const { data, error } = await (supabase as any).from("purchase_requests")\n        .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")\n        .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false });\n      if (!active) return;\n      if (error) setMyRequestError("پیگیری درخواست‌ها ممکن نیست؛ سیاست‌های خواندن درخواست باید در Supabase فعال باشد.");\n      else setMyDirectRequests((data ?? []) as MyDirectRequest[]);\n      setLoadingMyRequests(false);\n    }\n    void fetchMyDirectRequests();\n    return () => { active = false; };\n  }, [user?.id]);\n\n  const displayLoads = useMemo(
+  useEffect(() => {
+    let active = true;
+    async function fetchMyDirectRequests() {
+      if (!user) return;
+      const { data: member, error: memberError } = await (supabase as any)
+        .from("members").select("id").eq("auth_user_id", user.id).maybeSingle();
+      if (!active) return;
+      if (memberError || !member) {
+        setMyRequestError("پروفایل خریدار پیدا نشد؛ ابتدا ثبت‌نام را کامل کنید.");
+        return;
+      }
+      setLoadingMyRequests(true);
+      const { data, error } = await (supabase as any).from("purchase_requests")
+        .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")
+        .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false });
+      if (!active) return;
+      if (error) setMyRequestError("پیگیری درخواست‌ها ممکن نیست؛ سیاست‌های خواندن درخواست باید در Supabase فعال باشد.");
+      else setMyDirectRequests((data ?? []) as MyDirectRequest[]);
+      setLoadingMyRequests(false);
+    }
+    void fetchMyDirectRequests();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const displayLoads = useMemo(
     () => import.meta.env.DEV ? [...liveLoads, ...sampleLoads] : liveLoads,
     [liveLoads],
   );
@@ -246,6 +274,18 @@ function Requests() {
                 <p className="text-xs leading-6 text-muted-foreground">برای ارسال باید وارد حساب شوید. اطلاعات تماس طرفین در آگهی نمایش داده نمی‌شود.</p>
               </form>
             )}
+          </div>
+          <div className="mt-8 border-t border-border pt-6">
+            <h2 className="text-xl font-extrabold">پیگیری درخواست‌های سفارش من</h2>
+            {!user ? <p className="mt-3 text-sm text-muted-foreground">برای دیدن وضعیت درخواست‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت وضعیت درخواست‌ها…</p> : myDirectRequests.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز درخواست سفارش مستقیمی ثبت نکرده‌اید.</p> : (
+              <ul className="mt-4 grid gap-3">
+                {myDirectRequests.map(request => <li key={request.id} className="rounded-lg border border-border bg-card p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>{request.product_type}</strong><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(request.quantity))} {request.quantity_unit} · {request.quality_requirements || "کیفیت توافقی"}{request.needed_by ? " · تاریخ موردنیاز: " + request.needed_by : ""}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{directStatusLabels[request.status] ?? request.status}</span></div>
+                  {request.notes && <p className="mt-2 text-xs text-muted-foreground">توضیحات: {request.notes}</p>}
+                </li>)}
+              </ul>
+            )}
+            {myRequestError && <p role="alert" className="mt-3 text-sm text-destructive">{myRequestError}</p>}
           </div>
         </div>
       </section>
