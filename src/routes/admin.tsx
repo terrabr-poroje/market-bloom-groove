@@ -19,7 +19,8 @@ type MemberRequest = { id: string; member_id: string; role_code: string; approva
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
 
 function AdminPage() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, roles } = useAuth();
+  const canManage = isAdmin || roles.includes('city_manager');
   const [tab, setTab] = useState<'requests' | 'loads'>('requests');
   const [requests, setRequests] = useState<MemberRequest[]>([]);
   const [pendingLoads, setPendingLoads] = useState<PendingLoad[]>([]);
@@ -36,7 +37,7 @@ function AdminPage() {
       .order('created_at', { ascending: false })
       .then(({ data }: { data: PendingLoad[] | null }) => setPendingLoads(data ?? []));
   }
-  useEffect(() => { if (isAdmin) refresh(); }, [isAdmin]);
+  useEffect(() => { if (canManage) refresh(); }, [canManage]);
 
   async function approveRequest(request: MemberRequest) {
     const { error } = await (supabase as any).from('member_roles')
@@ -64,7 +65,7 @@ function AdminPage() {
   }
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بارگذاری…</section>;
-  if (!user || !isAdmin) {
+  if (!user || !canManage) {
     return (
       <section className="bg-market-surface py-16"><div className="site-container max-w-md text-center">
         <ShieldAlert className="mx-auto mb-4 size-12 text-warning" />
@@ -78,6 +79,7 @@ function AdminPage() {
   return (
     <section className="bg-market-surface py-12"><div className="site-container">
       <h1 className="text-2xl font-extrabold sm:text-3xl">پنل مدیریت ترابار</h1>
+      {!isAdmin && <p className="mt-2 text-sm text-muted-foreground">دسترسی شما فقط به درخواست‌ها و بارهای شهرهای تخصیص‌یافته محدود است.</p>}
       <div className="mt-6 flex gap-2 border-b border-border">
         <Button variant={tab === 'requests' ? 'default' : 'ghost'} onClick={() => setTab('requests')}><Users />درخواست‌های عضویت ({faNumber(requests.length)})</Button>
         <Button variant={tab === 'loads' ? 'default' : 'ghost'} onClick={() => setTab('loads')}><Package />بارهای در انتظار تأیید ({faNumber(pendingLoads.length)})</Button>
