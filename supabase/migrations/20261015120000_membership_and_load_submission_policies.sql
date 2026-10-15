@@ -162,4 +162,8 @@ WITH CHECK (public.terrabar_is_main_admin());
 REVOKE ALL ON TABLE public.members, public.member_roles, public.loads FROM anon;
 
 GRANT INSERT ON TABLE public.member_roles TO authenticated;
+
+-- Existing table-level UPDATE grants override column-level intent. Remove the
+-- broad grant explicitly, then permit only the review status column.
+REVOKE UPDATE, DELETE ON TABLE public.loads FROM authenticated;
 GRANT UPDATE (status) ON TABLE public.loads TO authenticated;
