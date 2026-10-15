@@ -49,7 +49,7 @@ export function LoadCard({ load }: { load: Load }) {
     }
     const { data: buyer, error: buyerError } = await (supabase as any)
       .from('members')
-      .select('id, full_name, phone, city, role')
+      .select('id, full_name, phone, email, city, role')
       .eq('auth_user_id', authData.user.id)
       .maybeSingle();
     if (buyerError || !buyer) {
@@ -61,6 +61,7 @@ export function LoadCard({ load }: { load: Load }) {
       load_id: load.id,
       customer_name: buyer.full_name,
       customer_phone: buyer.phone,
+      customer_email: buyer.email,
       customer_city: buyer.city,
       quantity,
       unit: 'package',
