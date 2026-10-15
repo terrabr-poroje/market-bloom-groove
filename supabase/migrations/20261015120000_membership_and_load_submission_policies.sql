@@ -431,3 +431,117 @@ WITH CHECK (
       AND (owner.id = public.loads.member_id OR owner.id = public.loads.owner_member_id)
   )
 );
+
+
+-- Order requests from a published load: buyer submits a pending request,
+-- seller can accept or reject it. Payment and delivery confirmation remain separate steps.
+DROP POLICY IF EXISTS orders_read_authorized ON public.orders;
+CREATE POLICY orders_read_authorized
+ON public.orders
+FOR SELECT
+TO authenticated
+USING (
+  public.terrabar_is_main_admin()
+  OR EXISTS (
+    SELECT 1 FROM public.members AS buyer
+    WHERE buyer.id = public.orders.buyer_member_id
+      AND buyer.auth_user_id = (SELECT auth.uid())
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.members AS seller
+    WHERE seller.id = public.orders.seller_member_id
+      AND seller.auth_user_id = (SELECT auth.uid())
+  )
+  OR EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (
+        auc.city_name = public.orders.customer_city
+        OR au.city = public.orders.customer_city
+      )
+  )
+);
+
+DROP POLICY IF EXISTS orders_insert_buyer_pending_request ON public.orders;
+CREATE POLICY orders_insert_buyer_pending_request
+ON public.orders
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  status = 'pending'
+  AND buyer_member_id IS NOT NULL
+  AND seller_member_id IS NOT NULL
+  AND unit = 'package'
+  AND quantity > 0
+  AND price > 0
+  AND total_price > 0
+  AND delivery_type IN ('terrabar', 'pickup', 'buyer_carrier')
+  AND (delivery_type = 'pickup' OR NULLIF(btrim(delivery_address), '') IS NOT NULL)
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS buyer
+    WHERE buyer.id = public.orders.buyer_member_id
+      AND buyer.auth_user_id = (SELECT auth.uid())
+      AND customer_name = buyer.full_name
+      AND customer_phone = buyer.phone
+      AND customer_city = buyer.city
+      AND (
+        buyer.role = 'buyer'
+        OR EXISTS (
+          SELECT 1 FROM public.member_roles AS mr
+          WHERE mr.member_id = buyer.id
+            AND mr.role_code IN ('buyer', 'special_buyer', 'professional_buyer')
+            AND (mr.role_code = 'buyer' OR mr.approval_status = 'approved')
+        )
+      )
+  )
+  AND EXISTS (
+    SELECT 1
+    FROM public.loads AS l
+    WHERE l.id = public.orders.load_id
+      AND l.status = 'active'
+      AND l.member_id = public.orders.seller_member_id
+      AND quantity >= COALESCE(l.min_order_quantity, 1)
+      AND quantity <= COALESCE(l.count, 0)
+      AND price = l.price
+      AND total_price = quantity * GREATEST(1, round(l.quantity / NULLIF(l.count, 0))) * l.price
+  )
+);
+
+DROP POLICY IF EXISTS orders_seller_review_update ON public.orders;
+CREATE POLICY orders_seller_review_update
+ON public.orders
+FOR UPDATE
+TO authenticated
+USING (
+  status = 'pending'
+  AND EXISTS (
+    SELECT 1 FROM public.members AS seller
+    WHERE seller.id = public.orders.seller_member_id
+      AND seller.auth_user_id = (SELECT auth.uid())
+  )
+)
+WITH CHECK (
+  status IN ('accepted', 'rejected')
+  AND EXISTS (
+    SELECT 1 FROM public.members AS seller
+    WHERE seller.id = public.orders.seller_member_id
+      AND seller.auth_user_id = (SELECT auth.uid())
+  )
+);
+
+REVOKE ALL PRIVILEGES ON TABLE public.orders FROM anon, authenticated;
+GRANT SELECT (
+  id, load_id, customer_name, customer_city, quantity, unit, price, total_price,
+  delivery_address, delivery_type, status, notes, created_at, updated_at,
+  buyer_member_id, seller_member_id
+) ON TABLE public.orders TO authenticated;
+GRANT INSERT (
+  load_id, customer_name, customer_phone, customer_city, quantity, unit, price,
+  total_price, delivery_address, delivery_type, status, notes, buyer_member_id, seller_member_id
+) ON TABLE public.orders TO authenticated;
+GRANT UPDATE (status) ON TABLE public.orders TO authenticated;
