@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { CheckCircle2, Megaphone, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { cities, pageHead, qualities } from '@/lib/marketplace';
+import { cities, faNumber, pageHead, qualities } from '@/lib/marketplace';
 
 export const Route = createFileRoute("/announce")({
   head: () => pageHead('اعلام بار', 'ثبت بار جدید در بازار ترابار؛ پس از تأیید مدیر در بازار منتشر می‌شود.'),
@@ -14,6 +14,8 @@ export const Route = createFileRoute("/announce")({
 
 const qualityValues = ['premium', 'standard', 'economy', 'negotiated'] as const;
 const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qualityValues[index]]));
+type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; quantity: number; count: number | null; price: number; status: string; created_at: string };
+const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
@@ -21,7 +23,44 @@ function AnnouncePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [ownedLoads, setOwnedLoads] = useState<OwnedLoad[]>([]);
+  const [loadingOwnedLoads, setLoadingOwnedLoads] = useState(true);
+  const [manageError, setManageError] = useState('');
+  const [busyLoadId, setBusyLoadId] = useState('');
   const set = (key: keyof typeof form) => (value: string) => setForm(prev => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    let active = true;
+    async function fetchOwnedLoads() {
+      if (!user) { setLoadingOwnedLoads(false); return; }
+      const { data: member } = await (supabase as any).from('members').select('id').eq('auth_user_id', user.id).maybeSingle();
+      if (!active) return;
+      if (!member) { setOwnedLoads([]); setLoadingOwnedLoads(false); return; }
+      const { data, error: listError } = await (supabase as any)
+        .from('loads')
+        .select('id, name, product_type, engine, city, quantity, count, price, status, created_at')
+        .or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id)
+        .order('created_at', { ascending: false });
+      if (!active) return;
+      if (listError) setManageError('فهرست بارهای شما دریافت نشد؛ دسترسی مشاهده را بررسی کنید.');
+      else setOwnedLoads((data ?? []) as OwnedLoad[]);
+      setLoadingOwnedLoads(false);
+    }
+    void fetchOwnedLoads();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  async function deactivateLoad(loadId: string) {
+    setBusyLoadId(loadId);
+    setManageError('');
+    const { error: updateError } = await (supabase as any).from('loads')
+      .update({ status: 'inactive' })
+      .eq('id', loadId)
+      .in('status', ['active', 'pending']);
+    if (updateError) setManageError('غیرفعال‌کردن بار انجام نشد؛ سیاست دسترسی دیتابیس باید در محیط آزمایشی اعمال و بررسی شود.');
+    else setOwnedLoads(items => items.map(item => item.id === loadId ? { ...item, status: 'inactive' } : item));
+    setBusyLoadId('');
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -114,6 +153,26 @@ function AnnouncePage() {
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
         <p className="mt-2 text-sm text-muted-foreground">بار شما پس از بررسی و تأیید مدیر در بازار منتشر می‌شود.</p>
+        <div className="mt-6 border-t border-border pt-5">
+          <h2 className="text-lg font-bold">مدیریت بارهای من</h2>
+          {loadingOwnedLoads ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت بارهای شما…</p> : ownedLoads.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز باری برای این حساب ثبت نشده است.</p> : (
+            <ul className="mt-3 grid gap-3">
+              {ownedLoads.map(load => (
+                <li key={load.id} className="rounded-lg border border-border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold">{load.product_type || load.name}{load.engine ? " · " + load.engine : ""}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{load.city} · {faNumber(Number(load.count ?? 0))} بسته · {faNumber(Number(load.price))} تومان/کیلو</p>
+                    </div>
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs">{loadStatusLabels[load.status] ?? load.status}</span>
+                  </div>
+                  {["active", "pending"].includes(load.status) && <Button type="button" variant="outline" size="sm" className="mt-3" disabled={busyLoadId === load.id} onClick={() => void deactivateLoad(load.id)}>{busyLoadId === load.id ? "در حال غیرفعال‌کردن…" : "غیرفعال‌کردن بار"}</Button>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {manageError && <p role="alert" className="mt-3 text-sm text-destructive">{manageError}</p>}
+        </div>
         {saved ? (
           <div className="mt-8 text-center"><CheckCircle2 className="mx-auto mb-3 size-12 text-primary" /><p className="font-bold">بار شما ثبت شد و در انتظار تأیید مدیر است</p><p className="mt-2 text-sm text-muted-foreground">پس از تأیید، در فهرست بارهای بازار نمایش داده می‌شود.</p><Button asChild className="mt-6"><Link to="/">بازگشت به بازار</Link></Button></div>
         ) : (
