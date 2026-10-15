@@ -16,9 +16,11 @@ export const Route = createFileRoute("/requests")({
 type PurchaseMode = "retail" | "wholesale" | "special" | "professional";
 type DirectOrderItem = { product: string; variety: string; quantity: string; unit: "kg" | "package" | "ton"; quality: string };
 type MyDirectRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
-type MyOrder = { id: string; load_id: string; quantity: number; unit: string; total_price: number | null; delivery_type: string | null; delivery_address: string | null; status: string; notes: string | null; created_at: string };
+type MyOrder = { id: string; load_id: string; quantity: number; unit: string; total_price: number | null; delivery_type: string | null; delivery_address: string | null; status: string; payment_status: string; paid_at: string | null; delivery_status: string; shipped_at: string | null; delivered_at: string | null; notes: string | null; created_at: string };
 const orderStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید فروشنده', accepted: 'تأیید فروشنده؛ در انتظار پرداخت', rejected: 'رد شده توسط فروشنده', paid: 'پرداخت‌شده', shipped: 'بار ارسال شده', bar_sent: 'بار ارسال شده', delivered: 'تحویل گرفته شده', received: 'تحویل گرفته شده', completed: 'تکمیل‌شده', cancelled: 'لغوشده' };
 const directStatusLabels: Record<string, string> = { new: "ثبت‌شده", in_review: "در حال بررسی", sourcing: "در حال تأمین", offer_ready: "پیشنهاد تأمین آماده", rejected: "ردشده", cancelled: "لغوشده", completed: "تکمیل‌شده" };
+const paymentStatusLabels: Record<string, string> = { unpaid: "پرداخت‌نشده", pending: "در انتظار تأیید پرداخت", paid: "پرداخت تأییدشده", failed: "پرداخت ناموفق", refunded: "بازپرداخت‌شده" };
+const deliveryStatusLabels: Record<string, string> = { awaiting_payment: "در انتظار پرداخت", awaiting_dispatch: "آماده ارسال", shipped: "بار ارسال شده", delivered: "تحویل گرفته شده", disputed: "در حال بررسی اختلاف" };
 const purchaseModes: { value: PurchaseMode; label: string; description: string; saleTypes: string[] }[] = [
   { value: "retail", label: "خرده", description: "خرید در سطح خرده طبق شرایط آگهی", saleTypes: ["regular", "retail"] },
   { value: "wholesale", label: "عمده", description: "خرید عمده بر اساس حداقل سفارش فروشنده", saleTypes: ["wholesale", "regular"] },
@@ -113,7 +115,7 @@ function Requests() {
           .select("id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at")
           .eq("buyer_member_id", member.id).is("load_id", null).order("created_at", { ascending: false }),
         (supabase as any).from("orders")
-          .select("id, load_id, quantity, unit, total_price, delivery_type, delivery_address, status, notes, created_at")
+          .select("id, load_id, quantity, unit, total_price, delivery_type, delivery_address, status, payment_status, paid_at, delivery_status, shipped_at, delivered_at, notes, created_at")
           .eq("buyer_member_id", member.id).order("created_at", { ascending: false }),
       ]);
       if (!active) return;
@@ -301,6 +303,7 @@ function Requests() {
               <ul className="mt-4 grid gap-3">
                 {myOrders.map(order => <li key={order.id} className="rounded-lg border border-border bg-card p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>سفارش {order.id.slice(0, 8)}</strong><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {order.total_price == null ? "مبلغ در انتظار بررسی" : faNumber(Number(order.total_price)) + " تومان"} · {order.delivery_type === "pickup" ? "تحویل حضوری" : "حمل"}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderStatusLabels[order.status] ?? order.status}</span></div>
+                  <p className="mt-2 text-xs text-muted-foreground">پرداخت: {paymentStatusLabels[order.payment_status] ?? "نامشخص"} · تحویل: {deliveryStatusLabels[order.delivery_status] ?? "در انتظار به‌روزرسانی"}{order.paid_at ? " · زمان پرداخت: " + new Date(order.paid_at).toLocaleString("fa-IR") : ""}</p>
                   {order.delivery_address && <p className="mt-2 text-xs text-muted-foreground">نشانی تحویل: {order.delivery_address}</p>}
                   {order.notes && <p className="mt-2 text-xs text-muted-foreground">توضیحات: {order.notes}</p>}
                 </li>)}
