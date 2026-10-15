@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
-export type AppRole = 'admin' | 'supplier' | 'seller' | 'buyer';
+export type AppRole = 'admin' | 'city_manager' | 'supplier' | 'seller' | 'buyer';
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -66,10 +66,12 @@ export function useAuth() {
       }
 
       // Only the main administrator receives the global admin UI role.
-      if (!adminError && (adminRows ?? []).some(row =>
-        ['main_admin', 'main-administrator', 'admin'].includes(String(row.admin_role).toLowerCase())
-      )) {
-        nextRoles.add('admin');
+      if (!adminError) {
+        const adminRoleCodes = (adminRows ?? []).map(row => String(row.admin_role).toLowerCase());
+        if (adminRoleCodes.some(code => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
+          nextRoles.add('admin');
+        }
+        if (adminRoleCodes.includes('city_manager')) nextRoles.add('city_manager');
       }
 
       setRoles([...nextRoles]);
