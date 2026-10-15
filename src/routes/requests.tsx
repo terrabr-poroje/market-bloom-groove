@@ -66,7 +66,7 @@ function Requests() {
           };
           const category = /گوجه|پیاز|خیار|سیب‌زمینی|بادمجان|فلفل/.test(product) ? "صیفی‌جات" : /سبزی|جعفری|گشنیز|شوید|کاهو/.test(product) ? "سبزیجات" : "میوه";
           return {
-            id: row.id, createdAt: String(row.created_at || ""), product,
+            id: row.id, memberId: String(row.member_id || ""), saleType: String(row.sale_type || "regular"), createdAt: String(row.created_at || ""), product,
             variety: String(row.engine || row.source_market || ""), category,
             quality: qualityMap[rawQuality] ?? "توافقی",
             city: String(row.city || ""), province: String(row.source_region || row.origin || ""),
@@ -77,8 +77,7 @@ function Requests() {
             validity: "طبق وضعیت بار", seller: "عضو تأییدشدهٔ ترابار",
             sellerType: String(row.seller_type || row.role || "فروشنده"),
             image: sampleLoads[0].image, isSample: false,
-            saleType: String(row.sale_type || "regular"),
-          } as Load & { saleType: string };
+          } as Load;
         }));
       }
       setLoadingLoads(false);
