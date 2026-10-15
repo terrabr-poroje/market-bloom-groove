@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Check, Clock3, MapPin, Package, Store, Truck, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { calculateOrder, faNumber, type Load } from '@/lib/marketplace';
+import { faNumber, type Load } from '@/lib/marketplace';
 
 export function LoadCard({ load }: { load: Load }) {
   const [dialog, setDialog] = useState<'order' | 'seller' | null>(null);
