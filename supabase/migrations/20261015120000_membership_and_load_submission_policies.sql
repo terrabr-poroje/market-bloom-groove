@@ -272,7 +272,16 @@ REVOKE ALL PRIVILEGES ON TABLE public.members, public.member_roles, public.loads
 FROM anon, authenticated;
 
 -- Authenticated users can read rows only when RLS permits them.
-GRANT SELECT ON TABLE public.members, public.member_roles, public.loads TO authenticated;
+GRANT SELECT ON TABLE public.members, public.member_roles TO authenticated;
+
+-- Seller contact numbers are intentionally excluded from ordinary marketplace
+-- SELECT privileges; buyer/seller communication must go through the market flow.
+GRANT SELECT (
+  id, name, quantity, city, role, product_type, origin, engine, source_market,
+  price, price_unit, quality, description, ready_date, status, member_id,
+  created_at, updated_at, min_quantity, unit, owner_member_id, seller_type,
+  source_region, sale_type, min_order_quantity, count
+) ON TABLE public.loads TO authenticated;
 
 -- A new profile may only be inserted with the fields used by the membership form.
 GRANT INSERT (auth_user_id, full_name, phone, city, role, verification_status, products)
