@@ -29,7 +29,7 @@ function AnnouncePage() {
     setError('');
     // Resolve the approved member record first; loads.member_id references members.id,
     // not auth.users.id. The production schema uses its own canonical column names.
-    const { data: member, error: memberError } = await supabase
+    const { data: member, error: memberError } = await (supabase as any)
       .from('members')
       .select('id')
       .eq('auth_user_id', user.id)
@@ -43,7 +43,7 @@ function AnnouncePage() {
 
     const packageWeight = Number(form.weight);
     const packageCount = Number(form.stock);
-    const { error: insertError } = await supabase.from('loads').insert({
+    const { error: insertError } = await (supabase as any).from('loads').insert({
       name: [form.product.trim(), form.variety.trim()].filter(Boolean).join(' '),
       product_type: form.product.trim(),
       engine: form.variety.trim() || null,
