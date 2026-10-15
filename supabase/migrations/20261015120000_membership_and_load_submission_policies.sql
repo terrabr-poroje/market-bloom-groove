@@ -28,7 +28,7 @@ WITH CHECK (
     WHERE m.id = public.loads.member_id
       AND m.auth_user_id = (SELECT auth.uid())
       AND mr.approval_status = 'approved'
-      AND mr.role_code IN ('supplier', 'seller', 'bar_seller')
+      AND mr.role_code IN ('supplier', 'bar_seller')
   )
 );
 
