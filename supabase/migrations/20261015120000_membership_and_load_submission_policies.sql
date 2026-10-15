@@ -266,13 +266,30 @@ WITH CHECK (
 REVOKE UPDATE ON TABLE public.member_roles FROM authenticated;
 GRANT UPDATE (approval_status, approved_by, approved_at) ON TABLE public.member_roles TO authenticated;
 
--- These tables contain account and marketplace data; anonymous grants are not
--- needed for the authenticated membership and listing flows.
-REVOKE ALL ON TABLE public.members, public.member_roles, public.loads FROM anon;
+-- Reset broad grants first. RLS alone is not a substitute for SQL privileges.
+-- The current project had broad table grants for anon and authenticated users.
+REVOKE ALL PRIVILEGES ON TABLE public.members, public.member_roles, public.loads
+FROM anon, authenticated;
 
-GRANT INSERT ON TABLE public.member_roles TO authenticated;
+-- Authenticated users can read rows only when RLS permits them.
+GRANT SELECT ON TABLE public.members, public.member_roles, public.loads TO authenticated;
 
--- Existing table-level UPDATE grants override column-level intent. Remove the
--- broad grant explicitly, then permit only the review status column.
-REVOKE UPDATE, DELETE ON TABLE public.loads FROM authenticated;
+-- A new profile may only be inserted with the fields used by the membership form.
+GRANT INSERT (auth_user_id, full_name, phone, city, role, verification_status, products)
+ON TABLE public.members TO authenticated;
+
+-- Members may request roles; RLS enforces self + pending-only submission.
+GRANT INSERT (member_id, role_code, approval_status, approved_by, approved_at)
+ON TABLE public.member_roles TO authenticated;
+
+-- Only the announcement fields needed by the form can be inserted into loads.
+GRANT INSERT (
+  name, quantity, city, role, product_type, origin, engine, price, price_unit,
+  quality, description, ready_date, status, member_id, contact_phone, min_quantity,
+  unit, owner_member_id, seller_type, source_region, sale_type, min_order_quantity, count
+) ON TABLE public.loads TO authenticated;
+
+-- Review screens may only change role approval metadata or a load's status.
+GRANT UPDATE (approval_status, approved_by, approved_at)
+ON TABLE public.member_roles TO authenticated;
 GRANT UPDATE (status) ON TABLE public.loads TO authenticated;
