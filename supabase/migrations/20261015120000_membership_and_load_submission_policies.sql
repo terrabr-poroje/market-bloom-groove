@@ -1,3 +1,15 @@
+-- Email OTP is an alternative identifier: neither phone nor email is mandatory
+-- at the database level, while Supabase Auth verifies whichever identifier is used.
+ALTER TABLE public.members
+  ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE public.members
+  ALTER COLUMN phone DROP NOT NULL;
+
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS customer_email text;
+ALTER TABLE public.orders
+  ALTER COLUMN customer_phone DROP NOT NULL;
+
 -- PROPOSED ONLY: review before applying to production Supabase.
 -- Adds the minimum authenticated self-service paths needed by the current
 -- membership form and load announcement flow. This file is NOT auto-applied
@@ -487,7 +499,8 @@ WITH CHECK (
     WHERE buyer.id = public.orders.buyer_member_id
       AND buyer.auth_user_id = (SELECT auth.uid())
       AND customer_name = buyer.full_name
-      AND customer_phone = buyer.phone
+      AND customer_phone IS NOT DISTINCT FROM buyer.phone
+      AND customer_email IS NOT DISTINCT FROM buyer.email
       AND customer_city = buyer.city
       AND (
         buyer.role = 'buyer'
@@ -541,7 +554,7 @@ GRANT SELECT (
   buyer_member_id, seller_member_id
 ) ON TABLE public.orders TO authenticated;
 GRANT INSERT (
-  load_id, customer_name, customer_phone, customer_city, quantity, unit, price,
+  load_id, customer_name, customer_phone, customer_email, customer_city, quantity, unit, price,
   total_price, delivery_address, delivery_type, status, notes, buyer_member_id, seller_member_id
 ) ON TABLE public.orders TO authenticated;
 GRANT UPDATE (status) ON TABLE public.orders TO authenticated;
