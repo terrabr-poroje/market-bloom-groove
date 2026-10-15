@@ -99,7 +99,7 @@ function Requests() {
       if (!cityAccessReady) return;
       const { data, error } = await (supabase as any)
         .from("loads")
-        .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count")
+        .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count, package_type")
         .eq("status", "active")
         .order("created_at", { ascending: false });
       if (!active) return;
@@ -130,7 +130,7 @@ function Requests() {
             return { saleType: key, label: labels[key] || key, price: Number(tier.unit_price), minimum: Math.max(1, Number(tier.minimum_packages ?? 1)) };
           }) : [{ saleType: legacyType, label: "قیمت پایه", price: Number(row.price) || 0, minimum: Math.max(1, Number(row.min_order_quantity ?? 1)) }];
           return {
-            id: row.id, memberId: String(row.member_id || ""), saleType: legacyType, saleOptions, createdAt: String(row.created_at || ""), product,
+            id: row.id, memberId: String(row.member_id || ""), saleType: legacyType, saleOptions, packageType: String(row.package_type || "کارتن"), createdAt: String(row.created_at || ""), product,
             variety: String(row.engine || row.source_market || ""), category,
             quality: qualityMap[rawQuality] ?? "توافقی",
             city: String(row.city || ""), province: String(row.source_region || row.origin || ""),
