@@ -58,9 +58,9 @@ export function useAuth() {
       if (!memberRoleError) {
         for (const row of memberRoleRows ?? []) {
           const roleCode = String(row.role_code).toLowerCase();
-          if (roleCode === 'supplier' || roleCode === 'seller' || roleCode === 'buyer') {
-            nextRoles.add(roleCode);
-          }
+          if (roleCode === 'supplier') nextRoles.add('supplier');
+          if (roleCode === 'seller' || roleCode === 'bar_seller') nextRoles.add('seller');
+          if (roleCode === 'buyer' || roleCode === 'special_buyer' || roleCode === 'professional_buyer') nextRoles.add('buyer');
         }
       }
 
