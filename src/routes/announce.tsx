@@ -14,6 +14,13 @@ export const Route = createFileRoute("/announce")({
 
 const qualityValues = ['premium', 'standard', 'economy', 'negotiated'] as const;
 const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qualityValues[index]]));
+const salesSections = [
+  { key: 'retail', label: 'خرده‌فروشی', defaultMin: 1 },
+  { key: 'wholesale', label: 'عمده‌فروشی', defaultMin: 2 },
+  { key: 'special', label: 'فروش ویژه', defaultMin: 2 },
+  { key: 'professional', label: 'ویژه حرفه‌ای', defaultMin: 5 },
+] as const;
+type SaleSectionKey = typeof salesSections[number]['key'];
 type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; quantity: number; count: number | null; price: number; status: string; created_at: string };
 type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
@@ -27,6 +34,9 @@ function AnnouncePage() {
   const [memberCity, setMemberCity] = useState('');
   const [memberRole, setMemberRole] = useState<'supplier' | 'bar_seller' | 'seller' | ''>('');
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [saleSectionsEnabled, setSaleSectionsEnabled] = useState<SaleSectionKey[]>(['retail']);
+  const [salePrices, setSalePrices] = useState<Record<SaleSectionKey, string>>({ retail: '', wholesale: '', special: '', professional: '' });
+  const [saleMinimums, setSaleMinimums] = useState<Record<SaleSectionKey, string>>({ retail: '1', wholesale: '2', special: '2', professional: '5' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -37,6 +47,10 @@ function AnnouncePage() {
   const [manageError, setManageError] = useState('');
   const [busyLoadId, setBusyLoadId] = useState('');
   const set = (key: keyof typeof form) => (value: string) => setForm(prev => ({ ...prev, [key]: value }));
+  const toggleSaleSection = (key: SaleSectionKey, checked: boolean) => {
+    setSaleSectionsEnabled(prev => checked ? [...new Set([...prev, key])] : prev.filter(item => item !== key));
+    if (checked && !salePrices[key] && form.price) setSalePrices(prev => ({ ...prev, [key]: form.price }));
+  };
 
   useEffect(() => {
     let active = true;
@@ -98,6 +112,16 @@ function AnnouncePage() {
     const packageCount = Number(form.stock);
     const minimumPackages = Number(form.minimum);
     const pricePerKg = Number(form.price);
+    const validSaleSections = saleSectionsEnabled.filter(key => {
+      const p = Number(salePrices[key] || form.price);
+      const min = Number(saleMinimums[key]);
+      return Number.isFinite(p) && p > 0 && Number.isInteger(min) && min >= 1 && min <= packageCount;
+    });
+    if (!saleSectionsEnabled.length || validSaleSections.length !== saleSectionsEnabled.length) {
+      setError('برای هر بخش فروش انتخاب‌شده، قیمت هر کیلو و حداقل تعداد بسته معتبر وارد کنید.');
+      setBusy(false);
+      return;
+    }
     if (!form.product.trim() || !form.variety.trim() || !form.province.trim() || !form.city.trim() ||
         photoFiles.length > 5 || photoFiles.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) ||
         !Number.isFinite(packageWeight) || packageWeight <= 0 ||
@@ -158,12 +182,26 @@ function AnnouncePage() {
       seller_type: actualMemberRole === 'supplier' ? 'supplier' : 'seller',
       member_id: member.id,
       owner_member_id: member.id,
-      sale_type: 'regular',
+      sale_type: validSaleSections.length === 1 ? validSaleSections[0] : 'regular',
       source_region: originCity,
     }).select('id').single();
     if (insertError || !insertedLoad) {
       setError('ثبت بار انجام نشد؛ اطلاعات یا دسترسی دیتابیس را بررسی کنید.');
     } else {
+      const priceRows = validSaleSections.map(key => ({
+        load_id: insertedLoad.id,
+        sale_type: key,
+        unit_price: Number(salePrices[key] || form.price),
+        minimum_packages: Number(saleMinimums[key]),
+        min_quantity: Number(saleMinimums[key]) * packageWeight,
+        max_quantity: null,
+      }));
+      const { error: tierError } = await (supabase as any).from('load_price_tiers').insert(priceRows);
+      if (tierError) {
+        await (supabase as any).from('loads').update({ status: 'inactive' }).eq('id', insertedLoad.id);
+        setError('قیمت‌گذاری بخش‌های فروش ذخیره نشد؛ آگهی برای جلوگیری از انتشار ناقص غیرفعال شد.');
+        setBusy(false); return;
+      }
       if (photoFiles.length) {
         const imageRows: { load_id: string; storage_path: string; display_order: number }[] = [];
         for (const [index, file] of photoFiles.entries()) {
@@ -272,7 +310,21 @@ function AnnouncePage() {
               <label className="field-label">موجودی (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.stock} onChange={e => set('stock')(e.target.value)} className="field-input text-left" /></label>
               <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.minimum} onChange={e => set('minimum')(e.target.value)} className="field-input text-left" /></label>
             </div>
-            <label className="field-label">قیمت هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => set('price')(e.target.value)} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
+            <label className="field-label">قیمت پایه هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => { set('price')(e.target.value); setSalePrices(prev => Object.fromEntries(Object.entries(prev).map(([key, value]) => [key, value || e.target.value])) as Record<SaleSectionKey, string>); }} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
+            <fieldset className="grid gap-3 rounded-lg border border-border p-4">
+              <legend className="px-2 font-bold">بخش‌های فروش و قیمت اختصاصی هر بخش</legend>
+              <p className="text-xs text-muted-foreground">فقط بخش‌هایی که انتخاب می‌کنید برای خریداران فعال می‌شوند. برای هر بخش قیمت هر کیلو و حداقل تعداد بسته جداگانه ثبت می‌شود.</p>
+              {salesSections.map(section => {
+                const enabled = saleSectionsEnabled.includes(section.key);
+                return <div key={section.key} className="grid gap-3 rounded-md border border-border p-3">
+                  <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={enabled} onChange={e => toggleSaleSection(section.key, e.target.checked)} />{section.label}</label>
+                  {enabled && <div className="grid grid-cols-2 gap-3">
+                    <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="1" step="100" dir="ltr" value={salePrices[section.key] || form.price} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
+                    <label className="field-label">حداقل بسته در این بخش<input required type="number" min="1" max={form.stock || undefined} step="1" dir="ltr" value={saleMinimums[section.key]} onChange={e => setSaleMinimums(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
+                  </div>}
+                </div>;
+              })}
+            </fieldset>
             <label className="field-label">عکس‌های بار (حداکثر ۵ عکس، JPG/PNG/WebP تا ۱۰ مگابایت هر عکس)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => setPhotoFiles(Array.from(e.target.files ?? []).slice(0, 5))} className="field-input" /><span className="text-xs text-muted-foreground">{photoFiles.length ? `${faNumber(photoFiles.length)} عکس انتخاب شده` : 'انتخاب عکس اختیاری است.'}</span></label>
             <label className="field-label">توضیحات<textarea value={form.description} onChange={e => set('description')(e.target.value)} className="field-input min-h-20 resize-y" placeholder="جزئیات بسته‌بندی، کیفیت، شرایط تحویل…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
