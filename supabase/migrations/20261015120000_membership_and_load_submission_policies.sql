@@ -28,11 +28,11 @@ WITH CHECK (
     WHERE m.id = public.loads.member_id
       AND m.auth_user_id = (SELECT auth.uid())
       AND mr.approval_status = 'approved'
-      AND mr.role_code IN ('supplier', 'bar_seller')
+      AND mr.role_code IN ('supplier', 'seller', 'bar_seller')
   )
 );
 
-GRANT INSERT, UPDATE ON TABLE public.members TO authenticated;
+GRANT INSERT ON TABLE public.members TO authenticated;
 GRANT INSERT ON TABLE public.loads TO authenticated;
 
 -- Main admins need to review pending loads in the management screen.
