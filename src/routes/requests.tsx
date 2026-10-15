@@ -106,6 +106,9 @@ function Requests() {
       if (error) {
         setLoadError("دریافت بارهای واقعی انجام نشد. اتصال دیتابیس یا مجوز مشاهده را بررسی کنید.");
       } else {
+        const loadIds = (data ?? []).map((row: any) => row.id);
+        const { data: tiers } = loadIds.length ? await (supabase as any).from("load_price_tiers").select("load_id, sale_type, unit_price, minimum_packages").in("load_id", loadIds) : { data: [] };
+        if (!active) return;
         setLiveLoads((data ?? []).map((row: any) => {
           const packageCount = Math.max(0, Number(row.count ?? 0));
           const quantity = Math.max(0, Number(row.quantity ?? 0));
@@ -119,8 +122,15 @@ function Requests() {
             negotiable: "توافقی", "توافقی": "توافقی",
           };
           const category = /گوجه|پیاز|خیار|سیب‌زمینی|بادمجان|فلفل/.test(product) ? "صیفی‌جات" : /سبزی|جعفری|گشنیز|شوید|کاهو/.test(product) ? "سبزیجات" : "میوه";
+          const rowTiers = (tiers ?? []).filter((tier: any) => String(tier.load_id) === String(row.id));
+          const legacyType = String(row.sale_type || "regular");
+          const saleOptions = rowTiers.length ? rowTiers.map((tier: any) => {
+            const key = String(tier.sale_type);
+            const labels: Record<string, string> = { retail: "خرده‌فروشی", wholesale: "عمده‌فروشی", special: "فروش ویژه", professional: "ویژه حرفه‌ای", regular: "فروش عادی", pro: "ویژه حرفه‌ای" };
+            return { saleType: key, label: labels[key] || key, price: Number(tier.unit_price), minimum: Math.max(1, Number(tier.minimum_packages ?? 1)) };
+          }) : [{ saleType: legacyType, label: "قیمت پایه", price: Number(row.price) || 0, minimum: Math.max(1, Number(row.min_order_quantity ?? 1)) }];
           return {
-            id: row.id, memberId: String(row.member_id || ""), saleType: String(row.sale_type || "regular"), createdAt: String(row.created_at || ""), product,
+            id: row.id, memberId: String(row.member_id || ""), saleType: legacyType, saleOptions, createdAt: String(row.created_at || ""), product,
             variety: String(row.engine || row.source_market || ""), category,
             quality: qualityMap[rawQuality] ?? "توافقی",
             city: String(row.city || ""), province: String(row.source_region || row.origin || ""),
@@ -179,10 +189,10 @@ function Requests() {
   const selectedMode = purchaseModes.find(item => item.value === purchaseMode)!;
   const filtered = displayLoads
     .filter(load => {
-      const saleType = String((load as Load & { saleType?: string }).saleType || "regular");
+      const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
       const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city);
       return cityAllowed
-        && selectedMode.saleTypes.includes(saleType)
+        && options.some(option => selectedMode.saleTypes.includes(option.saleType))
         && (!filters.category || load.category === filters.category)
         && (!filters.quality || load.quality === filters.quality)
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
