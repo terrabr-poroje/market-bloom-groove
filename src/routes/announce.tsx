@@ -16,7 +16,7 @@ const qualityMap = Object.fromEntries(qualities.map((label, index) => [label, qu
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: '', weight: '', stock: '', minimum: '', price: '', ready: 'آماده بارگیری', description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: '', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -27,20 +27,45 @@ function AnnouncePage() {
     if (!user) return;
     setBusy(true);
     setError('');
+    // Resolve the approved member record first; loads.member_id references members.id,
+    // not auth.users.id. The production schema uses its own canonical column names.
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .maybeSingle();
+
+    if (memberError || !member) {
+      setError('پروفایل عضویت شما پیدا نشد. ابتدا درخواست عضویت را ثبت کنید.');
+      setBusy(false);
+      return;
+    }
+
+    const packageWeight = Number(form.weight);
+    const packageCount = Number(form.stock);
     const { error: insertError } = await supabase.from('loads').insert({
-      seller_id: user.id,
-      product_name: form.product,
-      variety: form.variety,
+      name: [form.product.trim(), form.variety.trim()].filter(Boolean).join(' '),
+      product_type: form.product.trim(),
+      engine: form.variety.trim() || null,
       quality: qualityMap[form.quality] ?? 'standard',
       city: form.city,
-      province: form.province,
-      package_weight_kg: Number(form.weight),
-      stock_packages: Number(form.stock),
-      min_order_packages: Number(form.minimum),
-      price_per_kg: Number(form.price),
-      ready_at: form.ready,
-      description: form.description,
+      origin: form.province.trim(),
+      quantity: packageWeight * packageCount,
+      count: packageCount,
+      unit: 'kg',
+      min_quantity: Number(form.minimum) * packageWeight,
+      min_order_quantity: Number(form.minimum),
+      price: Number(form.price),
+      price_unit: 'toman_per_kg',
+      ready_date: form.ready,
+      description: form.description.trim() || null,
       status: 'pending',
+      role: 'seller',
+      seller_type: 'seller',
+      member_id: member.id,
+      owner_member_id: member.id,
+      sale_type: 'regular',
+      source_region: form.province.trim(),
     });
     if (insertError) setError('ثبت بار انجام نشد؛ مقادیر را بررسی کرده و دوباره تلاش کنید.');
     else setSaved(true);
@@ -85,7 +110,7 @@ function AnnouncePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">درجه کیفیت<select className="field-input" value={form.quality} onChange={e => set('quality')(e.target.value)}>{qualities.map(item => <option key={item}>{item}</option>)}</select></label>
-              <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" placeholder="مثلاً آماده بارگیری" /></label>
+              <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" type="date" /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">شهر مبدأ<select className="field-input" value={form.city} onChange={e => set('city')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
