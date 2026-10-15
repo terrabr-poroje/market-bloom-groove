@@ -22,7 +22,6 @@ function AdminPage() {
   const [tab, setTab] = useState<'requests' | 'loads'>('requests');
   const [requests, setRequests] = useState<MemberRequest[]>([]);
   const [pendingLoads, setPendingLoads] = useState<PendingLoad[]>([]);
-  const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
 
   function refresh() {
     (supabase as any).from('member_roles')
@@ -95,7 +94,6 @@ function AdminPage() {
               <p className="mt-2 text-xs text-muted-foreground">{request.members?.city ?? 'شهر ثبت نشده'}</p>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={() => approveRequest(request)}><CheckCircle2 />تأیید عضویت</Button>
-                <input className="field-input h-9 max-w-56 text-xs" placeholder="دلیل رد (اختیاری)" value={rejectReason[request.id] ?? ''} onChange={e => setRejectReason(prev => ({ ...prev, [request.id]: e.target.value }))} />
                 <Button size="sm" variant="outline" onClick={() => rejectRequest(request)}><XCircle />رد درخواست</Button>
               </div>
             </div>
