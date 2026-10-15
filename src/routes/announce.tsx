@@ -30,7 +30,7 @@ const deliveryStatusLabels: Record<string, string> = { awaiting_payment: 'در �
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: cities[0] ?? 'کرج', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: cities[0] ?? 'کرج', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
   const [memberCity, setMemberCity] = useState('');
   const [memberRole, setMemberRole] = useState<'supplier' | 'bar_seller' | 'seller' | ''>('');
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
@@ -170,6 +170,7 @@ function AnnouncePage() {
       origin: originCity,
       quantity: packageWeight * packageCount,
       count: packageCount,
+      package_type: form.packageType,
       unit: 'kg',
       min_quantity: minimumPackages * packageWeight,
       min_order_quantity: minimumPackages,
@@ -306,6 +307,7 @@ function AnnouncePage() {
               {memberRole === 'supplier' ? <label className="field-label">شهر محل عرضه<select required className="field-input" value={form.city} onChange={e => set('city')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label> : <label className="field-label">شهر محل عرضه<input readOnly aria-readonly="true" value={memberCity || 'شهر عضویت ثبت نشده'} className="field-input bg-muted" /><span className="text-xs text-muted-foreground">برای بارفروش، شهر محل عرضه ثابت و مطابق شهر عضویت است.</span></label>}
             </div>
             <div className="grid grid-cols-3 gap-3">
+              <label className="field-label">نوع بسته<select required value={form.packageType} onChange={e => set('packageType')(e.target.value)} className="field-input"><option>کارتن</option><option>سبد</option><option>کیسه</option><option>جعبه</option><option>بسته‌بندی فله</option><option>بسته‌بندی اختصاصی</option></select></label>
               <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="1" step="0.5" dir="ltr" value={form.weight} onChange={e => set('weight')(e.target.value)} className="field-input text-left" /></label>
               <label className="field-label">موجودی (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.stock} onChange={e => set('stock')(e.target.value)} className="field-input text-left" /></label>
               <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.minimum} onChange={e => set('minimum')(e.target.value)} className="field-input text-left" /></label>
