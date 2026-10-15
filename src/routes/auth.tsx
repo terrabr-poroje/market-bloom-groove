@@ -50,6 +50,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [authMethod, setAuthMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [city, setCity] = useState(cities[0] ?? "کرج");
@@ -145,6 +146,7 @@ function AuthPage() {
             auth_user_id: data.user.id,
             full_name: fullName.trim(),
             phone: authMethod === "phone" ? normalizedPhone : null,
+            email: authMethod === "email" ? normalizedEmail : null,
             city,
             role: memberRole,
             verification_status: "pending",
