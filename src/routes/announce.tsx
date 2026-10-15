@@ -23,7 +23,10 @@ const deliveryStatusLabels: Record<string, string> = { awaiting_payment: 'در �
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: '', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: cities[0] ?? 'کرج', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
+  const [memberCity, setMemberCity] = useState('');
+  const [memberRole, setMemberRole] = useState<'supplier' | 'bar_seller' | 'seller' | ''>('');
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -39,9 +42,15 @@ function AnnouncePage() {
     let active = true;
     async function fetchOwnedLoads() {
       if (!user) { setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
-      const { data: member } = await (supabase as any).from('members').select('id').eq('auth_user_id', user.id).maybeSingle();
+      const { data: member } = await (supabase as any).from('members').select('id, city').eq('auth_user_id', user.id).maybeSingle();
       if (!active) return;
       if (!member) { setOwnedLoads([]); setIncomingOrders([]); setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
+      setMemberCity(String(member.city ?? '').trim());
+      if (member.city) setForm(prev => ({ ...prev, city: String(member.city).trim(), province: String(member.city).trim() }));
+      const { data: roleRows } = await (supabase as any).from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved');
+      if (!active) return;
+      const codes = (roleRows ?? []).map((row: any) => String(row.role_code).toLowerCase());
+      setMemberRole(codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '');
       const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
         (supabase as any).from('loads').select('id, name, product_type, engine, city, quantity, count, price, status, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
         (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
@@ -89,7 +98,8 @@ function AnnouncePage() {
     const packageCount = Number(form.stock);
     const minimumPackages = Number(form.minimum);
     const pricePerKg = Number(form.price);
-    if (!form.product.trim() || !form.variety.trim() || !form.province.trim() ||
+    if (!form.product.trim() || !form.variety.trim() || !form.province.trim() || !form.city.trim() ||
+        photoFiles.length > 5 || photoFiles.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) ||
         !Number.isFinite(packageWeight) || packageWeight <= 0 ||
         !Number.isInteger(packageCount) || packageCount < 1 ||
         !Number.isInteger(minimumPackages) || minimumPackages < 1 || minimumPackages > packageCount ||
@@ -103,7 +113,7 @@ function AnnouncePage() {
     // not auth.users.id. The production schema uses its own canonical column names.
     const { data: member, error: memberError } = await (supabase as any)
       .from('members')
-      .select('id')
+      .select('id, city')
       .eq('auth_user_id', user.id)
       .maybeSingle();
 
@@ -113,13 +123,27 @@ function AnnouncePage() {
       return;
     }
 
-    const { error: insertError } = await (supabase as any).from('loads').insert({
+    const { data: approvedRoleRows, error: approvedRoleError } = await (supabase as any)
+      .from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved');
+    const codes = (approvedRoleRows ?? []).map((row: any) => String(row.role_code).toLowerCase());
+    const actualMemberRole = codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '';
+    if (approvedRoleError || !actualMemberRole) {
+      setError('فقط تأمین‌کننده یا بارفروش تأییدشده می‌تواند بار منتشر کند.');
+      setBusy(false); return;
+    }
+    if (actualMemberRole !== 'supplier' && !member.city) {
+      setError('شهر ثابت عضویت شما ثبت نشده است؛ ابتدا اطلاعات عضویت را تکمیل کنید.');
+      setBusy(false); return;
+    }
+    const offeredCity = actualMemberRole === 'supplier' ? form.city.trim() : String(member.city).trim();
+    const originCity = form.province.trim();
+    const { data: insertedLoad, error: insertError } = await (supabase as any).from('loads').insert({
       name: [form.product.trim(), form.variety.trim()].filter(Boolean).join(' '),
       product_type: form.product.trim(),
       engine: form.variety.trim() || null,
       quality: qualityMap[form.quality] ?? 'standard',
-      city: form.city,
-      origin: form.province.trim(),
+      city: offeredCity,
+      origin: originCity,
       quantity: packageWeight * packageCount,
       count: packageCount,
       unit: 'kg',
@@ -130,15 +154,36 @@ function AnnouncePage() {
       ready_date: form.ready,
       description: form.description.trim() || null,
       status: 'active',
-      role: 'seller',
-      seller_type: 'seller',
+      role: actualMemberRole === 'supplier' ? 'supplier' : 'seller',
+      seller_type: actualMemberRole === 'supplier' ? 'supplier' : 'seller',
       member_id: member.id,
       owner_member_id: member.id,
       sale_type: 'regular',
-      source_region: form.province.trim(),
-    });
-    if (insertError) setError('ثبت بار انجام نشد؛ مقادیر را بررسی کرده و دوباره تلاش کنید.');
-    else setSaved(true);
+      source_region: originCity,
+    }).select('id').single();
+    if (insertError || !insertedLoad) {
+      setError('ثبت بار انجام نشد؛ اطلاعات یا دسترسی دیتابیس را بررسی کنید.');
+    } else {
+      if (photoFiles.length) {
+        const imageRows: { load_id: string; storage_path: string; display_order: number }[] = [];
+        for (const [index, file] of photoFiles.entries()) {
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const path = `${user.id}/${insertedLoad.id}/${crypto.randomUUID()}-${safeName}`;
+          const { error: uploadError } = await supabase.storage.from('terrabar-load-images').upload(path, file, { contentType: file.type, upsert: false });
+          if (uploadError) {
+            setError('بار ثبت شد، اما بارگذاری عکس انجام نشد. سیاست دسترسی مخزن عکس باید بررسی شود.');
+            setBusy(false); return;
+          }
+          imageRows.push({ load_id: insertedLoad.id, storage_path: path, display_order: index });
+        }
+        const { error: imageError } = await (supabase as any).from('load_images').insert(imageRows);
+        if (imageError) {
+          setError('بار ثبت شد، اما پیوند عکس‌ها ذخیره نشد؛ به مدیر فنی اطلاع بدهید.');
+          setBusy(false); return;
+        }
+      }
+      setSaved(true);
+    }
     setBusy(false);
   }
 
@@ -219,8 +264,8 @@ function AnnouncePage() {
               <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" type="date" /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <label className="field-label">شهر مبدأ<select className="field-input" value={form.city} onChange={e => set('city')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
-              <label className="field-label">استان<input required value={form.province} onChange={e => set('province')(e.target.value)} className="field-input" placeholder="مثلاً مازندران" /></label>
+              <label className="field-label">شهر مبدأ بار<select required className="field-input" value={form.province} onChange={e => set('province')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
+              {memberRole === 'supplier' ? <label className="field-label">شهر محل عرضه<select required className="field-input" value={form.city} onChange={e => set('city')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label> : <label className="field-label">شهر محل عرضه<input readOnly aria-readonly="true" value={memberCity || 'شهر عضویت ثبت نشده'} className="field-input bg-muted" /><span className="text-xs text-muted-foreground">برای بارفروش، شهر محل عرضه ثابت و مطابق شهر عضویت است.</span></label>}
             </div>
             <div className="grid grid-cols-3 gap-3">
               <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="1" step="0.5" dir="ltr" value={form.weight} onChange={e => set('weight')(e.target.value)} className="field-input text-left" /></label>
@@ -228,6 +273,7 @@ function AnnouncePage() {
               <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.minimum} onChange={e => set('minimum')(e.target.value)} className="field-input text-left" /></label>
             </div>
             <label className="field-label">قیمت هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => set('price')(e.target.value)} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
+            <label className="field-label">عکس‌های بار (حداکثر ۵ عکس، JPG/PNG/WebP تا ۱۰ مگابایت هر عکس)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => setPhotoFiles(Array.from(e.target.files ?? []).slice(0, 5))} className="field-input" /><span className="text-xs text-muted-foreground">{photoFiles.length ? `${faNumber(photoFiles.length)} عکس انتخاب شده` : 'انتخاب عکس اختیاری است.'}</span></label>
             <label className="field-label">توضیحات<textarea value={form.description} onChange={e => set('description')(e.target.value)} className="field-input min-h-20 resize-y" placeholder="جزئیات بسته‌بندی، کیفیت، شرایط تحویل…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" disabled={busy}>{busy ? 'در حال ثبت…' : 'ثبت و انتشار بار'}</Button>
