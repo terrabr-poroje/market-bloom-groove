@@ -310,7 +310,7 @@ GRANT SELECT (
 ) ON TABLE public.loads TO authenticated;
 
 -- A new profile may only be inserted with the fields used by the membership form.
-GRANT INSERT (auth_user_id, full_name, phone, city, role, verification_status, products)
+GRANT INSERT (auth_user_id, full_name, phone, email, city, role, verification_status, products)
 ON TABLE public.members TO authenticated;
 
 -- Members may request roles; RLS enforces self + pending-only submission.
@@ -558,3 +558,44 @@ GRANT INSERT (
   total_price, delivery_address, delivery_type, status, notes, buyer_member_id, seller_member_id
 ) ON TABLE public.orders TO authenticated;
 GRANT UPDATE (status) ON TABLE public.orders TO authenticated;
+
+
+-- Assigned city managers and the main admin may advance direct sourcing requests.
+DROP POLICY IF EXISTS purchase_requests_manager_update ON public.purchase_requests;
+CREATE POLICY purchase_requests_manager_update
+ON public.purchase_requests
+FOR UPDATE
+TO authenticated
+USING (
+  status IN ('new', 'in_review', 'sourcing', 'offer_ready')
+  AND (
+    public.terrabar_is_main_admin()
+    OR EXISTS (
+      SELECT 1
+      FROM public.admin_users AS au
+      LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+      WHERE au.auth_user_id = (SELECT auth.uid())
+        AND au.admin_role = 'city_manager'
+        AND au.is_active = true
+        AND (auc.city_name = public.purchase_requests.destination_city
+             OR au.city = public.purchase_requests.destination_city)
+    )
+  )
+)
+WITH CHECK (
+  status IN ('in_review', 'sourcing', 'offer_ready', 'rejected', 'cancelled', 'completed')
+  AND (
+    public.terrabar_is_main_admin()
+    OR EXISTS (
+      SELECT 1
+      FROM public.admin_users AS au
+      LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+      WHERE au.auth_user_id = (SELECT auth.uid())
+        AND au.admin_role = 'city_manager'
+        AND au.is_active = true
+        AND (auc.city_name = public.purchase_requests.destination_city
+             OR au.city = public.purchase_requests.destination_city)
+    )
+  )
+);
+GRANT UPDATE (status) ON TABLE public.purchase_requests TO authenticated;
