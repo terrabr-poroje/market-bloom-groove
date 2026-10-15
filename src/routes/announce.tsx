@@ -57,8 +57,6 @@ function AnnouncePage() {
       return;
     }
 
-    const packageWeight = Number(form.weight);
-    const packageCount = Number(form.stock);
     const { error: insertError } = await (supabase as any).from('loads').insert({
       name: [form.product.trim(), form.variety.trim()].filter(Boolean).join(' '),
       product_type: form.product.trim(),
