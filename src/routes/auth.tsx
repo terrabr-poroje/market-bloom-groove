@@ -189,7 +189,7 @@ function AuthPage() {
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بررسی حساب…</section>;
 
-  if (user) {
+  if (user && !codeSent && !busy && !error) {
     return (
       <section className="bg-market-surface py-16">
         <div className="site-container max-w-md text-center">
