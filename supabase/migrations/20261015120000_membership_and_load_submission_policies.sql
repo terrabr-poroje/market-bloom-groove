@@ -42,88 +42,113 @@ WITH CHECK (
 GRANT INSERT ON TABLE public.members TO authenticated;
 GRANT INSERT ON TABLE public.loads TO authenticated;
 
--- Active marketplace visibility follows the approved city-access rules.
--- A normal buyer sees their own city; a special buyer sees their city and
--- enabled neighboring cities; a professional buyer has no city filter.
--- City managers are restricted to their assigned cities; main admins see all.
+-- Consolidate listing visibility into ONE permissive SELECT policy.
+-- PostgreSQL combines permissive policies with OR, so separate "narrower"
+-- policies do not restrict a broader policy. Remove prior broad policies first.
+DROP POLICY IF EXISTS loads_owner_access ON public.loads;
 DROP POLICY IF EXISTS loads_special_buyer_city_access ON public.loads;
 DROP POLICY IF EXISTS loads_marketplace_city_access ON public.loads;
-CREATE POLICY loads_marketplace_city_access
+DROP POLICY IF EXISTS loads_main_admin_review_select ON public.loads;
+DROP POLICY IF EXISTS loads_regular_buyer_city_access ON public.loads;
+DROP POLICY IF EXISTS loads_professional_buyer_access ON public.loads;
+
+CREATE POLICY loads_select_authorized
 ON public.loads
 FOR SELECT
 TO authenticated
 USING (
-  status = 'active'
-  AND (
-    public.terrabar_is_main_admin()
-    OR EXISTS (
-      SELECT 1
-      FROM public.admin_users AS au
-      LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
-      WHERE au.auth_user_id = (SELECT auth.uid())
-        AND au.admin_role = 'city_manager'
-        AND au.is_active = true
-        AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
-    )
-    OR EXISTS (
+  -- Main admin can review all statuses.
+  public.terrabar_is_main_admin()
+
+  -- City managers can review only loads in their assigned city scope.
+  OR EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
+  )
+
+  -- Owners can see their own pending/rejected/active listings.
+  OR EXISTS (
+    SELECT 1
+    FROM public.members AS owner
+    WHERE owner.auth_user_id = (SELECT auth.uid())
+      AND (owner.id = public.loads.member_id OR owner.id = public.loads.owner_member_id)
+  )
+
+  -- Non-admin marketplace users see active inventory according to role/city.
+  OR (
+    status = 'active'
+    AND EXISTS (
       SELECT 1
       FROM public.members AS m
       WHERE m.auth_user_id = (SELECT auth.uid())
         AND (
+          -- Approved professional buyers: no city restriction.
           EXISTS (
             SELECT 1 FROM public.member_roles AS mr
             WHERE mr.member_id = m.id
-              AND mr.approval_status = 'approved'
               AND mr.role_code = 'professional_buyer'
+              AND mr.approval_status = 'approved'
           )
+
+          -- Regular buyers: own city, regular listings only; buyer approval
+          -- is not required by the product rules.
           OR (
             m.city = public.loads.city
+            AND COALESCE(public.loads.sale_type, 'regular') = 'regular'
             AND (
               m.role = 'buyer'
               OR EXISTS (
                 SELECT 1 FROM public.member_roles AS mr
                 WHERE mr.member_id = m.id
-                  AND mr.approval_status = 'approved'
-                  AND mr.role_code IN ('buyer', 'special_buyer')
+                  AND mr.role_code = 'buyer'
               )
             )
           )
+
+          -- Approved special buyers: own city and enabled neighboring cities.
           OR (
             EXISTS (
               SELECT 1 FROM public.member_roles AS mr
               WHERE mr.member_id = m.id
-                AND mr.approval_status = 'approved'
                 AND mr.role_code = 'special_buyer'
+                AND mr.approval_status = 'approved'
             )
-            AND EXISTS (
-              SELECT 1 FROM public.city_neighbors AS cn
-              WHERE cn.is_enabled = true
-                AND (
-                  (cn.city_name = m.city AND cn.neighbor_city_name = public.loads.city)
-                  OR (cn.neighbor_city_name = m.city AND cn.city_name = public.loads.city)
-                )
+            AND (
+              public.loads.city = m.city
+              OR EXISTS (
+                SELECT 1 FROM public.city_neighbors AS cn
+                WHERE cn.is_enabled = true
+                  AND (
+                    (cn.city_name = m.city AND cn.neighbor_city_name = public.loads.city)
+                    OR (cn.neighbor_city_name = m.city AND cn.city_name = public.loads.city)
+                  )
+              )
             )
           )
-          OR EXISTS (
-            SELECT 1 FROM public.member_roles AS mr
-            WHERE mr.member_id = m.id
-              AND mr.approval_status = 'approved'
-              AND mr.role_code IN ('supplier', 'bar_seller')
+
+          -- Approved suppliers/bar-sellers may browse active inventory in
+          -- their own city; owner access above retains visibility to own loads.
+          OR (
+            m.city = public.loads.city
+            AND EXISTS (
+              SELECT 1 FROM public.member_roles AS mr
+              WHERE mr.member_id = m.id
+                AND mr.role_code IN ('supplier', 'bar_seller')
+                AND mr.approval_status = 'approved'
+            )
           )
         )
     )
   )
 );
 
--- Main admins need to review pending loads in the management screen.
-DROP POLICY IF EXISTS loads_main_admin_review_select ON public.loads;
-CREATE POLICY loads_main_admin_review_select
-ON public.loads
-FOR SELECT
-TO authenticated
-USING (public.terrabar_is_main_admin());
-
--- Main admins may only change load review status through this policy.
+-- Main admins may change listing review status; city managers cannot alter
+-- rows outside their assigned city and ordinary members cannot approve loads.
 DROP POLICY IF EXISTS loads_main_admin_review_update ON public.loads;
 CREATE POLICY loads_main_admin_review_update
 ON public.loads
@@ -131,78 +156,6 @@ FOR UPDATE
 TO authenticated
 USING (public.terrabar_is_main_admin())
 WITH CHECK (public.terrabar_is_main_admin());
-
--- Regular buyers see active regular listings only in their registered city.
-DROP POLICY IF EXISTS loads_regular_buyer_city_access ON public.loads;
-CREATE POLICY loads_regular_buyer_city_access
-ON public.loads
-FOR SELECT
-TO authenticated
-USING (
-  status = 'active'
-  AND COALESCE(sale_type, 'regular') = 'regular'
-  AND EXISTS (
-    SELECT 1
-    FROM public.members AS m
-    JOIN public.member_roles AS mr ON mr.member_id = m.id
-    WHERE m.auth_user_id = (SELECT auth.uid())
-      AND m.city = public.loads.city
-      AND mr.role_code = 'buyer'
-  )
-);
-
--- Special buyers must have an approved special_buyer role; city access is
--- restricted to their own city and enabled neighboring-city relationships.
-DROP POLICY IF EXISTS loads_special_buyer_city_access ON public.loads;
-CREATE POLICY loads_special_buyer_city_access
-ON public.loads
-FOR SELECT
-TO authenticated
-USING (
-  status = 'active'
-  AND sale_type = 'special'
-  AND EXISTS (
-    SELECT 1
-    FROM public.members AS m
-    JOIN public.member_roles AS mr ON mr.member_id = m.id
-    WHERE m.auth_user_id = (SELECT auth.uid())
-      AND mr.role_code = 'special_buyer'
-      AND mr.approval_status = 'approved'
-      AND (
-        public.loads.city = m.city
-        OR EXISTS (
-          SELECT 1 FROM public.city_neighbors AS cn
-          WHERE cn.city_name = m.city
-            AND cn.neighbor_city_name = public.loads.city
-            AND cn.is_enabled = true
-        )
-        OR EXISTS (
-          SELECT 1 FROM public.city_neighbors AS cn
-          WHERE cn.city_name = public.loads.city
-            AND cn.neighbor_city_name = m.city
-            AND cn.is_enabled = true
-        )
-      )
-  )
-);
-
--- Professional buyers may see active listings without a city restriction.
-DROP POLICY IF EXISTS loads_professional_buyer_access ON public.loads;
-CREATE POLICY loads_professional_buyer_access
-ON public.loads
-FOR SELECT
-TO authenticated
-USING (
-  status = 'active'
-  AND EXISTS (
-    SELECT 1
-    FROM public.members AS m
-    JOIN public.member_roles AS mr ON mr.member_id = m.id
-    WHERE m.auth_user_id = (SELECT auth.uid())
-      AND mr.role_code = 'professional_buyer'
-      AND mr.approval_status = 'approved'
-  )
-);
 
 -- These tables contain account and marketplace data; anonymous grants are not
 -- needed for the authenticated membership and listing flows.
