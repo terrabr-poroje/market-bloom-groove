@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Megaphone, ShieldAlert } from 'lucide-react';
