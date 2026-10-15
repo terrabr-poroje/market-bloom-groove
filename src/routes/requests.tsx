@@ -99,7 +99,7 @@ function Requests() {
       if (!cityAccessReady) return;
       const { data, error } = await (supabase as any)
         .from("loads")
-        .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count, package_type")
+        .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count, package_type, package_weight")
         .eq("status", "active")
         .order("created_at", { ascending: false });
       if (!active) return;
@@ -112,7 +112,7 @@ function Requests() {
         setLiveLoads((data ?? []).map((row: any) => {
           const packageCount = Math.max(0, Number(row.count ?? 0));
           const quantity = Math.max(0, Number(row.quantity ?? 0));
-          const weight = packageCount > 0 ? Math.max(1, Math.round(quantity / packageCount)) : 1;
+          const weight = Number(row.package_weight) > 0 ? Number(row.package_weight) : packageCount > 0 ? Math.max(1, Math.round(quantity / packageCount)) : 1;
           const product = String(row.product_type || row.name || "محصول");
           const rawQuality = String(row.quality || "").toLowerCase();
           const qualityMap: Record<string, Quality> = {
