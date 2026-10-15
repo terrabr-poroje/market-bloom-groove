@@ -43,7 +43,7 @@ function Requests() {
           const quality = qualityMap[rawQuality] ?? 'توافقی';
           const category = /گوجه|پیاز|خیار|سیب‌زمینی|بادمجان|فلفل/.test(product) ? 'صیفی‌جات' : /سبزی|جعفری|گشنیز|شوید|کاهو/.test(product) ? 'سبزیجات' : 'میوه';
           return {
-            id: row.id, product, variety, category, quality,
+            id: row.id, createdAt: String(row.created_at || ''), product, variety, category, quality,
             city: String(row.city || ''),
             province: String(row.source_region || row.origin || ''),
             weight,
@@ -72,7 +72,7 @@ function Requests() {
   const [filters, setFilters] = useState({ city: '', category: '', quality: '', query: '' });
   const [sort, setSort] = useState('newest');
   const normalizedQuery = filters.query.trim().replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s/g, '');
-  const filtered = displayLoads.filter(load => (!filters.city || load.city === filters.city) && (!filters.category || load.category === filters.category) && (!filters.quality || load.quality === filters.quality) && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, '').includes(normalizedQuery))).sort((a, b) => sort === 'price' ? a.price - b.price : sort === 'stock' ? b.stock - a.stock : a.id - b.id);
+  const filtered = displayLoads.filter(load => (!filters.city || load.city === filters.city) && (!filters.category || load.category === filters.category) && (!filters.quality || load.quality === filters.quality) && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, '').includes(normalizedQuery))).sort((a, b) => sort === 'price' ? a.price - b.price : sort === 'stock' ? b.stock - a.stock : (Date.parse(b.createdAt || '') || Number(b.id) || 0) - (Date.parse(a.createdAt || '') || Number(a.id) || 0));
   function search(event: FormEvent) { event.preventDefault(); setFilters({ city, category, quality, query }); document.getElementById('market-loads')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }); }
   function reset() { setCity(''); setCategory(''); setQuality(''); setQuery(''); setFilters({ city: '', category: '', quality: '', query: '' }); }
   const active = Object.values(filters).some(Boolean);
