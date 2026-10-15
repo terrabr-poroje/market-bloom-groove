@@ -9,7 +9,11 @@ CREATE POLICY members_insert_own_profile
 ON public.members
 FOR INSERT
 TO authenticated
-WITH CHECK (auth_user_id = (SELECT auth.uid()));
+WITH CHECK (
+  auth_user_id = (SELECT auth.uid())
+  AND role IN ('buyer', 'supplier', 'seller', 'bar_seller')
+  AND COALESCE(verification_status, 'pending') = 'pending'
+);
 
 -- Only members with an approved supplier/bar-seller role may submit a load.
 -- The submitted member_id must be the caller's own member profile.
@@ -150,12 +154,99 @@ USING (
 -- Main admins may change listing review status; city managers cannot alter
 -- rows outside their assigned city and ordinary members cannot approve loads.
 DROP POLICY IF EXISTS loads_main_admin_review_update ON public.loads;
+DROP POLICY IF EXISTS loads_city_manager_review_update ON public.loads;
+
 CREATE POLICY loads_main_admin_review_update
 ON public.loads
 FOR UPDATE
 TO authenticated
 USING (public.terrabar_is_main_admin())
 WITH CHECK (public.terrabar_is_main_admin());
+
+CREATE POLICY loads_city_manager_review_update
+ON public.loads
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = public.loads.city OR au.city = public.loads.city)
+  )
+);
+
+-- City managers can review membership requests only for members in assigned cities.
+DROP POLICY IF EXISTS member_roles_city_manager_read ON public.member_roles;
+CREATE POLICY member_roles_city_manager_read
+ON public.member_roles
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.admin_users AS au ON au.auth_user_id = (SELECT auth.uid())
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE m.id = public.member_roles.member_id
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = m.city OR au.city = m.city)
+  )
+);
+
+DROP POLICY IF EXISTS member_roles_city_manager_update ON public.member_roles;
+CREATE POLICY member_roles_city_manager_update
+ON public.member_roles
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.admin_users AS au ON au.auth_user_id = (SELECT auth.uid())
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE m.id = public.member_roles.member_id
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = m.city OR au.city = m.city)
+  )
+)
+WITH CHECK (
+  approval_status IN ('approved', 'rejected')
+  AND (
+    (approval_status = 'approved' AND approved_by = (SELECT auth.uid()) AND approved_at IS NOT NULL)
+    OR (approval_status = 'rejected' AND approved_by IS NULL AND approved_at IS NULL)
+  )
+  AND EXISTS (
+    SELECT 1
+    FROM public.members AS m
+    JOIN public.admin_users AS au ON au.auth_user_id = (SELECT auth.uid())
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE m.id = public.member_roles.member_id
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = m.city OR au.city = m.city)
+  )
+);
+
+-- The review UI only needs to change approval fields, never the member, role or IDs.
+REVOKE UPDATE ON TABLE public.member_roles FROM authenticated;
+GRANT UPDATE (approval_status, approved_by, approved_at) ON TABLE public.member_roles TO authenticated;
 
 -- These tables contain account and marketplace data; anonymous grants are not
 -- needed for the authenticated membership and listing flows.
