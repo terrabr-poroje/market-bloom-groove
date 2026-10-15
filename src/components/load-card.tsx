@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { supabase } from '@/integrations/supabase/client';
