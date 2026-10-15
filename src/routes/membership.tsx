@@ -14,7 +14,7 @@ export const Route = createFileRoute("/membership")({
 const roleLabels: Record<AppRole, string> = { admin: 'مدیر', supplier: 'تأمین‌کننده (باغدار، کشاورز، سورتینگ)', seller: 'بارفروش / حجره‌دار میدان', buyer: 'خریدار' };
 const statusLabels: Record<string, string> = { pending: 'در انتظار بررسی مدیر', approved: 'تأیید شده', rejected: 'رد شده' };
 
-type Request = { id: string; requested_role: AppRole; status: string; reject_reason: string | null; created_at: string };
+type Request = { id: string; role_code: string; approval_status: string; created_at: string };
 
 function MembershipPage() {
   const { user, loading } = useAuth();
@@ -30,8 +30,8 @@ function MembershipPage() {
 
   function refresh() {
     if (!user) return;
-    supabase.from('member_requests').select('id, requested_role, status, reject_reason, created_at').order('created_at', { ascending: false })
-      .then(({ data }) => setRequests((data ?? []) as Request[]));
+    supabase.from('member_roles').select('id, role_code, approval_status, created_at, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
+      .then(({ data }) => setRequests((data ?? []) as unknown as Request[]));
   }
   useEffect(refresh, [user]);
 
@@ -40,11 +40,41 @@ function MembershipPage() {
     if (!user) return;
     setBusy(true);
     setError('');
-    const { error: insertError } = await supabase.from('member_requests').insert({
-      user_id: user.id, requested_role: role, full_name: fullName, phone, city, description,
+    // Create or reuse the caller's member profile in the production schema.
+    const { data: existingMember, error: lookupError } = await supabase
+      .from('members').select('id').eq('auth_user_id', user.id).maybeSingle();
+
+    if (lookupError) {
+      setError('بررسی پروفایل انجام نشد؛ کمی بعد دوباره تلاش کنید.');
+      setBusy(false);
+      return;
+    }
+
+    let memberId = existingMember?.id;
+    if (!memberId) {
+      const { data: newMember, error: memberInsertError } = await supabase
+        .from('members')
+        .insert({ auth_user_id: user.id, full_name: fullName.trim(), phone: phone.trim(), city, role, verification_status: 'pending', products: description.trim() || null })
+        .select('id')
+        .single();
+      if (memberInsertError || !newMember) {
+        setError('ساخت پروفایل انجام نشد؛ اطلاعات را بررسی کنید یا با مدیر تماس بگیرید.');
+        setBusy(false);
+        return;
+      }
+      memberId = newMember.id;
+    }
+
+    const { error: roleInsertError } = await supabase.from('member_roles').insert({
+      member_id: memberId,
+      role_code: role,
+      approval_status: 'pending',
+      approved_by: null,
+      approved_at: null,
     });
-    if (insertError) setError('ثبت درخواست انجام نشد؛ دوباره تلاش کنید.');
-    else { setSaved(true); refresh(); }
+    if (roleInsertError) {
+      setError(roleInsertError.code === '23505' ? 'این درخواست نقش قبلاً ثبت شده است.' : 'ثبت درخواست عضویت انجام نشد؛ دوباره تلاش کنید.');
+    } else { setSaved(true); refresh(); }
     setBusy(false);
   }
 
@@ -94,13 +124,13 @@ function MembershipPage() {
             {requests.map(request => (
               <li key={request.id} className="rounded-lg border border-border p-4 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <strong>{roleLabels[request.requested_role]}</strong>
-                  <span className={`flex items-center gap-1 text-xs ${request.status === 'approved' ? 'text-primary' : request.status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <strong>{(roleLabels[request.role_code as AppRole] ?? request.role_code)}</strong>
+                  <span className={`flex items-center gap-1 text-xs ${request.approval_status === 'approved' ? 'text-primary' : request.approval_status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {request.status === 'approved' ? <CheckCircle2 className="size-4" /> : request.status === 'rejected' ? <XCircle className="size-4" /> : <Clock3 className="size-4" />}
-                    {statusLabels[request.status]}
+                    {statusLabels[request.approval_status]}
                   </span>
                 </div>
-                {request.reject_reason && <p className="mt-2 text-xs text-destructive">دلیل رد: {request.reject_reason}</p>}
+                
               </li>
             ))}
           </ul>
