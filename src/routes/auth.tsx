@@ -52,6 +52,7 @@ function AuthPage() {
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [city, setCity] = useState(cities[0] ?? "کرج");
+  const [activity, setActivity] = useState("");
   const [role, setRole] = useState<MainRole>("buyer");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
@@ -72,6 +73,11 @@ function AuthPage() {
     }
     if (mode === "signup" && !acceptedTerms) {
       setError("برای ادامه، پذیرش قوانین ترابار الزامی است.");
+      setBusy(false);
+      return;
+    }
+    if (mode === "signup" && role !== "buyer" && !activity.trim()) {
+      setError("برای نقش حرفه‌ای، نوع فعالیت یا محصولات را وارد کنید.");
       setBusy(false);
       return;
     }
@@ -135,7 +141,7 @@ function AuthPage() {
             city,
             role: memberRole,
             verification_status: "pending",
-            products: null,
+            products: role === "buyer" ? null : activity.trim(),
           })
           .select("id")
           .single();
@@ -222,6 +228,7 @@ function AuthPage() {
                 <>
                   <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" placeholder="نام کامل شما" autoComplete="name" /></label>
                   <label className="field-label">شهر محل فعالیت<select className="field-input" value={city} onChange={e => setCity(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
+                  {role !== "buyer" && <label className="field-label">نوع فعالیت / محصولات<input required value={activity} onChange={e => setActivity(e.target.value)} className="field-input" placeholder={role === "supplier" ? "مثلاً باغدار مرکبات، کشاورز یا سورتینگ" : "مثلاً حجره و نوع محصولات قابل عرضه"} /></label>}
                   <fieldset className="grid gap-3">
                     <legend className="mb-1 text-sm font-bold">نقش اصلی خود را انتخاب کنید</legend>
                     {roleOptions.map(item => {
