@@ -190,6 +190,24 @@ WITH CHECK (
   )
 );
 
+-- City managers can read member profiles only in their assigned cities.
+DROP POLICY IF EXISTS members_city_manager_read_assigned_city ON public.members;
+CREATE POLICY members_city_manager_read_assigned_city
+ON public.members
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.admin_users AS au
+    LEFT JOIN public.admin_user_cities AS auc ON auc.admin_user_id = au.id
+    WHERE au.auth_user_id = (SELECT auth.uid())
+      AND au.admin_role = 'city_manager'
+      AND au.is_active = true
+      AND (auc.city_name = public.members.city OR au.city = public.members.city)
+  )
+);
+
 -- City managers can review membership requests only for members in assigned cities.
 DROP POLICY IF EXISTS member_roles_city_manager_read ON public.member_roles;
 CREATE POLICY member_roles_city_manager_read
