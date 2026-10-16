@@ -1,4 +1,4 @@
-name: Verify Cloudflare Workers migration
+name: Verify Terrabar release candidate
 
 on:
   push:
@@ -18,27 +18,21 @@ on:
       - ".github/workflows/verify-cloudflare-migration.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install dependencies and refresh lockfile
-        run: bun install
-      - name: Build application
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Lint
+        run: bun run lint
+      - name: Unit tests
+        run: bun run test
+      - name: Build for production runtime
         run: bun run build
-      - name: Commit refreshed lockfile on migration branch
-        if: github.event_name == 'push'
-        run: |
-          if ! git diff --quiet -- bun.lock; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add bun.lock
-            git commit -m "chore: refresh bun lockfile for Cloudflare migration"
-            git push
-          fi
