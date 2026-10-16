@@ -50,8 +50,10 @@ jobs:
               exit 1
             fi
           done
+          # Normalize a common copy/paste variation: a trailing slash.
+          VITE_SUPABASE_URL="${VITE_SUPABASE_URL%/}"
           if [ "$VITE_SUPABASE_URL" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
-            echo "::error::VITE_SUPABASE_URL does not match the approved Terrabar Supabase project."
+            echo "::error::VITE_SUPABASE_URL must point to the approved Terrabar Supabase project (gznsxqeyhnuzglliijzz). Update that repository secret."
             exit 1
           fi
 
