@@ -9,6 +9,7 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -35,9 +36,11 @@ export function useAuth() {
     async function loadRoles() {
       if (!session?.user) {
         setRoles([]);
+        setRolesLoading(false);
         return;
       }
 
+      setRolesLoading(true);
       // Production schema uses members + member_roles, not user_roles.
       const [{ data: memberRoleRows, error: memberRoleError }, { data: adminRows, error: adminError }] =
         await Promise.all([
@@ -75,6 +78,7 @@ export function useAuth() {
       }
 
       setRoles([...nextRoles]);
+      setRolesLoading(false);
     }
 
     void loadRoles();
@@ -85,7 +89,7 @@ export function useAuth() {
     session,
     user: session?.user ?? null,
     roles,
-    loading,
+    loading: loading || (Boolean(session?.user) && rolesLoading),
     isAdmin: roles.includes('admin'),
     canAnnounce: roles.includes('supplier') || roles.includes('seller'),
   };
