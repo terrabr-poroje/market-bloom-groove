@@ -1,3 +1,4 @@
+# Deployment workflow: triggered on app changes in the migration branch.
 name: Deploy Terrabar stable Worker
 
 on:
