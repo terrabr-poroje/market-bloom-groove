@@ -21,5 +21,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Build for Cloudflare Workers
         run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - name: Deploy temporary preview Worker
         run: bunx wrangler deploy --temporary
