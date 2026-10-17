@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, Headphones, MapPin, Menu, Plus, Search, Sprout, UserRound, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Brand } from "./marketplace-brand";
+
+const linkButtonBase = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 px-4 py-2";
+const primaryLinkButton = `${linkButtonBase} bg-primary text-primary-foreground shadow hover:bg-primary/90`;
+const outlineLinkButton = `${linkButtonBase} border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground`;
+const ghostLinkButton = `${linkButtonBase} hover:bg-accent hover:text-accent-foreground`;
 
 export function MarketplaceShell({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
@@ -29,10 +33,10 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
             <Link to="/guide" activeProps={{ className: "text-primary font-bold" }}>راهنمای معامله</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-2">
-            <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link to="/auth"><UserRound />ثبت‌نام / ورود</Link></Button>
-            <Button asChild variant="outline" className="hidden sm:inline-flex"><Link to="/requests"><Search />درخواست بار</Link></Button>
-            <Button asChild><Link to="/announce"><Plus />اعلام بار</Link></Button>
-            <Button variant="ghost" size="icon" aria-label={menu ? "بستن منو" : "باز کردن منو"} aria-expanded={menu} onClick={() => setMenu(!menu)}>{menu ? <X /> : <Menu />}</Button>
+            <Link to="/auth" className={`${ghostLinkButton} hidden sm:inline-flex`}><UserRound />ثبت‌نام / ورود</Link>
+            <Link to="/requests" className={`${outlineLinkButton} hidden sm:inline-flex`}><Search />درخواست بار</Link>
+            <Link to="/announce" className={primaryLinkButton}><Plus />اعلام بار</Link>
+            <button type="button" className={`${ghostLinkButton} w-9 px-0`} aria-label={menu ? "بستن منو" : "باز کردن منو"} aria-expanded={menu} onClick={() => setMenu(!menu)}>{menu ? <X /> : <Menu />}</button>
           </div>
         </div>
 
@@ -73,7 +77,7 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
             <h3 className="mb-5 font-bold">ارتباط با ترابار</h3>
             <p className="flex items-center gap-2 text-sm text-footer-muted"><MapPin className="size-4 shrink-0" />ایران</p>
             <p className="mt-3 text-xs leading-6 text-footer-muted">اطلاعات رسمی تماس به‌زودی اعلام می‌شود.</p>
-            <Button asChild variant="outline" className="mt-4 border-footer-muted/30 bg-transparent text-footer-foreground"><Link to="/contact"><Headphones />تماس و پشتیبانی<ChevronLeft /></Link></Button>
+            <Link to="/contact" className={`${outlineLinkButton} mt-4 border-footer-muted/30 bg-transparent text-footer-foreground`}><Headphones />تماس و پشتیبانی<ChevronLeft /></Link>
           </div>
         </div>
         <div className="border-t border-footer-muted/20">
