@@ -80,6 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "ترابار | بازار میوه و تره‌بار ایران" },
+      { name: "description", content: "ترابار؛ بستری برای ارتباط باغدار، کشاورز، تأمین‌کننده، بارفروش و خریدار، معرفی بار و پیدا کردن محصولات بازار میوه و تره‌بار ایران." },
+      { property: "og:title", content: "ترابار | بازار میوه و تره‌بار ایران" },
+      { property: "og:description", content: "ارتباط فعالان بازار میوه و تره‌بار ایران برای معرفی بار و پیدا کردن محصول موردنیاز." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
