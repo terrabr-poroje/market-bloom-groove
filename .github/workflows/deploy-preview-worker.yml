@@ -93,13 +93,15 @@ jobs:
           set -euo pipefail
           base="https://terrabar-market-preview.rahavard.workers.dev"
           for route in / /auth /announce /requests; do
-            code="$(curl --silent --show-error --output /tmp/terrabar-preview.html --write-out '%{http_code}' --retry 5 --retry-delay 2 --retry-connrefused "${base}${route}")"
+            result="$(curl --silent --show-error --output /tmp/terrabar-preview.html --write-out '%{http_code} %{time_total}' --retry 5 --retry-delay 2 --retry-connrefused "${base}${route}")"
+            code="${result%% *}"
+            elapsed="${result##* }"
             if [ "$code" != "200" ]; then
-              echo "::error::Preview route ${route} returned HTTP ${code}"
+              echo "::error::Preview route ${route} returned HTTP ${code} after ${elapsed}s"
               head -c 500 /tmp/terrabar-preview.html || true
               exit 1
             fi
-            echo "PASS ${route}: HTTP 200"
+            echo "PASS ${route}: HTTP 200, ${elapsed}s"
           done
           grep -q 'ترابار' /tmp/terrabar-preview.html || {
             echo "::error::Preview route response did not contain the expected Terrabar page text."
