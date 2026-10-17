@@ -43,6 +43,7 @@ function Index() {
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
             <div className="mb-6 grid size-24 place-items-center rounded-2xl border-2 border-dashed border-primary/40 bg-accent text-primary sm:size-28" aria-label="جایگاه لوگوی ترابار">
               <Sprout className="size-12 sm:size-14" />
+              <span className="mt-1 text-xs font-semibold">محل درج لوگوی ترابار</span>
             </div>
             <p className="text-sm font-semibold text-primary">TERRABAR | ترابار</p>
             <h1 className="mt-3 text-3xl font-extrabold leading-relaxed text-foreground sm:text-5xl">بازار میوه و تره‌بار ایران</h1>
