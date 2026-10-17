@@ -55,8 +55,13 @@ function AdminLoginPage() {
     const { data, error: resetError } = await supabase.functions.invoke("admin-login", {
       body: { action: "reset", username: username.normalize("NFKC").trim().replace(/\\s+/g, " ") },
     });
-    if (resetError) setError("ارسال لینک تنظیم رمز انجام نشد. کمی بعد دوباره تلاش کنید.");
-    else setNotice(data?.message ?? "اگر نام کاربری متعلق به مدیر فعال باشد، لینک تنظیم رمز ارسال می‌شود.");
+    if (resetError) {
+      setError("ارتباط با سرویس بازیابی رمز برقرار نشد. دوباره تلاش کنید؛ اگر ادامه داشت، گزارش خطای سرویس باید بررسی شود.");
+    } else if (data?.ok === false) {
+      setError(data.error ?? "ارسال ایمیل بازیابی انجام نشد. تنظیمات ایمیل و آدرس بازگشت را بررسی کنید.");
+    } else {
+      setNotice(data?.message ?? "اگر نام کاربری متعلق به مدیر فعال باشد، لینک تنظیم رمز ارسال می‌شود.");
+    }
     setBusy(false);
   }
 
