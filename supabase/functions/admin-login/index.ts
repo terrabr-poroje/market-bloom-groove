@@ -1,0 +1,132 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const allowedOrigins = new Set([
+  "https://terrabar.ir",
+  "https://www.terrabar.ir",
+  "http://localhost:8080",
+]);
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://terrabar.ir",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
+
+function json(req: Request, body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+  });
+}
+
+function normalizeUsername(value: unknown): string {
+  return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
+  if (req.method !== "POST") return json(req, { error: "درخواست نامعتبر است." }, 405);
+
+  const url = Deno.env.get("SUPABASE_URL");
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !anon || !service) {
+    return json(req, { error: "تنظیمات امن ورود مدیر کامل نیست." }, 500);
+  }
+
+  let body: { action?: string; username?: string; password?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return json(req, { error: "اطلاعات ارسالی معتبر نیست." }, 400);
+  }
+
+  const username = normalizeUsername(body.username);
+  if (!username || username.length > 160) {
+    return json(req, { error: "نام کاربری را وارد کنید." }, 400);
+  }
+
+  const db = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+  const auth = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: admin, error: lookupError } = await db
+    .from("admin_users")
+    .select("auth_user_id, admin_role, is_active")
+    .ilike("login_username", username)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error("[admin-login] admin lookup failed:", lookupError.message);
+    return json(req, { error: "بررسی حساب مدیر موقتاً انجام نشد." }, 503);
+  }
+
+  const validAdmin = Boolean(
+    admin?.auth_user_id &&
+    ["main_admin", "city_manager"].includes(String(admin.admin_role))
+  );
+
+  if (body.action === "reset") {
+    if (!validAdmin) {
+      return json(req, {
+        ok: true,
+        message: "اگر نام کاربری متعلق به مدیر فعال باشد، لینک بازیابی به ایمیل ثبت‌شده ارسال می‌شود.",
+      });
+    }
+
+    const { data: userData, error: userError } = await db.auth.admin.getUserById(admin!.auth_user_id);
+    const email = userData.user?.email;
+    if (userError || !email) {
+      console.error("[admin-login] admin recovery identity unavailable:", userError?.message ?? "no email");
+      return json(req, {
+        ok: false,
+        error: "برای حساب مدیر ایمیل قابل‌بازیابی پیدا نشد؛ اتصال حساب مدیر باید بررسی شود.",
+      });
+    }
+
+    const { error: resetError } = await auth.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://terrabar.ir/admin-reset-password",
+    });
+
+    if (resetError) {
+      console.error("[admin-login] password recovery email failed:", resetError.message);
+      return json(req, {
+        ok: false,
+        error: "ارسال ایمیل بازیابی انجام نشد. تنظیم SMTP در Supabase و مجازبودن آدرس https://terrabar.ir/admin-reset-password را بررسی کنید.",
+      });
+    }
+
+    return json(req, {
+      ok: true,
+      message: "درخواست بازیابی ثبت شد. صندوق ورودی و پوشه هرزنامه ایمیل مدیر را بررسی کنید.",
+    });
+  }
+
+  const password = String(body.password ?? "");
+  if (!validAdmin || password.length < 10) {
+    return json(req, { error: "نام کاربری یا رمز عبور صحیح نیست." }, 401);
+  }
+
+  const { data: userData, error: userError } = await db.auth.admin.getUserById(admin!.auth_user_id);
+  const email = userData.user?.email;
+  if (userError || !email) {
+    console.error("[admin-login] admin login identity unavailable:", userError?.message ?? "no email");
+    return json(req, { error: "ورود مدیر موقتاً در دسترس نیست." }, 503);
+  }
+
+  const { data, error } = await auth.auth.signInWithPassword({ email, password });
+  if (error || !data.session || data.user?.id !== admin!.auth_user_id) {
+    return json(req, { error: "نام کاربری یا رمز عبور صحیح نیست." }, 401);
+  }
+
+  return json(req, {
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    },
+    role: admin!.admin_role,
+  });
+});
