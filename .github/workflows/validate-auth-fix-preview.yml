@@ -1,6 +1,12 @@
 name: Validate and preview auth loading fix
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/lib/auth.ts"
+      - ".github/workflows/validate-auth-fix-preview.yml"
   pull_request:
     branches:
       - main
