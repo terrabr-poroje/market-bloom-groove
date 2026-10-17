@@ -8,16 +8,17 @@ type CityPickerProps = {
   id?: string;
   placeholder?: string;
   disabled?: boolean;
+  options?: readonly string[];
 };
 
-export function CityPicker({ value, onChange, id, placeholder = "جست‌وجوی شهر یا استان…", disabled = false }: CityPickerProps) {
+export function CityPicker({ value, onChange, id, placeholder = "جست‌وجوی شهر یا استان…", disabled = false, options = cities }: CityPickerProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("fa");
-    if (!q) return cities;
-    return cities.filter(city => city.toLocaleLowerCase("fa").includes(q));
-  }, [query]);
+    if (!q) return options;
+    return options.filter(city => city.toLocaleLowerCase("fa").includes(q));
+  }, [query, options]);
 
   return (
     <div className="relative">
