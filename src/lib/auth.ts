@@ -14,11 +14,22 @@ export function useAuth() {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setLoading(false);
-    });
+    // Auth initialization must always settle; a rejected request must not leave
+    // the whole application waiting on its initial loading state forever.
+    void supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.error('[Terrabar auth] Could not restore session:', error);
+        setSession(data.session);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        console.error('[Terrabar auth] Session initialization failed:', error);
+        setSession(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (active) setSession(next);
@@ -41,9 +52,12 @@ export function useAuth() {
       }
 
       setRolesLoading(true);
-      // Production schema uses members + member_roles, not user_roles.
-      const [{ data: memberRoleRows, error: memberRoleError }, { data: adminRows, error: adminError }] =
-        await Promise.all([
+      try {
+        // Production schema uses members + member_roles, not user_roles.
+        const [
+          { data: memberRoleRows, error: memberRoleError },
+          { data: adminRows, error: adminError },
+        ] = await Promise.all([
           (supabase as any)
             .from('member_roles')
             .select('role_code, approval_status, members!inner(auth_user_id)')
@@ -56,29 +70,43 @@ export function useAuth() {
             .eq('is_active', true),
         ]);
 
-      if (!active) return;
+        if (!active) return;
 
-      const nextRoles = new Set<AppRole>();
-      if (!memberRoleError) {
-        for (const row of memberRoleRows ?? []) {
-          const roleCode = String(row.role_code).toLowerCase();
-          if (roleCode === 'supplier') nextRoles.add('supplier');
-          if (roleCode === 'seller' || roleCode === 'bar_seller') nextRoles.add('seller');
-          if (roleCode === 'buyer' || roleCode === 'special_buyer' || roleCode === 'professional_buyer') nextRoles.add('buyer');
+        const nextRoles = new Set<AppRole>();
+        if (!memberRoleError) {
+          for (const row of memberRoleRows ?? []) {
+            const roleCode = String(row.role_code).toLowerCase();
+            if (roleCode === 'supplier') nextRoles.add('supplier');
+            if (roleCode === 'seller' || roleCode === 'bar_seller') nextRoles.add('seller');
+            if (roleCode === 'buyer' || roleCode === 'special_buyer' || roleCode === 'professional_buyer') {
+              nextRoles.add('buyer');
+            }
+          }
+        } else {
+          console.error('[Terrabar auth] Could not load member roles:', memberRoleError);
         }
-      }
 
-      // Only the main administrator receives the global admin UI role.
-      if (!adminError) {
-        const adminRoleCodes = (adminRows ?? []).map(row => String(row.admin_role).toLowerCase());
-        if (adminRoleCodes.some(code => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
-          nextRoles.add('admin');
+        // Only the main administrator receives the global admin UI role.
+        if (!adminError) {
+          const adminRoleCodes = (adminRows ?? []).map(row => String(row.admin_role).toLowerCase());
+          if (adminRoleCodes.some(code => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
+            nextRoles.add('admin');
+          }
+          if (adminRoleCodes.includes('city_manager')) nextRoles.add('city_manager');
+        } else {
+          console.error('[Terrabar auth] Could not load admin roles:', adminError);
         }
-        if (adminRoleCodes.includes('city_manager')) nextRoles.add('city_manager');
-      }
 
-      setRoles([...nextRoles]);
-      setRolesLoading(false);
+        setRoles([...nextRoles]);
+      } catch (error) {
+        if (!active) return;
+        // Fail closed: a failed role lookup grants no extra permissions, but
+        // does not trap the user behind an endless loading indicator.
+        console.error('[Terrabar auth] Role lookup failed:', error);
+        setRoles([]);
+      } finally {
+        if (active) setRolesLoading(false);
+      }
     }
 
     void loadRoles();
