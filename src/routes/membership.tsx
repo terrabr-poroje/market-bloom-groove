@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, Send, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
-import { cities, pageHead } from '@/lib/marketplace';
+import { pageHead } from '@/lib/marketplace';
 import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/membership")({
@@ -28,7 +28,7 @@ function MembershipPage() {
   const [role, setRole] = useState<AppRole>('supplier');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [city, setCity] = useState(cities[0] ?? 'کرج');
+  const [city, setCity] = useState('کرج');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
