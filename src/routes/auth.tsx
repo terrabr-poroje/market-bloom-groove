@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, LogIn, Phone, ShieldCheck, Sprout, Store, UserRou
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { cities, pageHead } from "@/lib/marketplace";
+import { pageHead } from "@/lib/marketplace";
 import { CityPicker } from "@/components/city-picker";
 
 export const Route = createFileRoute("/auth")({
@@ -55,7 +55,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
-  const [city, setCity] = useState(cities[0] ?? "کرج");
+  const [city, setCity] = useState("کرج");
   const [activity, setActivity] = useState("");
   const [role, setRole] = useState<MainRole>("buyer");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
