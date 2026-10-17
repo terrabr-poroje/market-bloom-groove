@@ -56,30 +56,45 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
-      - name: Verify production target and domain routes
+      - name: Configure and verify the existing production Worker
         run: |
           set -euo pipefail
           node <<'NODE'
           const fs = require('fs');
-          const path = 'dist/server/wrangler.json';
+          const path = '.output/server/wrangler.json';
           const config = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (config.name !== 'terrabar-market') {
-            throw new Error('Refusing deployment: unexpected Worker name ' + config.name);
+
+          // Nitro generates a default Worker name. Set the explicitly approved
+          // existing production Worker and only its two existing custom domains.
+          config.name = 'terrabar-market';
+          config.routes = [
+            { pattern: 'terrabar.ir', custom_domain: true },
+            { pattern: 'www.terrabar.ir', custom_domain: true }
+          ];
+
+          if (!config.main) {
+            throw new Error('Refusing deployment: generated Worker entry point is missing.');
           }
-          const routes = config.routes || [];
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
+
+          const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (verified.name !== 'terrabar-market') {
+            throw new Error('Refusing deployment: unexpected Worker name ' + verified.name);
+          }
+          const routes = verified.routes || [];
           for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
             if (!routes.some(route => route.pattern === hostname && route.custom_domain === true)) {
-              throw new Error('Refusing deployment: expected existing custom domain route missing: ' + hostname);
+              throw new Error('Refusing deployment: approved custom domain missing: ' + hostname);
             }
           }
           if (routes.some(route => !['terrabar.ir', 'www.terrabar.ir'].includes(route.pattern))) {
             throw new Error('Refusing deployment: unexpected route found in production config');
           }
-          console.log('Verified: existing Worker terrabar-market and only the two approved hostnames.');
+          console.log('Verified: Worker terrabar-market and only the two approved hostnames.');
           NODE
 
       - name: Deploy to the existing production Worker
-        run: bunx wrangler deploy --config dist/server/wrangler.json
+        run: bunx wrangler deploy --config .output/server/wrangler.json
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
