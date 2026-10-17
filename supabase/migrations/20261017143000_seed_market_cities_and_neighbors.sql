@@ -101,7 +101,6 @@ INSERT INTO public.cities (city_name, is_active) VALUES
   ('طبس', true),
   ('علی‌آباد کتول', true),
   ('عنبرآباد', true),
-  ('فارس', true),
   ('فارسان', true),
   ('فردیس', true),
   ('فریمان', true),
