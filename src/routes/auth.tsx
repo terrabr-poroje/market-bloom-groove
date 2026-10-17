@@ -284,7 +284,7 @@ function AuthPage() {
                       );
                     })}
                   </fieldset>
-                  <label className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 accent-primary" /><span>قوانین و مقررات ترابار را می‌پذیرم.</span></label>
+                  <label className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 accent-primary" /><span><Link to="/rules" className="text-primary underline">قوانین و مقررات ترابار</Link> را می‌پذیرم.</span></label>
                 </>
               )}
               {!adminLogin && <fieldset className="grid gap-2">
