@@ -71,7 +71,7 @@ function AdminPage() {
         <ShieldAlert className="mx-auto mb-4 size-12 text-warning" />
         <h1 className="text-2xl font-extrabold">دسترسی محدود به مدیران</h1>
         <p className="mt-3 text-sm text-muted-foreground">این بخش فقط برای مدیران ترابار فعال است.</p>
-        <Button asChild className="mt-6"><Link to="/">بازگشت به بازار</Link></Button>
+        <div className="mt-6 flex flex-wrap justify-center gap-3"><Button asChild><Link to="/auth">ورود مدیر ترابار</Link></Button><Button asChild variant="outline"><Link to="/">بازگشت به بازار</Link></Button></div>
       </div></section>
     );
   }
