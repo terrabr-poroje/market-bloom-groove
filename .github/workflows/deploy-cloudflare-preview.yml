@@ -1,5 +1,6 @@
-# Deployment workflow: triggered on app changes in the migration branch.
-name: Deploy Terrabar stable Worker
+# Safety workflow: build and verify the migration branch only.
+# Intentionally does not deploy any Worker or modify production domains.
+name: Validate Terrabar migration build
 
 on:
   workflow_dispatch:
@@ -21,11 +22,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: terrabar-stable-cloudflare-deploy
-  cancel-in-progress: false
+  group: terrabar-migration-build-validation
+  cancel-in-progress: true
 
 jobs:
-  deploy-stable:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,66 +35,29 @@ jobs:
         with:
           bun-version: latest
 
-      # Accept the correctly named secret, plus the likely existing typo seen in the
-      # repository secret list (LOUDFLARE_API_TOKEN without the initial C).
-      - name: Validate required deployment settings
+      - name: Validate approved Supabase project settings
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
-          for name in CLOUDFLARE_API_TOKEN VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
             if [ -z "${!name:-}" ]; then
-              echo "::error::Missing GitHub Actions secret or alias for: $name"
+              echo "::error::Missing GitHub Actions secret: $name"
               exit 1
             fi
           done
-          # Normalize a common copy/paste variation: a trailing slash.
           VITE_SUPABASE_URL="${VITE_SUPABASE_URL%/}"
           if [ "$VITE_SUPABASE_URL" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
-            echo "::error::VITE_SUPABASE_URL must point to the approved Terrabar Supabase project (gznsxqeyhnuzglliijzz). Update that repository secret."
+            echo "::error::VITE_SUPABASE_URL must point to the approved Terrabar Supabase project (gznsxqeyhnuzglliijzz)."
             exit 1
           fi
 
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
 
-      # If the account ID secret is absent, ask Wrangler which account(s) the token
-      # can access. Auto-select only when exactly one account is available.
-      - name: Resolve Cloudflare account ID safely
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          bunx wrangler whoami --json > "$RUNNER_TEMP/wrangler-whoami.json"
-          ACCOUNT_ID="$(node -e '
-            const fs = require("fs");
-            const d = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-            const accounts = Array.isArray(d.accounts) ? d.accounts : [];
-            if (accounts.length !== 1 || !accounts[0].id) process.exit(2);
-            process.stdout.write(accounts[0].id);
-          ' "$RUNNER_TEMP/wrangler-whoami.json")" || {
-            echo "::error::Could not safely choose a single Cloudflare account. Add CLOUDFLARE_ACCOUNT_ID as a repository Actions secret."
-            exit 1
-          }
-          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT_ID" >> "$GITHUB_ENV"
-          echo "Resolved the single Cloudflare account available to this token."
-
-      - name: Build stable production bundle
+      - name: Build application (no deployment)
         run: bun run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-
-      - name: Deploy stable Worker to the connected Cloudflare account
-        run: bunx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
