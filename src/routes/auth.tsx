@@ -236,7 +236,7 @@ function AuthPage() {
           <h1 className="text-2xl font-extrabold">به ترابار خوش آمدید</h1>
           <p className="mt-3 text-sm text-muted-foreground">شما وارد حساب خود شده‌اید.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {isAdmin ? <Button asChild><Link to="/admin">ورود به پنل مدیریت</Link></Button> : <Button onClick={async () => { await supabase.auth.signOut(); setAdminLogin(true); setMode("login"); setAuthMethod("email"); setError(""); setNotice(""); }}>تغییر حساب / ورود مدیر</Button>}
+            {isAdmin ? <Button asChild><Link to="/admin">ورود به پنل مدیریت</Link></Button> : <Button onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/admin-login" }); }}>تغییر حساب / ورود مدیر</Button>}
             <Button asChild variant="outline"><Link to="/membership">درخواست عضویت و پیگیری وضعیت</Link></Button>
             <Button asChild variant="outline"><Link to="/">بازگشت به صفحه اصلی</Link></Button>
           </div>
@@ -262,8 +262,7 @@ function AuthPage() {
             <button type="button" onClick={() => { setMode("login"); setAdminLogin(false); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === "login" ? "bg-card shadow-sm" : "text-muted-foreground"}`}>ورود</button>
           </div>
 
-          <Button type="button" variant={adminLogin ? "default" : "outline"} className="mt-4 w-full" onClick={() => { setAdminLogin(true); setMode("login"); setAuthMethod("email"); setCodeSent(false); setCode(""); setError(""); setNotice(""); }}>ورود مدیر ترابار با ایمیل</Button>
-          {adminLogin && <p className="mt-2 text-xs text-muted-foreground">فقط حساب‌هایی که در پایگاه داده به‌عنوان مدیر فعال ثبت شده‌اند اجازه ورود به پنل مدیریت دارند.</p>}
+          <Button asChild variant="outline" className="mt-4 w-full"><Link to="/admin-login">ورود مدیر کل / مدیر شهر با نام کاربری و رمز عبور</Link></Button>
 
           {!codeSent ? (
             <form onSubmit={sendCode} className="mt-6 grid gap-4">
