@@ -9,7 +9,7 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <header className="border-b border-border bg-background">
         <div className="site-container flex min-h-16 items-center justify-between gap-3 py-3">
           <Link to="/" aria-label="ترابار، صفحه نخست" onClick={closeMenu} className="shrink-0">
             <Brand />
