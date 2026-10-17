@@ -203,7 +203,7 @@ function AuthPage() {
       setNotice("ورود با موفقیت انجام شد.");
     }
     setBusy(false);
-    window.setTimeout(() => navigate({ to: "/" }), 900);
+    window.setTimeout(() => navigate({ to: mode === "signup" && role !== "buyer" ? "/membership" : "/" }), 900);
   }
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بررسی حساب…</section>;
