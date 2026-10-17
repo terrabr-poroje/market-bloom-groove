@@ -105,7 +105,6 @@ export const cities = [
   "طبس",
   "علی‌آباد کتول",
   "عنبرآباد",
-  "فارس",
   "فارسان",
   "فردیس",
   "فریمان",
@@ -162,6 +161,7 @@ export const cities = [
   "یاسوج",
   "یزد"
 ] as const;
+export const qualities = ['ویژه', 'استاندارد', 'اقتصادی', 'توافقی'] as const;
 export type Quality = typeof qualities[number];
 export type SaleOption = { saleType: string; label: string; price: number; minimum: number };
 export type Load = { id: string | number; memberId?: string; saleType?: string; saleOptions?: SaleOption[]; packageType?: string; createdAt?: string; isSample?: boolean; product: string; variety: string; category: string; quality: Quality; city: string; province: string; weight: number; stock: number; minimum: number; price: number; ready: string; validity: string; seller: string; sellerType: string; image: string };
