@@ -5,7 +5,8 @@ import { CheckCircle2, Megaphone, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { cities, faNumber, pageHead, qualities } from '@/lib/marketplace';
+import { faNumber, pageHead, provinces, qualities } from '@/lib/marketplace';
+import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/announce")({
   head: () => pageHead('اعلام بار', 'ثبت و انتشار فوری بار برای اعضای تأییدشده ترابار.'),
@@ -30,7 +31,7 @@ const deliveryStatusLabels: Record<string, string> = { awaiting_payment: 'در �
 
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: cities[0] ?? 'کرج', province: cities[0] ?? 'کرج', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: 'کرج', province: 'البرز', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
   const [memberCity, setMemberCity] = useState('');
   const [memberRole, setMemberRole] = useState<'supplier' | 'bar_seller' | 'seller' | ''>('');
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
@@ -304,8 +305,8 @@ function AnnouncePage() {
               <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" type="date" /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <label className="field-label">شهر مبدأ بار<select required className="field-input" value={form.province} onChange={e => set('province')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
-              {memberRole === 'supplier' ? <label className="field-label">شهر محل عرضه<select required className="field-input" value={form.city} onChange={e => set('city')(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label> : <label className="field-label">شهر محل عرضه<input readOnly aria-readonly="true" value={memberCity || 'شهر عضویت ثبت نشده'} className="field-input bg-muted" /><span className="text-xs text-muted-foreground">برای بارفروش، شهر محل عرضه ثابت و مطابق شهر عضویت است.</span></label>}
+              <label className="field-label">شهر مبدأ بار<CityPicker value={form.province} onChange={value => set("province")(value)} id="load-province" options={provinces} placeholder="جست‌وجوی استان…" /></label>
+              {memberRole === 'supplier' ? <label className="field-label">شهر محل عرضه<CityPicker value={form.city} onChange={value => set("city")(value)} id="load-city" placeholder="جست‌وجوی شهر…" /></label> : <label className="field-label">شهر محل عرضه<input readOnly aria-readonly="true" value={memberCity || 'شهر عضویت ثبت نشده'} className="field-input bg-muted" /><span className="text-xs text-muted-foreground">برای بارفروش، شهر محل عرضه ثابت و مطابق شهر عضویت است.</span></label>}
             </div>
             <div className="grid grid-cols-3 gap-3">
               <label className="field-label">نوع بسته<select required value={form.packageType} onChange={e => set('packageType')(e.target.value)} className="field-input"><option>کارتن</option><option>سبد</option><option>کیسه</option><option>جعبه</option><option>بسته‌بندی فله</option><option>بسته‌بندی اختصاصی</option></select></label>
