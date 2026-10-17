@@ -1,0 +1,38 @@
+name: Verify Terrabar release candidate
+
+on:
+  push:
+    branches:
+      - cloudflare-workers-migration
+    paths-ignore:
+      - "bun.lock"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "bun.lock"
+      - "vite.config.ts"
+      - "wrangler.jsonc"
+      - "src/**"
+      - ".github/workflows/verify-cloudflare-migration.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Lint
+        run: bun run lint
+      - name: Unit tests
+        run: bun run test
+      - name: Build for production runtime
+        run: bun run build

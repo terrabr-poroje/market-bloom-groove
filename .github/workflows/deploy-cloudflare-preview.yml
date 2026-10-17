@@ -1,0 +1,63 @@
+# Safety workflow: build and verify the migration branch only.
+# Intentionally does not deploy any Worker or modify production domains.
+name: Validate Terrabar migration build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cloudflare-workers-migration
+    paths:
+      - ".github/workflows/deploy-cloudflare-preview.yml"
+      - "src/**"
+      - "app/**"
+      - "public/**"
+      - "package.json"
+      - "bun.lock*"
+      - "vite.config.ts"
+      - "wrangler.jsonc"
+      - "tsconfig.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terrabar-migration-build-validation
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate approved Supabase project settings
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+          VITE_SUPABASE_URL="${VITE_SUPABASE_URL%/}"
+          if [ "$VITE_SUPABASE_URL" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
+            echo "::error::VITE_SUPABASE_URL must point to the approved Terrabar Supabase project (gznsxqeyhnuzglliijzz)."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build application (no deployment)
+        run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
