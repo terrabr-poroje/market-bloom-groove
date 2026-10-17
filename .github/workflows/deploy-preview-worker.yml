@@ -87,3 +87,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke-test public preview routes
+        run: |
+          set -euo pipefail
+          base="https://terrabar-market-preview.rahavard.workers.dev"
+          for route in / /auth /announce /requests; do
+            code="$(curl --silent --show-error --output /tmp/terrabar-preview.html --write-out '%{http_code}' --retry 5 --retry-delay 2 --retry-connrefused "${base}${route}")"
+            if [ "$code" != "200" ]; then
+              echo "::error::Preview route ${route} returned HTTP ${code}"
+              head -c 500 /tmp/terrabar-preview.html || true
+              exit 1
+            fi
+            echo "PASS ${route}: HTTP 200"
+          done
+          grep -q 'ترابار' /tmp/terrabar-preview.html || {
+            echo "::error::Preview route response did not contain the expected Terrabar page text."
+            exit 1
+          }
