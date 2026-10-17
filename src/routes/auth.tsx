@@ -113,7 +113,7 @@ function AuthPage() {
       if (authMethod === "phone") setPhone(normalizedPhone);
       else setEmail(normalizedEmail);
       setCodeSent(true);
-      setNotice(authMethod === "phone" ? "کد یک‌بارمصرف پیامکی ارسال شد." : "کد تأیید به ایمیل شما ارسال شد؛ صندوق ورودی و پوشه هرزنامه را بررسی کنید.");
+      setNotice(authMethod === "phone" ? "کد یک‌بارمصرف پیامکی ارسال شد." : "کد عددی تأیید به ایمیل شما ارسال شد؛ صندوق ورودی و پوشه هرزنامه را بررسی کنید.");
     }
     setBusy(false);
   }
@@ -232,7 +232,7 @@ function AuthPage() {
             <div className="grid size-12 place-items-center rounded-xl bg-accent text-primary"><Phone className="size-6" /></div>
             <div>
               <h1 className="text-2xl font-extrabold">{mode === "signup" ? "ثبت‌نام در ترابار" : "ورود به ترابار"}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">ورود امن با شماره موبایل و کد یک‌بارمصرف</p>
+              <p className="mt-1 text-sm text-muted-foreground">ورود امن با کد یک‌بارمصرف پیامکی یا ایمیلی</p>
             </div>
           </div>
 
@@ -281,10 +281,10 @@ function AuthPage() {
           ) : (
             <form onSubmit={verifyCode} className="mt-6 grid gap-4">
               <div className="rounded-lg bg-accent/40 p-4 text-sm"><p className="font-semibold">کد تأیید برای {authMethod === "phone" ? phone : email} ارسال شد</p><p className="mt-1 text-xs text-muted-foreground">کد دریافت‌شده را وارد کنید تا {mode === "signup" ? "ثبت‌نام" : "ورود"} کامل شود.</p></div>
-              <label className="field-label">کد یک‌بارمصرف<input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={4} maxLength={8} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} className="field-input text-center text-lg tracking-[0.4em]" placeholder="------" /></label>
+              <label className="field-label">کد یک‌بارمصرف<input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} className="field-input text-center text-lg tracking-[0.4em]" placeholder="000000" /></label>
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
-              <Button type="submit" disabled={busy || code.trim().length < 4}>{busy ? "در حال بررسی…" : "تأیید کد و ادامه"}<ShieldCheck className="mr-2 size-4" /></Button>
+              <Button type="submit" disabled={busy || code.trim().length !== 6}>{busy ? "در حال بررسی…" : "تأیید کد و ادامه"}<ShieldCheck className="mr-2 size-4" /></Button>
               <Button type="button" variant="outline" disabled={busy} onClick={() => { setCodeSent(false); setCode(""); setError(""); setNotice(""); }}>اصلاح شماره / ارسال دوباره</Button>
             </form>
           )}
