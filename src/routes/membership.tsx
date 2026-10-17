@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
 import { cities, pageHead } from '@/lib/marketplace';
+import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/membership")({
   head: () => pageHead('درخواست عضویت', 'درخواست عضویت به‌عنوان خریدار، تأمین‌کننده یا بارفروش در ترابار؛ پس از تأیید مدیر فعال می‌شود.'),
@@ -149,7 +150,7 @@ function MembershipPage() {
             <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" /></label>
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">شماره تماس<input required dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09…" /></label>
-              <label className="field-label">شهر<select className="field-input" value={city} onChange={e => setCity(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
+              <label className="field-label">شهر<CityPicker value={city} onChange={setCity} id="membership-city" /></label>
             </div>
             <label className="field-label">توضیحات (اختیاری)<textarea value={description} onChange={e => setDescription(e.target.value)} className="field-input min-h-20 resize-y" placeholder="نوع فعالیت، محصولات، سابقه…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
