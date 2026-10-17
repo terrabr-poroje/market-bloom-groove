@@ -45,7 +45,7 @@ function normalizeIranPhone(value: string) {
 }
 
 function AuthPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [adminLogin, setAdminLogin] = useState(false);
@@ -236,7 +236,8 @@ function AuthPage() {
           <h1 className="text-2xl font-extrabold">به ترابار خوش آمدید</h1>
           <p className="mt-3 text-sm text-muted-foreground">شما وارد حساب خود شده‌اید.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button asChild><Link to="/membership">درخواست عضویت و پیگیری وضعیت</Link></Button>
+            {isAdmin ? <Button asChild><Link to="/admin">ورود به پنل مدیریت</Link></Button> : <Button onClick={async () => { await supabase.auth.signOut(); setAdminLogin(true); setMode("login"); setAuthMethod("email"); setError(""); setNotice(""); }}>تغییر حساب / ورود مدیر</Button>}
+            <Button asChild variant="outline"><Link to="/membership">درخواست عضویت و پیگیری وضعیت</Link></Button>
             <Button asChild variant="outline"><Link to="/">بازگشت به صفحه اصلی</Link></Button>
           </div>
         </div>
