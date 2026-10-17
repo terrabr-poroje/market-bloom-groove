@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Headphones, MapPin, Menu, X, Sprout } from "lucide-react";
+import { Headphones, MapPin, Menu, X } from "lucide-react";
 import { Brand } from "./marketplace-brand";
 
 export function MarketplaceShell({ children }: { children: ReactNode }) {
@@ -10,7 +10,7 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="site-container flex min-h-16 flex-row-reverse items-center justify-between gap-3 py-3">
+        <div className="site-container flex min-h-16 items-center justify-between gap-3 py-3">
           <Link to="/" aria-label="ترابار، صفحه نخست" onClick={closeMenu} className="shrink-0">
             <Brand />
           </Link>
@@ -49,7 +49,6 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           <p className="text-sm leading-7 text-muted-foreground">بازار میوه و تره‌بار ایران؛ ارتباط باغدار، تأمین‌کننده، بارفروش و خریدار.</p>
           <Link to="/contact" className="inline-flex items-center gap-2 text-sm text-primary hover:underline"><Headphones className="size-4" />پشتیبانی</Link>
           <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="size-3.5" />ایران</span>
-          <span className="sr-only"><Sprout /></span>
         </div>
       </footer>
     </>
