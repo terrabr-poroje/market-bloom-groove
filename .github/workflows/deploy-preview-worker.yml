@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - terrabar-repair-preview
+      - cloudflare-workers-migration
     paths:
       - ".github/workflows/deploy-preview-worker.yml"
       - "src/**"
