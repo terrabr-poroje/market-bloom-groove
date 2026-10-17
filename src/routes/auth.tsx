@@ -48,6 +48,7 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [adminLogin, setAdminLogin] = useState(false);
   const [authMethod, setAuthMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -91,7 +92,7 @@ function AuthPage() {
     }
 
     const authOptions = {
-      shouldCreateUser: mode === "signup",
+      shouldCreateUser: mode === "signup" && !adminLogin,
       data: mode === "signup"
         ? {
             full_name: fullName.trim(),
@@ -131,6 +132,25 @@ function AuthPage() {
     if (verifyError || !data.user) {
       setError("کد تأیید معتبر نیست یا منقضی شده است؛ دوباره بررسی کنید.");
       setBusy(false);
+      return;
+    }
+
+    if (adminLogin) {
+      const { data: adminRecord, error: adminLookupError } = await (supabase as any)
+        .from("admin_users")
+        .select("id, admin_role")
+        .eq("auth_user_id", data.user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (adminLookupError || !adminRecord || !["main_admin", "city_manager"].includes(String(adminRecord.admin_role))) {
+        await supabase.auth.signOut();
+        setError("این حساب دسترسی فعال مدیریت ترابار ندارد. با حساب مدیر مجاز وارد شوید.");
+        setBusy(false);
+        return;
+      }
+      setNotice("ورود مدیر با موفقیت تأیید شد؛ در حال انتقال به پنل مدیریت…");
+      setBusy(false);
+      window.setTimeout(() => navigate({ to: "/admin" }), 500);
       return;
     }
 
@@ -237,9 +257,12 @@ function AuthPage() {
           </div>
 
           <div className="mt-6 grid grid-cols-2 rounded-lg bg-secondary p-1">
-            <button type="button" onClick={() => { setMode("signup"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === "signup" ? "bg-card shadow-sm" : "text-muted-foreground"}`}>ثبت‌نام</button>
-            <button type="button" onClick={() => { setMode("login"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === "login" ? "bg-card shadow-sm" : "text-muted-foreground"}`}>ورود</button>
+            <button type="button" onClick={() => { setMode("signup"); setAdminLogin(false); setAuthMethod("phone"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === "signup" ? "bg-card shadow-sm" : "text-muted-foreground"}`}>ثبت‌نام</button>
+            <button type="button" onClick={() => { setMode("login"); setAdminLogin(false); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === "login" ? "bg-card shadow-sm" : "text-muted-foreground"}`}>ورود</button>
           </div>
+
+          <Button type="button" variant={adminLogin ? "default" : "outline"} className="mt-4 w-full" onClick={() => { setAdminLogin(true); setMode("login"); setAuthMethod("email"); setCodeSent(false); setCode(""); setError(""); setNotice(""); }}>ورود مدیر ترابار با ایمیل</Button>
+          {adminLogin && <p className="mt-2 text-xs text-muted-foreground">فقط حساب‌هایی که در پایگاه داده به‌عنوان مدیر فعال ثبت شده‌اند اجازه ورود به پنل مدیریت دارند.</p>}
 
           {!codeSent ? (
             <form onSubmit={sendCode} className="mt-6 grid gap-4">
@@ -264,16 +287,16 @@ function AuthPage() {
                   <label className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 accent-primary" /><span>قوانین و مقررات ترابار را می‌پذیرم.</span></label>
                 </>
               )}
-              <fieldset className="grid gap-2">
+              {!adminLogin && <fieldset className="grid gap-2">
                 <legend className="text-sm font-bold">روش ورود یا ثبت‌نام را انتخاب کنید</legend>
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => { setAuthMethod("phone"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-lg border p-3 text-sm font-semibold ${authMethod === "phone" ? "border-primary bg-accent/50" : "border-border"}`}>شماره موبایل</button>
                   <button type="button" onClick={() => { setAuthMethod("email"); setCodeSent(false); setError(""); setNotice(""); }} className={`rounded-lg border p-3 text-sm font-semibold ${authMethod === "email" ? "border-primary bg-accent/50" : "border-border"}`}>ایمیل</button>
                 </div>
-              </fieldset>
-              {authMethod === "phone"
+              </fieldset>}
+              {authMethod === "phone" && !adminLogin
                 ? <label className="field-label">شماره موبایل<input required dir="ltr" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09123456789" /></label>
-                : <label className="field-label">ایمیل<input required type="email" dir="ltr" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /><span className="text-xs font-normal text-muted-foreground">می‌توانید بدون شماره موبایل با ایمیل ثبت‌نام کنید.</span></label>}
+                : <label className="field-label">ایمیل<input required type="email" dir="ltr" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /><span className="text-xs font-normal text-muted-foreground">{adminLogin ? "کد ورود فقط برای ایمیل حساب مدیر فعال ارسال می‌شود." : "می‌توانید بدون شماره موبایل با ایمیل ثبت‌نام کنید."}</span></label>}
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
               <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد تأیید"}<Phone className="mr-2 size-4" /></Button>
