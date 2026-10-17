@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, LogIn, PackagePlus, Search, Sprout } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/")({
-  head: () => pageHead(
-    "ترابار | بازار میوه و تره‌بار ایران",
-    "ترابار؛ بستری برای معرفی بار، درخواست خرید و همکاری فعالان بازار میوه و تره‌بار."
-  ),
+  head: () =>
+    pageHead(
+      "ترابار | بازار میوه و تره‌بار ایران",
+      "ترابار؛ بستری برای معرفی بار، درخواست خرید و همکاری فعالان بازار میوه و تره‌بار."
+    ),
   component: Index,
 });
 
@@ -69,7 +69,7 @@ function Index() {
                   <div className="mb-4 grid size-12 place-items-center rounded-xl bg-accent text-primary"><Icon className="size-6" /></div>
                   <h3 className="text-lg font-bold">{item.title}</h3>
                   <p className="mt-3 flex-1 text-sm leading-7 text-muted-foreground">{item.description}</p>
-                  <Button asChild className="mt-6 w-full"><Link to={item.to}>{item.action}<ArrowLeft className="mr-auto size-4" /></Link></Button>
+                  <Link to={item.to} className="mt-6 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">{item.action}<ArrowLeft className="mr-auto size-4" /></Link>
                 </article>
               );
             })}
