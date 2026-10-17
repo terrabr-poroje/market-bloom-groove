@@ -7,7 +7,8 @@ on:
       - "src/**"
       - "public/**"
       - "package.json"
-      - "package-lock.json"
+      - "bun.lock"
+      - "bun.lockb"
       - "vite.config.*"
       - ".github/workflows/deploy-terrabar-cloudflare.yml"
   workflow_dispatch:
@@ -27,44 +28,82 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version: latest
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Validate approved Supabase settings
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name. Production was not changed."
+              exit 1
+            fi
+          done
+          if [ "${VITE_SUPABASE_URL%/}" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
+            echo "::error::Refusing deployment: Supabase URL is not the approved Terrabar project."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
 
       - name: Build production app
-        run: npm run build
+        run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
-      - name: Verify Cloudflare build output
+      - name: Verify generated Cloudflare Worker config
         run: |
-          test -f .output/server/index.mjs
-          test -d .output/public
-          echo "Build output verified."
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const path = '.output/server/wrangler.json';
+          if (!fs.existsSync(path)) {
+            throw new Error('Refusing deployment: generated Cloudflare Worker config is missing.');
+          }
+          const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (!config.main) {
+            throw new Error('Refusing deployment: generated Worker entry point is missing.');
+          }
+          config.name = 'terrabar-market';
+          config.routes = [
+            { pattern: 'terrabar.ir', custom_domain: true },
+            { pattern: 'www.terrabar.ir', custom_domain: true }
+          ];
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
+          console.log('Verified generated Worker config for terrabar-market.');
+          NODE
 
       - name: Deploy existing Terrabar Worker
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: 980efee43cd0c6512bb7ffce38e319c6
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::GitHub secret CLOUDFLARE_API_TOKEN is missing. Production was not changed."
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::Missing Cloudflare API token secret. Production was not changed."
             exit 1
           fi
-          npx --yes wrangler@4 deploy .output/server/index.mjs \
-            --assets .output/public \
-            --name terrabar-market \
-            --compatibility-date 2026-10-17 \
-            --keep-vars
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::Missing CLOUDFLARE_ACCOUNT_ID secret. Production was not changed."
+            exit 1
+          fi
+          bunx wrangler deploy --config .output/server/wrangler.json
 
       - name: Smoke-test production routes
         run: |
-          set -e
-          for path in / /auth /announce /requests; do
-            status=$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "https://terrabar.ir$path")
-            echo "$path -> HTTP $status"
-            test "$status" = "200"
+          set -euo pipefail
+          for base in https://terrabar.ir https://www.terrabar.ir; do
+            for route in / /auth /announce /requests; do
+              status="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' --retry 3 --retry-delay 2 "$base$route")"
+              echo "$base$route -> HTTP $status"
+              test "$status" = "200"
+            done
           done
