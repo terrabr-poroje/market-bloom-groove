@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Package, ShieldAlert, Users, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,12 +18,24 @@ const qualityLabels: Record<string, string> = { premium: 'ویژه', standard: '
 type MemberRequest = { id: string; member_id: string; role_code: string; approval_status: string; created_at: string; members: { full_name: string; phone: string; city: string } | null };
 type AdminOrder = { id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
 type AdminPurchaseRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
+type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
+type CityManager = { id: string; auth_user_id: string; display_name: string; login_username: string; city: string; is_active: boolean };
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
 
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
   const canManage = isAdmin || roles.includes('city_manager');
-  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases'>('requests');
+  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers'>('requests');
+  const [managerCandidates, setManagerCandidates] = useState<ManagerCandidate[]>([]);
+  const [cityManagers, setCityManagers] = useState<CityManager[]>([]);
+  const [activeCities, setActiveCities] = useState<string[]>([]);
+  const [managerUserId, setManagerUserId] = useState('');
+  const [managerName, setManagerName] = useState('');
+  const [managerUsername, setManagerUsername] = useState('');
+  const [managerCity, setManagerCity] = useState('');
+  const [managerBusy, setManagerBusy] = useState(false);
+  const [managerError, setManagerError] = useState('');
+  const [managerNotice, setManagerNotice] = useState('');
   const [requests, setRequests] = useState<MemberRequest[]>([]);
   const [pendingLoads, setPendingLoads] = useState<PendingLoad[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -50,6 +62,14 @@ function AdminPage() {
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }: { data: AdminPurchaseRequest[] | null }) => setPurchaseRequests(data ?? []));
+    if (isAdmin) {
+      void supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } }).then(({ data, error }) => {
+        if (error || !data) { setManagerError('فهرست مدیران شهر دریافت نشد.'); return; }
+        setManagerCandidates((data.members ?? []) as ManagerCandidate[]);
+        setCityManagers((data.managers ?? []) as CityManager[]);
+        setActiveCities((data.cities ?? []).map((item: { city_name: string }) => item.city_name));
+      });
+    }
   }
   useEffect(() => { if (canManage) refresh(); }, [canManage]);
 
@@ -76,6 +96,25 @@ function AdminPage() {
     const { error } = await (supabase as any).from('loads').update({ status: 'rejected' }).eq('id', load.id);
     if (error) { window.alert('رد بار انجام نشد؛ دسترسی مدیر را بررسی کنید.'); return; }
     refresh();
+  }
+  async function saveCityManager(event: React.FormEvent) {
+    event.preventDefault(); setManagerBusy(true); setManagerError(''); setManagerNotice('');
+    const selected = managerCandidates.find(item => item.auth_user_id === managerUserId);
+    if (!selected || !managerCity || !managerName.trim() || !managerUsername.trim()) { setManagerError('حساب، نام و نام کاربری و شهر را کامل انتخاب کنید.'); setManagerBusy(false); return; }
+    const { data, error } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'assign', targetAuthUserId: managerUserId, city: managerCity, displayName: managerName.trim(), username: managerUsername.trim() } });
+    if (error || data?.error) { setManagerError(data?.error ?? 'ثبت مدیر شهر انجام نشد.'); setManagerBusy(false); return; }
+    setManagerNotice(data?.message ?? 'مدیر شهر ثبت شد.');
+    const { data: refreshed } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } });
+    if (refreshed) { setManagerCandidates((refreshed.members ?? []) as ManagerCandidate[]); setCityManagers((refreshed.managers ?? []) as CityManager[]); setActiveCities((refreshed.cities ?? []).map((item: { city_name: string }) => item.city_name)); }
+    setManagerBusy(false);
+  }
+  async function deactivateCityManager(manager: CityManager) {
+    if (!window.confirm(`دسترسی مدیریتی ${manager.display_name} غیرفعال شود؟`)) return;
+    const { data, error } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'deactivate', targetAuthUserId: manager.auth_user_id } });
+    if (error || data?.error) { setManagerError(data?.error ?? 'غیرفعال‌سازی انجام نشد.'); return; }
+    setManagerNotice(data?.message ?? 'مدیر شهر غیرفعال شد.');
+    const { data: refreshed } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } });
+    if (refreshed) { setManagerCandidates((refreshed.members ?? []) as ManagerCandidate[]); setCityManagers((refreshed.managers ?? []) as CityManager[]); setActiveCities((refreshed.cities ?? []).map((item: { city_name: string }) => item.city_name)); }
   }
   async function updatePurchaseStatus(request: AdminPurchaseRequest, status: string) {
     const { error } = await (supabase as any).from('purchase_requests').update({ status }).eq('id', request.id);
@@ -104,6 +143,7 @@ function AdminPage() {
         <Button variant={tab === 'loads' ? 'default' : 'ghost'} onClick={() => setTab('loads')}><Package />بارهای در انتظار تأیید ({faNumber(pendingLoads.length)})</Button>
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
+        {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
       </div>
 
       {tab === 'requests' && (
@@ -125,6 +165,39 @@ function AdminPage() {
         </div>
       )}
 
+
+
+      {tab === 'managers' && isAdmin && (
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h2 className="text-lg font-bold">تخصیص مدیر شهر</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">فقط حسابی را انتخاب کنید که قبلاً ثبت‌نام کرده و ایمیل آن تأیید شده باشد. مدیر شهر فقط به شهر تعیین‌شده دسترسی می‌گیرد.</p>
+            <form className="mt-5 grid gap-4" onSubmit={saveCityManager}>
+              <label className="field-label">حساب کاربری
+                <select required className="field-input" value={managerUserId} onChange={event => { const item = managerCandidates.find(candidate => candidate.auth_user_id === event.target.value); setManagerUserId(event.target.value); if (item) { setManagerName(item.full_name); setManagerUsername(item.full_name); setManagerCity(item.city || activeCities[0] || ''); } }}>
+                  <option value="">انتخاب کاربر ثبت‌نام‌شده</option>
+                  {managerCandidates.map(item => <option key={item.auth_user_id} value={item.auth_user_id}>{item.full_name} — {item.city} ({item.role})</option>)}
+                </select>
+              </label>
+              <label className="field-label">نام و نام خانوادگی مدیر<input required className="field-input" value={managerName} onChange={event => setManagerName(event.target.value)} /></label>
+              <label className="field-label">نام کاربری ورود<input required className="field-input" value={managerUsername} onChange={event => setManagerUsername(event.target.value)} /></label>
+              <label className="field-label">شهر تحت مدیریت<select required className="field-input" value={managerCity} onChange={event => setManagerCity(event.target.value)}><option value="">انتخاب شهر</option>{activeCities.map(city => <option key={city} value={city}>{city}</option>)}</select></label>
+              {managerError && <p role="alert" className="text-sm text-destructive">{managerError}</p>}
+              {managerNotice && <p role="status" className="text-sm text-primary">{managerNotice}</p>}
+              <Button type="submit" disabled={managerBusy}>{managerBusy ? 'در حال ذخیره…' : 'ثبت / به‌روزرسانی مدیر شهر'}</Button>
+            </form>
+          </div>
+          <div className="grid content-start gap-3">
+            <h2 className="text-lg font-bold">فهرست مدیران شهر</h2>
+            {cityManagers.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز مدیر شهری تعریف نشده است.</p>}
+            {cityManagers.map(manager => <div key={manager.id} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>{manager.display_name || manager.login_username}</strong><p className="mt-1 text-sm text-muted-foreground">نام کاربری: {manager.login_username} · شهر: {manager.city}</p><p className="mt-1 text-xs">{manager.is_active ? 'فعال' : 'غیرفعال'}</p></div>
+                {manager.is_active && <Button type="button" variant="outline" size="sm" onClick={() => void deactivateCityManager(manager)}>غیرفعال‌کردن</Button>}
+              </div>
+            </div>)}
+          </div>
+        </div>
+      )}
 
       {tab === 'orders' && (
         <div className="mt-6 grid gap-4">
