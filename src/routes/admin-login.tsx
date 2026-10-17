@@ -73,7 +73,7 @@ function AdminLoginPage() {
               <input required autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} className="field-input" placeholder="نام و نام خانوادگی مدیر" />
             </label>
             <label className="field-label">رمز عبور
-              <input required type="password" autoComplete="current-password" minLength={10} value={password} onChange={e => setPassword(e.target.value)} className="field-input" placeholder="حداقل ۸ نویسه" dir="ltr" />
+              <input required type="password" autoComplete="current-password" minLength={10} value={password} onChange={e => setPassword(e.target.value)} className="field-input" placeholder="حداقل ۱۰ نویسه" dir="ltr" />
             </label>
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
