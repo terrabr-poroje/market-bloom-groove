@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { cities, pageHead } from "@/lib/marketplace";
+import { CityPicker } from "@/components/city-picker";
 
 export const Route = createFileRoute("/auth")({
   head: () => pageHead("ورود و ثبت‌نام", "ثبت‌نام و ورود با شماره موبایل در ترابار؛ انتخاب نقش خریدار، تأمین‌کننده یا بارفروش."),
@@ -269,7 +270,7 @@ function AuthPage() {
               {mode === "signup" && (
                 <>
                   <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" placeholder="نام کامل شما" autoComplete="name" /></label>
-                  <label className="field-label">شهر محل فعالیت<select className="field-input" value={city} onChange={e => setCity(e.target.value)}>{cities.map(item => <option key={item}>{item}</option>)}</select></label>
+                  <label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="signup-city" /></label>
                   {role !== "buyer" && <label className="field-label">نوع فعالیت / محصولات<input required value={activity} onChange={e => setActivity(e.target.value)} className="field-input" placeholder={role === "supplier" ? "مثلاً باغدار مرکبات، کشاورز یا سورتینگ" : "مثلاً حجره و نوع محصولات قابل عرضه"} /></label>}
                   <fieldset className="grid gap-3">
                     <legend className="mb-1 text-sm font-bold">نقش اصلی خود را انتخاب کنید</legend>
