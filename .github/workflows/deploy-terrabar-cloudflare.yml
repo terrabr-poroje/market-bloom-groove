@@ -84,15 +84,11 @@ jobs:
       - name: Deploy existing Terrabar Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: "980efee43cd0c6512bb7ffce38e319c6"
         run: |
           set -euo pipefail
           if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
             echo "::error::Missing Cloudflare API token secret. Production was not changed."
-            exit 1
-          fi
-          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
-            echo "::error::Missing CLOUDFLARE_ACCOUNT_ID secret. Production was not changed."
             exit 1
           fi
           bunx wrangler deploy --config .output/server/wrangler.json
