@@ -1,0 +1,60 @@
+name: Configure Terrabar email OTP template
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/configure-terrabar-email-otp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configure-email-otp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Configure approved Supabase project's Magic Link email as a six-digit OTP
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::Missing GitHub Actions secret SUPABASE_ACCESS_TOKEN. No Supabase settings were changed."
+            exit 1
+          fi
+
+          api="https://api.supabase.com/v1/projects/gznsxqeyhnuzglliijzz/config/auth"
+          payload="$(jq -n \
+            --arg subject "کد ورود ترابار" \
+            --arg content '<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8"><h2>کد ورود ترابار</h2><p>برای ورود یا تأیید ایمیل خود، کد یک‌بارمصرف زیر را در سایت ترابار وارد کنید:</p><p style="font-size:32px;font-weight:bold;letter-spacing:6px;text-align:center">{{ .Token }}</p><p>این کد را در اختیار دیگران قرار ندهید. اگر شما درخواست ورود نداده‌اید، این ایمیل را نادیده بگیرید.</p></div>') \
+            '{mailer_subjects_magic_link:$subject,mailer_templates_magic_link_content:$content}')"
+
+          curl --fail --silent --show-error \
+            --request PATCH "$api" \
+            --header "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data "$payload" \
+            --output /tmp/supabase-auth-update.json
+
+          echo "Supabase accepted the email-template update. Checking the saved template..."
+          curl --fail --silent --show-error "$api" \
+            --header "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            --header "Accept: application/json" \
+            --output /tmp/supabase-auth-verify.json
+
+          node <<'NODE'
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync('/tmp/supabase-auth-verify.json', 'utf8'));
+          const subject = config.mailer_subjects_magic_link || '';
+          const template = config.mailer_templates_magic_link_content || '';
+          if (!template.includes('{{ .Token }}') || template.includes('{{ .ConfirmationURL }}')) {
+            throw new Error('Saved Magic Link template did not verify as OTP-only. Please inspect the Supabase Auth template.');
+          }
+          if (!subject.includes('کد ورود ترابار')) {
+            throw new Error('Saved email subject did not verify.');
+          }
+          console.log('Verified: Magic Link email template contains the OTP token and no confirmation URL.');
+          NODE
