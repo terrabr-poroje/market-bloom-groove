@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Search, ChevronDown, Check } from "lucide-react";
 import { cities } from "@/lib/marketplace";
 
@@ -14,17 +14,26 @@ type CityPickerProps = {
 export function CityPicker({ value, onChange, id, placeholder = "جست‌وجوی شهر یا استان…", disabled = false, options = cities }: CityPickerProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("fa");
     if (!q) return options;
     return options.filter(city => city.toLocaleLowerCase("fa").includes(q));
   }, [query, options]);
 
+  const selectCity = (city: string) => {
+    onChange(city);
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  };
+
   return (
     <div className="relative">
       <div className="relative">
         <Search aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
+          ref={inputRef}
           id={id}
           dir="rtl"
           role="combobox"
@@ -37,12 +46,10 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
           onFocus={() => { setQuery(""); setOpen(true); }}
           onChange={event => { setQuery(event.target.value); setOpen(true); }}
           onKeyDown={event => {
-            if (event.key === "Escape") { setOpen(false); setQuery(""); }
+            if (event.key === "Escape") { setOpen(false); setQuery(""); inputRef.current?.blur(); }
             if (event.key === "Enter" && filtered.length === 1) {
               event.preventDefault();
-              onChange(filtered[0]);
-              setOpen(false);
-              setQuery("");
+              selectCity(filtered[0]);
             }
           }}
           className="field-input pr-9 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
@@ -50,15 +57,9 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
         />
         <ChevronDown aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       </div>
-      {!open && value && (
-        <p aria-live="polite" className="mt-2 flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm font-semibold text-foreground">
-          <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
-          <span>انتخاب‌شده: {value}</span>
-        </p>
-      )}
       {open && !disabled && (
         <>
-          <button type="button" aria-label="بستن فهرست شهرها" className="fixed inset-0 z-10 cursor-default" onClick={() => { setOpen(false); setQuery(""); }} />
+          <button type="button" aria-label="بستن فهرست شهرها" className="fixed inset-0 z-10 cursor-default" onClick={() => { setOpen(false); setQuery(""); inputRef.current?.blur(); }} />
           <div id={id ? `${id}-options` : undefined} role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-background p-1 text-foreground shadow-xl">
             <p className="px-3 py-2 text-sm font-medium text-muted-foreground">{filtered.length ? `${filtered.length} شهر در فهرست` : "شهری پیدا نشد"}</p>
             {filtered.map(city => (
@@ -67,11 +68,7 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
                 role="option"
                 aria-selected={city === value}
                 key={city}
-                onClick={() => {
-                  onChange(city);
-                  setQuery("");
-                  setOpen(false);
-                }}
+                onClick={() => selectCity(city)}
                 className="flex w-full items-center justify-between rounded-md px-3 py-3 text-right text-base font-medium leading-7 text-foreground hover:bg-accent focus-visible:bg-accent"
               >
                 <span>{city}</span>
