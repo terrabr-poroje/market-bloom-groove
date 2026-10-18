@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 type RatingFormProps = {
+  orderId: string;
   reviewerMemberId: string;
   targetType: "member" | "load";
   targetId: string;
   title: string;
 };
 
-export function RatingForm({ reviewerMemberId, targetType, targetId, title }: RatingFormProps) {
+export function RatingForm({ orderId, reviewerMemberId, targetType, targetId, title }: RatingFormProps) {
   const [score, setScore] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -22,6 +23,7 @@ export function RatingForm({ reviewerMemberId, targetType, targetId, title }: Ra
     setBusy(true);
     setMessage("");
     const payload = {
+      order_id: orderId,
       reviewer_member_id: reviewerMemberId,
       target_type: targetType,
       target_member_id: targetType === "member" ? targetId : null,
@@ -33,7 +35,7 @@ export function RatingForm({ reviewerMemberId, targetType, targetId, title }: Ra
     if (error) {
       const duplicate = error.code === "23505";
       setMessage(duplicate
-        ? "برای این مورد قبلاً امتیاز ثبت کرده‌اید."
+        ? "برای این سفارش قبلاً امتیاز ثبت کرده‌اید."
         : "ثبت امتیاز ممکن نشد. فقط برای سفارش تحویل‌شده و حساب خریدار همان سفارش امکان ثبت وجود دارد.");
     } else {
       setSubmitted(true);
