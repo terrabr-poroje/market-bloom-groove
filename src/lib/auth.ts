@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
 export type AppRole = 'admin' | 'city_manager' | 'supplier' | 'seller' | 'buyer';
@@ -13,31 +12,43 @@ export function useAuth() {
 
   useEffect(() => {
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    // Auth initialization must always settle; a rejected request must not leave
-    // the whole application waiting on its initial loading state forever.
-    void supabase.auth.getSession()
-      .then(({ data, error }) => {
+    async function initializeAuth() {
+      try {
+        // Keep Supabase out of the initial browser bundle; auth starts after the app mounts.
+        const { supabase } = await import('@/integrations/supabase/client');
         if (!active) return;
-        if (error) console.error('[Terrabar auth] Could not restore session:', error);
-        setSession(data.session);
-      })
-      .catch((error: unknown) => {
+
+        const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+          if (active) setSession(next);
+        });
+        unsubscribe = () => sub.subscription.unsubscribe();
+
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (!active) return;
+          if (error) console.error('[Terrabar auth] Could not restore session:', error);
+          setSession(data.session);
+        } catch (error) {
+          if (!active) return;
+          console.error('[Terrabar auth] Session initialization failed:', error);
+          setSession(null);
+        } finally {
+          if (active) setLoading(false);
+        }
+      } catch (error) {
         if (!active) return;
-        console.error('[Terrabar auth] Session initialization failed:', error);
+        console.error('[Terrabar auth] Could not initialize Supabase auth:', error);
         setSession(null);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+        setLoading(false);
+      }
+    }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      if (active) setSession(next);
-    });
-
+    void initializeAuth();
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
@@ -53,6 +64,7 @@ export function useAuth() {
 
       setRolesLoading(true);
       try {
+        const { supabase } = await import('@/integrations/supabase/client');
         // Production schema uses members + member_roles, not user_roles.
         const [
           { data: memberRoleRows, error: memberRoleError },
@@ -124,5 +136,6 @@ export function useAuth() {
 }
 
 export async function signOut() {
+  const { supabase } = await import('@/integrations/supabase/client');
   await supabase.auth.signOut();
 }
