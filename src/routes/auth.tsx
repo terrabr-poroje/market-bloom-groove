@@ -264,6 +264,7 @@ function AuthPage() {
           </div>
 
           <Button asChild variant="outline" className="mt-4 w-full"><Link to="/admin-login">ورود مدیر کل / مدیر شهر با نام کاربری و رمز عبور</Link></Button>
+          <p className="mt-3 text-center text-sm"><Link to="/reset-password" className="text-primary underline">فراموشی رمز عبور؟ دریافت کد ایمیل</Link></p>
 
           {!codeSent ? (
             <form onSubmit={sendCode} className="mt-6 grid gap-4">
