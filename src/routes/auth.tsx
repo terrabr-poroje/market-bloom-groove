@@ -225,9 +225,12 @@ function AuthPage() {
     }
     setBusy(false);
     const requestedNext = new URLSearchParams(window.location.search).get("next") || sessionStorage.getItem("terrabar:after-auth");
-    const safeNext = requestedNext === "/requests" ? "/requests" : null;
+    const safeNext = requestedNext === "/requests" || (requestedNext ? /^\/store\/[a-zA-Z0-9-]+$/.test(requestedNext) : false) ? requestedNext : null;
     if (safeNext) sessionStorage.removeItem("terrabar:after-auth");
-    window.setTimeout(() => navigate({ to: safeNext ?? (mode === "signup" && role !== "buyer" ? "/membership" : "/") }), 900);
+    window.setTimeout(() => {
+      if (safeNext) window.location.assign(safeNext);
+      else void navigate({ to: mode === "signup" && role !== "buyer" ? "/membership" : "/" });
+    }, 900);
   }
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بررسی حساب…</section>;
