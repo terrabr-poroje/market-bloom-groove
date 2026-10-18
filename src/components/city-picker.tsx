@@ -52,7 +52,7 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
               selectCity(filtered[0]);
             }
           }}
-          className="field-input pr-9 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
+          className="field-input !pr-10 !pl-10 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
           placeholder={placeholder}
         />
         <ChevronDown aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
