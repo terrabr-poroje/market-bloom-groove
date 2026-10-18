@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, LogIn, Phone, ShieldCheck, Sprout, Store, UserRou
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { pageHead, provinces } from "@/lib/marketplace";
+import { pageHead, provinces, provinceCities } from "@/lib/marketplace";
 import { CityPicker } from "@/components/city-picker";
 
 export const Route = createFileRoute("/auth")({
@@ -284,7 +284,7 @@ function AuthPage() {
               {mode === "signup" && (
                 <>
                   <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" placeholder="نام کامل شما" autoComplete="name" /></label>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="field-label">استان محل فعالیت<CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="signup-province" options={provinces} placeholder="جست‌وجوی استان…" /></label><label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="signup-city" placeholder="ابتدا استان را انتخاب کنید، سپس شهر را جست‌وجو کنید…" /></label></div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="field-label">استان محل فعالیت<CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="signup-province" options={provinces} placeholder="جست‌وجوی استان…" /></label><label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="signup-city" options={provinceCities[province] ?? []} disabled={!province} placeholder={province ? "جست‌وجو و انتخاب شهر همین استان…" : "ابتدا استان را انتخاب کنید…"} /></label></div>
                   {role !== "buyer" && <label className="field-label">نوع فعالیت / محصولات<input required value={activity} onChange={e => setActivity(e.target.value)} className="field-input" placeholder={role === "supplier" ? "مثلاً باغدار مرکبات، کشاورز یا سورتینگ" : "مثلاً حجره و نوع محصولات قابل عرضه"} /></label>}
                   <fieldset className="grid gap-3">
                     <legend className="mb-1 text-sm font-bold">نقش اصلی خود را انتخاب کنید</legend>
