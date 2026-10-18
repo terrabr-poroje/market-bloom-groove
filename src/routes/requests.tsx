@@ -75,8 +75,8 @@ function Requests() {
       const roles = (roleRows ?? []).map((r: any) => String(r.role_code).toLowerCase());
       setApprovedRoleCodes(roles);
       const adminRoles = (adminRows ?? []).map((r: any) => String(r.admin_role).toLowerCase());
-      if (!roles.some((role: string) => ["professional_buyer", "supplier", "bar_seller", "seller"].includes(role))) setPurchaseMode("retail");
-      if (adminRoles.some((r: string) => ["main_admin", "main-administrator", "admin"].includes(r)) || roles.includes("professional_buyer")) {
+      if (!roles.some((role: string) => ["supplier", "bar_seller", "seller"].includes(role))) setPurchaseMode("retail");
+      if (adminRoles.some((r: string) => ["main_admin", "main-administrator", "admin"].includes(r))) {
         setAllowedCities([]); setCityAccess("all");
       } else if (adminRoles.includes("city_manager")) {
         const ids = (adminRows ?? []).filter((r: any) => String(r.admin_role).toLowerCase() === "city_manager").map((r: any) => r.id);
@@ -84,12 +84,10 @@ function Requests() {
         if (!active) return;
         setAllowedCities([...new Set([...(assigned ?? []).map((r: any) => String(r.city_name)), ...((adminRows ?? []).map((r: any) => r.city).filter(Boolean) as string[])])]);
         setCityAccess("assigned");
-      } else if (roles.includes("special_buyer")) {
-        const { data: neighbors } = await (supabase as any).from("city_neighbors").select("city_name, neighbor_city_name").eq("is_enabled", true);
-        if (!active) return;
-        const nearby = (neighbors ?? []).filter((r: any) => r.city_name === ownCity || r.neighbor_city_name === ownCity).map((r: any) => r.city_name === ownCity ? String(r.neighbor_city_name) : String(r.city_name));
-        setAllowedCities([...new Set([ownCity, ...nearby])]); setCityAccess("nearby");
-      } else { setAllowedCities([ownCity]); setCityAccess("own"); }
+      } else {
+        // All non-professional roles are ordinary buyers: own city only.
+        setAllowedCities([ownCity]); setCityAccess("own");
+      }
       setCityAccessReady(true);
     }
     void resolveCityAccess();
@@ -207,15 +205,17 @@ function Requests() {
     [liveLoads],
   );
   const normalizedQuery = filters.query.trim().replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s/g, "");
-  const canUseProfessional = approvedRoleCodes.some(role => ["professional_buyer", "supplier", "bar_seller", "seller"].includes(role));
+  const canUseProfessional = approvedRoleCodes.some(role => ["supplier", "bar_seller", "seller"].includes(role));
   const canBuySupplierProfessional = approvedRoleCodes.some(role => ["supplier", "bar_seller", "seller"].includes(role));
   const selectedMode = purchaseModes.find(item => item.value === purchaseMode) ?? purchaseModes[0];
   const filtered = displayLoads
     .filter(load => {
       const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
       const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city);
-      const supplierProfessionalLoad = ["supplier"].includes(String(load.sellerType || "").toLowerCase()) && options.some(option => ["professional", "pro"].includes(option.saleType));
-      const professionalAudienceAllowed = purchaseMode !== "professional" || !supplierProfessionalLoad || canBuySupplierProfessional;
+      const isProfessionalInventory = String(load.sellerType || "").toLowerCase() === "supplier" || options.some(option => ["professional", "pro"].includes(option.saleType));
+      const professionalCityAccess = purchaseMode === "professional" && canBuySupplierProfessional && isProfessionalInventory;
+      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city) || professionalCityAccess;
+      const professionalAudienceAllowed = purchaseMode !== "professional" || !isProfessionalInventory || canBuySupplierProfessional;
       return cityAllowed
         && professionalAudienceAllowed
         && options.some(option => selectedMode.saleTypes.includes(option.saleType))
