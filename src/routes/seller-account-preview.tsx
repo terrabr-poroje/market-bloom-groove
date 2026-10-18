@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BadgeCheck, ClipboardList, History, PackagePlus, Store, Truck, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, ClipboardList, History, PackagePlus, ShoppingBasket, Store, Truck, UserRound } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/seller-account-preview")({
@@ -10,8 +10,8 @@ export const Route = createFileRoute("/seller-account-preview")({
 const tasks = [
   { title: "اعلام بار جدید", description: "ثبت محصول، رقم، کیفیت، مقدار بسته‌ها، وزن و قیمت فروش", icon: PackagePlus, color: "bg-lime-50 text-lime-800", to: "/announce" },
   { title: "مدیریت بارهای اعلام‌شده", description: "مشاهده بارهای فعال و بررسی موجودی و قیمت آن‌ها", icon: ClipboardList, color: "bg-emerald-50 text-emerald-800", to: "/announce" },
-  { title: "سفارش‌های دریافتی و جاری", description: "بررسی سفارش‌های در انتظار اقدام و پیگیری وضعیت تحویل", icon: Truck, color: "bg-sky-50 text-sky-800", to: "/orders-current-preview" },
-  { title: "سفارش‌های تکمیل‌شده", description: "مرور سابقه سفارش‌های تحویل‌شده", icon: History, color: "bg-violet-50 text-violet-800", to: "/orders-completed-preview" },
+  { title: "سفارش‌ها؛ جاری و تکمیل‌شده", description: "مشاهده سفارش‌های در جریان و سابقه سفارش‌های تکمیل‌شده در یک صفحه", icon: History, color: "bg-sky-50 text-sky-800", to: "/seller-orders-preview" },
+  { title: "امکانات خرید", description: "خرید بار، پیگیری سفارش‌های جاری و مشاهده سفارش‌های انجام‌شده", icon: ShoppingBasket, color: "bg-violet-50 text-violet-800", to: "/seller-purchase-preview" },
   { title: "ویترین من", description: "مشاهده صفحه بارهای فعال و معرفی ویترین به خریداران", icon: Store, color: "bg-amber-50 text-amber-800", to: "/member-home" },
 ];
 
