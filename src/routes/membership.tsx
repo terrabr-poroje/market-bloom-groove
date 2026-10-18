@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, Send, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
-import { pageHead } from '@/lib/marketplace';
+import { pageHead, provinces } from '@/lib/marketplace';
 import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/membership")({
@@ -28,6 +28,7 @@ function MembershipPage() {
   const [role, setRole] = useState<AppRole>('supplier');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [province, setProvince] = useState('البرز');
   const [city, setCity] = useState('کرج');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,6 +45,7 @@ function MembershipPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!user) return;
+    if (!province.trim() || !city.trim()) { setError("استان و شهر محل فعالیت را انتخاب کنید."); return; }
     setBusy(true);
     setError('');
     // Create or reuse the caller's member profile in the production schema.
@@ -148,9 +150,10 @@ function MembershipPage() {
               </select>
             </label>
             <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" /></label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="field-label">شماره تماس<input required dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09…" /></label>
-              <label className="field-label">شهر<CityPicker value={city} onChange={setCity} id="membership-city" /></label>
+            <label className="field-label">شماره تماس<input required dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09…" /></label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="field-label">استان محل فعالیت<CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="membership-province" options={provinces} placeholder="جست‌وجوی استان…" /></label>
+              <label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="membership-city" placeholder="ابتدا استان را انتخاب کنید، سپس شهر را جست‌وجو کنید…" /></label>
             </div>
             <label className="field-label">توضیحات (اختیاری)<textarea value={description} onChange={e => setDescription(e.target.value)} className="field-input min-h-20 resize-y" placeholder="نوع فعالیت، محصولات، سابقه…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
