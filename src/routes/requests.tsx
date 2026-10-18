@@ -32,6 +32,7 @@ const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: 
 function Requests() {
   const { user } = useAuth();
   const [profileCity, setProfileCity] = useState("");
+  const [approvedRoleCodes, setApprovedRoleCodes] = useState<string[]>([]);
   const [allowedCities, setAllowedCities] = useState<string[]>([]);
   const [cityAccess, setCityAccess] = useState<"own" | "nearby" | "all" | "assigned" | "unavailable">("unavailable");
   const [cityAccessReady, setCityAccessReady] = useState(false);
@@ -60,10 +61,10 @@ function Requests() {
     let active = true;
     async function resolveCityAccess() {
       setCityAccessReady(false);
-      if (!user) { setProfileCity(""); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
+      if (!user) { setProfileCity(""); setApprovedRoleCodes([]); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
       const { data: member, error } = await (supabase as any).from("members").select("city").eq("auth_user_id", user.id).maybeSingle();
       if (!active) return;
-      if (error || !member?.city) { setProfileCity(""); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
+      if (error || !member?.city) { setProfileCity(""); setApprovedRoleCodes([]); setAllowedCities([]); setCityAccess("unavailable"); setCityAccessReady(true); return; }
       const ownCity = String(member.city).trim();
       setProfileCity(ownCity);
       const [{ data: roleRows }, { data: adminRows }] = await Promise.all([
@@ -72,7 +73,9 @@ function Requests() {
       ]);
       if (!active) return;
       const roles = (roleRows ?? []).map((r: any) => String(r.role_code).toLowerCase());
+      setApprovedRoleCodes(roles);
       const adminRoles = (adminRows ?? []).map((r: any) => String(r.admin_role).toLowerCase());
+      if (!roles.some((role: string) => ["professional_buyer", "supplier", "bar_seller", "seller"].includes(role))) setPurchaseMode("retail");
       if (adminRoles.some((r: string) => ["main_admin", "main-administrator", "admin"].includes(r)) || roles.includes("professional_buyer")) {
         setAllowedCities([]); setCityAccess("all");
       } else if (adminRoles.includes("city_manager")) {
@@ -204,12 +207,17 @@ function Requests() {
     [liveLoads],
   );
   const normalizedQuery = filters.query.trim().replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/\s/g, "");
-  const selectedMode = purchaseModes.find(item => item.value === purchaseMode)!;
+  const canUseProfessional = approvedRoleCodes.some(role => ["professional_buyer", "supplier", "bar_seller", "seller"].includes(role));
+  const canBuySupplierProfessional = approvedRoleCodes.some(role => ["supplier", "bar_seller", "seller"].includes(role));
+  const selectedMode = purchaseModes.find(item => item.value === purchaseMode) ?? purchaseModes[0];
   const filtered = displayLoads
     .filter(load => {
       const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
       const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city);
+      const supplierProfessionalLoad = ["supplier"].includes(String(load.sellerType || "").toLowerCase()) && options.some(option => ["professional", "pro"].includes(option.saleType));
+      const professionalAudienceAllowed = purchaseMode !== "professional" || !supplierProfessionalLoad || canBuySupplierProfessional;
       return cityAllowed
+        && professionalAudienceAllowed
         && options.some(option => selectedMode.saleTypes.includes(option.saleType))
         && (!filters.category || load.category === filters.category)
         && (!filters.quality || load.quality === filters.quality)
@@ -306,11 +314,11 @@ function Requests() {
           <div className="mb-5">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />درخواست خرید</div>
             <h1 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h1>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید.</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. بخش «ویژه حرفه‌ای» فقط برای نقش‌های تأییدشده مجاز نمایش داده می‌شود.</p>
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {purchaseModes.map(mode => (
+            {purchaseModes.filter(mode => mode.value !== "professional" || canUseProfessional).map(mode => (
               <button key={mode.value} type="button" onClick={() => setPurchaseMode(mode.value)} aria-pressed={purchaseMode === mode.value}
                 className={`rounded-lg border p-3 text-right transition-colors ${purchaseMode === mode.value ? "border-primary bg-accent" : "border-border bg-card hover:border-primary/50"}`}>
                 <strong className="block text-sm">{mode.label}</strong>
