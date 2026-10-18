@@ -114,6 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/admin-login': typeof AdminLoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
@@ -166,6 +167,7 @@ export interface FileRouteTypes {
     | '/membership'
     | '/requests'
     | '/rules'
+    | '/reset-password'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
