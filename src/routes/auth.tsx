@@ -224,8 +224,9 @@ function AuthPage() {
       setNotice("ورود با موفقیت انجام شد.");
     }
     setBusy(false);
-    const requestedNext = new URLSearchParams(window.location.search).get("next");
+    const requestedNext = new URLSearchParams(window.location.search).get("next") || sessionStorage.getItem("terrabar:after-auth");
     const safeNext = requestedNext === "/requests" ? "/requests" : null;
+    if (safeNext) sessionStorage.removeItem("terrabar:after-auth");
     window.setTimeout(() => navigate({ to: safeNext ?? (mode === "signup" && role !== "buyer" ? "/membership" : "/") }), 900);
   }
 
