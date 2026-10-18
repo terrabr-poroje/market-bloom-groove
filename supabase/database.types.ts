@@ -54,8 +54,10 @@ export type Database = {
           city: string | null
           created_at: string
           created_by: string | null
+          display_name: string | null
           id: string
           is_active: boolean
+          login_username: string | null
         }
         Insert: {
           admin_role: string
@@ -63,8 +65,10 @@ export type Database = {
           city?: string | null
           created_at?: string
           created_by?: string | null
+          display_name?: string | null
           id?: string
           is_active?: boolean
+          login_username?: string | null
         }
         Update: {
           admin_role?: string
@@ -72,8 +76,10 @@ export type Database = {
           city?: string | null
           created_at?: string
           created_by?: string | null
+          display_name?: string | null
           id?: string
           is_active?: boolean
+          login_username?: string | null
         }
         Relationships: []
       }
@@ -200,6 +206,8 @@ export type Database = {
           load_id: string
           max_quantity: number | null
           min_quantity: number
+          minimum_packages: number
+          sale_type: string
           unit_price: number
         }
         Insert: {
@@ -208,6 +216,8 @@ export type Database = {
           load_id: string
           max_quantity?: number | null
           min_quantity?: number
+          minimum_packages?: number
+          sale_type?: string
           unit_price: number
         }
         Update: {
@@ -216,6 +226,8 @@ export type Database = {
           load_id?: string
           max_quantity?: number | null
           min_quantity?: number
+          minimum_packages?: number
+          sale_type?: string
           unit_price?: number
         }
         Relationships: [
@@ -243,6 +255,8 @@ export type Database = {
           name: string
           origin: string
           owner_member_id: string | null
+          package_type: string
+          package_weight: number
           price: number
           price_unit: string
           product_type: string
@@ -272,6 +286,8 @@ export type Database = {
           name: string
           origin: string
           owner_member_id?: string | null
+          package_type?: string
+          package_weight?: number
           price: number
           price_unit: string
           product_type: string
@@ -301,6 +317,8 @@ export type Database = {
           name?: string
           origin?: string
           owner_member_id?: string | null
+          package_type?: string
+          package_weight?: number
           price?: number
           price_unit?: string
           product_type?: string
@@ -368,10 +386,11 @@ export type Database = {
         Row: {
           auth_user_id: string | null
           city: string
+          email: string | null
           full_name: string
           id: string
           joined_at: string
-          phone: string
+          phone: string | null
           products: string | null
           role: string
           verification_status: string | null
@@ -379,10 +398,11 @@ export type Database = {
         Insert: {
           auth_user_id?: string | null
           city: string
+          email?: string | null
           full_name: string
           id?: string
           joined_at?: string
-          phone: string
+          phone?: string | null
           products?: string | null
           role: string
           verification_status?: string | null
@@ -390,10 +410,11 @@ export type Database = {
         Update: {
           auth_user_id?: string | null
           city?: string
+          email?: string | null
           full_name?: string
           id?: string
           joined_at?: string
-          phone?: string
+          phone?: string | null
           products?: string | null
           role?: string
           verification_status?: string | null
@@ -438,16 +459,27 @@ export type Database = {
           buyer_member_id: string | null
           created_at: string
           customer_city: string
+          customer_email: string | null
           customer_name: string
-          customer_phone: string
+          customer_phone: string | null
+          delivered_at: string | null
           delivery_address: string | null
+          delivery_confirmation_method: string | null
+          delivery_confirmed_by: string | null
+          delivery_status: string
           delivery_type: string | null
           id: string
           load_id: string
           notes: string | null
+          paid_at: string | null
+          payment_provider: string | null
+          payment_reference: string | null
+          payment_status: string
           price: number | null
           quantity: number
+          sale_type: string
           seller_member_id: string | null
+          shipped_at: string | null
           status: string
           total_price: number | null
           unit: string
@@ -457,16 +489,27 @@ export type Database = {
           buyer_member_id?: string | null
           created_at?: string
           customer_city: string
+          customer_email?: string | null
           customer_name: string
-          customer_phone: string
+          customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: string | null
+          delivery_confirmation_method?: string | null
+          delivery_confirmed_by?: string | null
+          delivery_status?: string
           delivery_type?: string | null
           id?: string
           load_id: string
           notes?: string | null
+          paid_at?: string | null
+          payment_provider?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           price?: number | null
           quantity: number
+          sale_type?: string
           seller_member_id?: string | null
+          shipped_at?: string | null
           status?: string
           total_price?: number | null
           unit: string
@@ -476,16 +519,27 @@ export type Database = {
           buyer_member_id?: string | null
           created_at?: string
           customer_city?: string
+          customer_email?: string | null
           customer_name?: string
-          customer_phone?: string
+          customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: string | null
+          delivery_confirmation_method?: string | null
+          delivery_confirmed_by?: string | null
+          delivery_status?: string
           delivery_type?: string | null
           id?: string
           load_id?: string
           notes?: string | null
+          paid_at?: string | null
+          payment_provider?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           price?: number | null
           quantity?: number
+          sale_type?: string
           seller_member_id?: string | null
+          shipped_at?: string | null
           status?: string
           total_price?: number | null
           unit?: string
