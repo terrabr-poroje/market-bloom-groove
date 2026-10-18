@@ -18,7 +18,7 @@ type MemberRole = { id: string; role_code: string; approval_status: string; crea
 type Load = { id: string; name: string | null; product_type: string | null; engine: string | null; city: string | null; quantity: number | null; count: number | null; price: number | null; status: string; created_at: string };
 type Order = { id: string; load_id: string | null; seller_member_id: string | null; buyer_member_id: string | null; quantity: number | null; unit: string | null; total_price: number | null; status: string; payment_status: string | null; delivery_status: string | null; created_at: string };
 
-const roleLabels: Record<string, string> = { supplier: "تأمین‌کننده", seller: "بارفروش / حجره‌دار", bar_seller: "بارفروش / حجره‌دار", buyer: "خریدار", special_buyer: "خریدار ویژه", professional_buyer: "خریدار حرفه‌ای" };
+const roleLabels: Record<string, string> = { supplier: "تأمین‌کننده", seller: "بارفروش / حجره‌دار", bar_seller: "بارفروش / حجره‌دار", buyer: "خریدار", special_buyer: "خریدار", professional_buyer: "خریدار" };
 const approvalLabels: Record<string, string> = { pending: "در انتظار بررسی", approved: "تأییدشده", rejected: "ردشده" };
 const loadLabels: Record<string, string> = { active: "فعال", pending: "در انتظار بررسی", inactive: "غیرفعال", rejected: "ردشده", sold_out: "تمام‌شده", expired: "منقضی‌شده", published: "منتشرشده" };
 const orderLabels: Record<string, string> = { pending: "در انتظار پاسخ", accepted: "تأییدشده", confirmed: "تأییدشده", rejected: "ردشده", shipped: "ارسال‌شده", delivered: "تحویل‌شده", cancelled: "لغوشده" };
