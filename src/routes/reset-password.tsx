@@ -61,7 +61,7 @@ function ResetPasswordPage() {
       redirectTo: "https://terrabar.ir/reset-password",
     });
     if (sendError) {
-      setError(/after (\\d+) seconds/i.test(sendError.message) ? "برای امنیت، کمی پیش درخواست بازیابی ارسال شده است. لطفاً حدود ۲۰ ثانیه صبر کنید و فقط یک بار دیگر تلاش کنید." : "ارسال ایمیل بازیابی انجام نشد. تنظیمات SMTP و قالب Recovery در Supabase باید بررسی شود.");
+      setError(/after (\d+) seconds/i.test(sendError.message) ? "برای امنیت، کمی پیش درخواست بازیابی ارسال شده است. لطفاً حدود ۲۰ ثانیه صبر کنید و فقط یک بار دیگر تلاش کنید." : "ارسال ایمیل بازیابی انجام نشد. تنظیمات SMTP و قالب Recovery در Supabase باید بررسی شود.");
     } else {
       setEmail(normalized);
       setStage("verify");
