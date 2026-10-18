@@ -306,10 +306,10 @@ function AuthPage() {
           ) : (
             <form onSubmit={verifyCode} className="mt-6 grid gap-4">
               <div className="rounded-lg bg-accent/40 p-4 text-sm"><p className="font-semibold">کد تأیید برای {authMethod === "phone" ? phone : email} ارسال شد</p><p className="mt-1 text-xs text-muted-foreground">کد دریافت‌شده را وارد کنید تا {mode === "signup" ? "ثبت‌نام" : "ورود"} کامل شود.</p></div>
-              <label className="field-label">کد یک‌بارمصرف<input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} className="field-input text-center text-lg tracking-[0.4em]" placeholder="000000" /></label>
+              <label className="field-label">کد یک‌بارمصرف<input required dir="ltr" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))} className="field-input text-center text-lg tracking-[0.4em]" placeholder={authMethod === "email" ? "کد ایمیل" : "000000"} /><span className="text-xs font-normal text-muted-foreground">{authMethod === "email" ? "تا هماهنگ‌شدن تنظیمات ایمیل، کد ۶ یا ۸ رقمی پذیرفته می‌شود." : "کد پیامکی ۶ رقمی را وارد کنید."}</span></label>
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
-              <Button type="submit" disabled={busy || code.trim().length !== 6}>{busy ? "در حال بررسی…" : "تأیید کد و ادامه"}<ShieldCheck className="mr-2 size-4" /></Button>
+              <Button type="submit" disabled={busy || !(code.trim().length === 6 || (authMethod === "email" && code.trim().length === 8))}>{busy ? "در حال بررسی…" : "تأیید کد و ادامه"}<ShieldCheck className="mr-2 size-4" /></Button>
               <Button type="button" variant="outline" disabled={busy} onClick={() => { setCodeSent(false); setCode(""); setError(""); setNotice(""); }}>اصلاح شماره / ارسال دوباره</Button>
             </form>
           )}
