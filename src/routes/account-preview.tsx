@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BadgeCheck, History, MapPin, Truck, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, History, MapPin, ShoppingBasket, Truck, UserRound } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/account-preview")({
@@ -8,6 +8,7 @@ export const Route = createFileRoute("/account-preview")({
 });
 
 const tasks = [
+  { title: "خرید بار", description: "بازگشت به فهرست بارهای موجود و جست‌وجوی بار برای خرید", icon: ShoppingBasket, color: "bg-lime-50 text-lime-800", to: "/requests" },
   { title: "پیگیری سفارش‌های جاری", description: "سفارش‌های نیمه‌تمام؛ در انتظار پرداخت یا در حال ارسال", icon: Truck, color: "bg-emerald-50 text-emerald-800", to: "/orders-current-preview" },
   { title: "سفارش‌های انجام‌شده", description: "مشاهده سفارش‌های تحویل‌شده و ثبت امتیاز و نظر برای هر سفارش تکمیل‌شده", icon: History, color: "bg-lime-50 text-lime-800", to: "/orders-completed-preview" },
 ];
