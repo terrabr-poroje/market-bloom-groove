@@ -94,9 +94,27 @@ function Requests() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user) return;
+    let active = true;
+    async function recordSearchVisit() {
+      const { data: member } = await (supabase as any).from("members").select("id").eq("auth_user_id", user.id).maybeSingle();
+      if (!active) return;
+      const storageKey = `terrabar:visit:/requests:${user.id}`;
+      const now = Date.now();
+      const previous = Number(sessionStorage.getItem(storageKey) || 0);
+      if (previous && now - previous < 30 * 60 * 1000) return;
+      const { error } = await (supabase as any).from("site_visits").insert({ user_id: user.id, member_id: member?.id ?? null, route: "/requests" });
+      if (!error && active) sessionStorage.setItem(storageKey, String(now));
+    }
+    void recordSearchVisit();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  useEffect(() => {
     let active = true;
     async function fetchLoads() {
       if (!cityAccessReady) return;
+      if (!user) { setLoadingLoads(false); return; }
       const { data, error } = await (supabase as any)
         .from("loads")
         .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count, package_type, package_weight")
@@ -148,7 +166,7 @@ function Requests() {
     }
     void fetchLoads();
     return () => { active = false; };
-  }, [cityAccessReady]);
+  }, [cityAccessReady, user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -260,6 +278,25 @@ function Requests() {
       setOrderNotes("");
     }
     setOrderBusy(false);
+  }
+
+  if (!user) {
+    return (
+      <section className="bg-market-surface py-16">
+        <div className="site-container max-w-lg">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8">
+            <div className="mx-auto grid size-14 place-items-center rounded-full bg-accent text-primary"><Search className="size-7" /></div>
+            <h1 className="mt-4 text-2xl font-extrabold">برای جست‌وجوی بار وارد ترابار شوید</h1>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">برای مشاهده بارهای فعال متناسب با شهر و سطح دسترسی، ابتدا ثبت‌نام کنید یا وارد حساب خود شوید. این کار کمک می‌کند بازدیدها و استفاده از بازار به‌صورت دقیق و امن ثبت شود.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Link to="/auth?next=/requests" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground">ثبت‌نام / ورود</Link>
+              <Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-semibold">بازگشت به صفحه اصلی</Link>
+            </div>
+            <p className="mt-4 text-xs leading-6 text-muted-foreground">اطلاعات حساب فقط برای مدیریت عضویت و خدمات ترابار استفاده می‌شود؛ نشانی اینترنتی (IP) یا اثرانگشت دستگاه ذخیره نمی‌شود.</p>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
