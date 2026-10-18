@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase rating tables use the audited runtime schema until generated client types are refreshed. */
 import { useEffect, useState, type FormEvent } from "react";
 import { Send, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
