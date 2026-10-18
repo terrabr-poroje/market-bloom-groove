@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           for base in https://terrabar.ir https://www.terrabar.ir; do
-            for route in / /auth /membership /announce /requests /admin-login /reset-password; do
+            for route in / /auth /member-home /account /account-preview /seller-account-preview /supplier-account-preview /login-buyer /login-seller /login-supplier /seller-accounting-preview /seller-orders-preview /seller-purchase-preview /orders-current-preview /orders-completed-preview /membership /announce /requests /admin-login /reset-password; do
               status="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' --retry 3 --retry-delay 2 "$base$route")"
               echo "$base$route -> HTTP $status"
               test "$status" = "200"
