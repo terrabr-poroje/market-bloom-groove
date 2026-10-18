@@ -29,9 +29,9 @@ function SellerStorefront() {
     async function fetchStorefront() {
       setLoading(true);
       setError("");
-      const { data: member, error: memberError } = await (supabase as any)
-        .from("members").select("id, full_name, city, role, verification_status")
-        .eq("id", memberId).maybeSingle();
+      const { data: memberRows, error: memberError } = await (supabase as any)
+        .rpc("get_storefront_member", { p_member_id: memberId });
+      const member = Array.isArray(memberRows) ? memberRows[0] : memberRows;
       if (!active) return;
       if (memberError || !member) {
         setSeller(null); setLoads([]); setError("این ویترین پیدا نشد یا دیگر در دسترس نیست."); setLoading(false); return;
@@ -40,7 +40,7 @@ function SellerStorefront() {
       const { data, error: loadError } = await (supabase as any)
         .from("loads")
         .select("id, name, quantity, city, role, product_type, origin, engine, source_market, price, price_unit, quality, description, ready_date, status, member_id, created_at, min_quantity, unit, seller_type, source_region, sale_type, min_order_quantity, count, package_type, package_weight")
-        .eq("member_id", memberId).eq("status", "active").order("created_at", { ascending: false });
+        .or("member_id.eq." + memberId + ",owner_member_id.eq." + memberId).eq("status", "active").order("created_at", { ascending: false });
       if (!active) return;
       if (loadError) {
         setError("بارهای این ویترین بارگذاری نشدند. لطفاً دوباره تلاش کنید.");
