@@ -28,7 +28,7 @@ type AdminRating = { id: string; order_id: string; reviewer_member_id: string; t
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
   const canManage = isAdmin || roles.includes('city_manager');
-  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers'>('requests');
+  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers' | 'reviews' | 'visits'>('requests');
   const [managerCandidates, setManagerCandidates] = useState<ManagerCandidate[]>([]);
   const [cityManagers, setCityManagers] = useState<CityManager[]>([]);
   const [activeCities, setActiveCities] = useState<string[]>([]);
@@ -252,7 +252,7 @@ function AdminPage() {
               <div className="flex flex-wrap items-center justify-between gap-2"><strong>نظر سفارش {rating.order_id.slice(0, 8)}</strong><span className="text-amber-600">{"★".repeat(Math.max(0, Math.min(5, rating.score)))}{"☆".repeat(5 - Math.max(0, Math.min(5, rating.score)))} · {rating.score}/۵</span></div>
               <p className="mt-1 text-xs text-muted-foreground">شناسه عضو خریدار: {rating.reviewer_member_id} · {rating.target_type === 'load' ? 'درباره بار' : 'درباره فروشنده'} · {new Date(rating.created_at).toLocaleString('fa-IR')}</p>
               <p className="mt-3 whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">{rating.review_text || 'توضیح متنی ثبت نشده است.'}</p>
-              <div className="mt-4 grid gap-2">{rating.messages.map(message => <div key={message.id} className="rounded-md border border-border p-3"><p className="text-xs text-muted-foreground">{message.sender_user_id === user?.id ? 'پاسخ ترابار' : 'پیام خریدار'} · {new Date(message.created_at).toLocaleString('fa-IR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{message.message}</p></div>)}</div>
+              <div className="mt-4 grid gap-2">{rating.messages.map(message => <div key={message.id} className="rounded-md border border-border p-3"><p className="text-xs text-muted-foreground">{message.sender_user_id === user?.id ? 'پاسخ شما از طرف ترابار' : 'پیام دیگر در گفت‌وگو'} · {new Date(message.created_at).toLocaleString('fa-IR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{message.message}</p></div>)}</div>
               <form className="mt-4 grid gap-2" onSubmit={event => { event.preventDefault(); void sendRatingReply(rating.id); }}>
                 <label className="field-label">ارسال پیام به خریدار<textarea className="field-input mt-1 resize-y" rows={2} maxLength={2000} value={ratingReplies[rating.id] ?? ''} onChange={event => setRatingReplies(current => ({ ...current, [rating.id]: event.target.value }))} placeholder="برای بررسی دقیق‌تر، سؤال یا پیگیری خود را بنویسید…" /></label>
                 <div><Button type="submit" size="sm" disabled={ratingReplyBusy || !(ratingReplies[rating.id] ?? '').trim()}>ارسال پیام</Button></div>
