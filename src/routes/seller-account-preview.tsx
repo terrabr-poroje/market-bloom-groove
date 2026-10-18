@@ -13,7 +13,7 @@ const tasks = [
   { title: "اطلاعات حساب و گردش حساب", description: "مشاهده اطلاعات حساب بانکی ثبت‌شده، دریافتی‌ها، پرداختی‌ها و سوابق تراکنش‌ها", icon: ArrowRightLeft, color: "bg-violet-50 text-violet-800", to: "/seller-accounting-preview" },
   { title: "سفارش‌ها؛ جاری و تکمیل‌شده", description: "مشاهده سفارش‌های در جریان و سابقه سفارش‌های تکمیل‌شده در یک صفحه", icon: History, color: "bg-sky-50 text-sky-800", to: "/seller-orders-preview" },
   { title: "امکانات خرید", description: "خرید بار، پیگیری سفارش‌های جاری و مشاهده سفارش‌های انجام‌شده", icon: ShoppingBasket, color: "bg-violet-50 text-violet-800", to: "/seller-purchase-preview" },
-  { title: "ویترین من", description: "مشاهده صفحه بارهای فعال و معرفی ویترین به خریداران", icon: Store, color: "bg-amber-50 text-amber-800", to: "/member-home" },
+  { title: "ویترین من و لینک تبلیغاتی", description: "مشاهده بارهای خود و کپی لینک اختصاصی برای مشتری‌ها", icon: Store, color: "bg-amber-50 text-amber-800", to: "/announce" },
   { title: "پیگیری تأیید عضویت", description: "مشاهده وضعیت درخواست عضویت و بررسی نتیجه مدیر؛ در صورت نیاز ثبت دوباره درخواست ردشده", icon: UserCheck, color: "bg-blue-50 text-blue-800", to: "/membership" },
   { title: "راهنمای حساب کاربری", description: "آشنایی با امکانات حساب، کارهایی که پس از تأیید عضویت فعال می‌شوند و روش استفاده از بخش‌های ترابار", icon: BookOpen, color: "bg-orange-50 text-orange-800", to: "/guide" },
 ];
