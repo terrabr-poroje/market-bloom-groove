@@ -1,10 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Headphones, MapPin, Menu, X } from "lucide-react";
+import { ArrowRight, Headphones, MapPin, Menu, X } from "lucide-react";
 import { Brand } from "./marketplace-brand";
 
 export function MarketplaceShell({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
+  const navigate = useNavigate();
   const closeMenu = () => setMenu(false);
 
   return (
@@ -41,6 +42,20 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           </nav>
         )}
       </header>
+
+      <div className="site-container py-3">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) window.history.back();
+            else void navigate({ to: "/" });
+          }}
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowRight className="size-4" aria-hidden="true" />
+          بازگشت به صفحه قبل
+        </button>
+      </div>
 
       <main>{children}</main>
 
