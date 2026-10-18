@@ -108,6 +108,6 @@ function SellerStorefront() {
     </div>
     {error && <p role="alert" className="mb-5 rounded-lg border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}
     {!error && loads.length === 0 ? <div className="rounded-xl border border-border bg-card p-8 text-center"><Store className="mx-auto size-9 text-muted-foreground" /><h2 className="mt-3 font-bold">فعلاً بار فعالی در این ویترین وجود ندارد</h2><p className="mt-2 text-sm text-muted-foreground">با ثبت بار جدید توسط فروشنده، آگهی در همین صفحه نمایش داده می‌شود.</p></div> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{loads.map(load => <LoadCard key={String(load.id)} load={load} />)}</div>}
-    <div className="mt-8"><Button variant="outline" onClick={() => window.location.href = "/requests"}><ArrowRight className="ml-2 size-4" />بازگشت به جست‌وجوی بار</Button></div>
+    <div className="mt-8"><Button variant="outline" onClick={() => window.location.href = "/member-home"}><ArrowRight className="ml-2 size-4" />بازگشت به صفحه کاربران ترابار</Button></div>
   </section>;
 }
