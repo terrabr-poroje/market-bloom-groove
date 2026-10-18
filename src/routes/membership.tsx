@@ -16,7 +16,7 @@ export const Route = createFileRoute("/membership")({
 const roleLabels: Record<AppRole, string> = { admin: 'مدیر', supplier: 'تأمین‌کننده (باغدار، کشاورز، سورتینگ)', seller: 'بارفروش / حجره‌دار میدان', buyer: 'خریدار' };
 const statusLabels: Record<string, string> = { pending: 'در انتظار بررسی مدیر', approved: 'تأیید شده', rejected: 'رد شده' };
 
-type Request = { id: string; role_code: string; approval_status: string; created_at: string };
+type Request = { id: string; role_code: string; approval_status: string; created_at: string; request_note?: string | null };
 
 // UI role labels are user-friendly; the production database requires bar_seller.
 const roleToCode: Partial<Record<AppRole, string>> = { supplier: 'supplier', seller: 'bar_seller', buyer: 'buyer' };
@@ -34,13 +34,35 @@ function MembershipPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [resubmitNotes, setResubmitNotes] = useState<Record<string, string>>({});
 
   function refresh() {
     if (!user) return;
-    (supabase as any).from('member_roles').select('id, role_code, approval_status, created_at, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
+    (supabase as any).from('member_roles').select('id, role_code, approval_status, created_at, request_note, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
       .then(({ data }) => setRequests((data ?? []) as unknown as Request[]));
   }
   useEffect(refresh, [user]);
+
+  async function resubmitRole(request: Request) {
+    if (!user || request.approval_status !== 'rejected') return;
+    const note = (resubmitNotes[request.id] ?? '').trim();
+    if (!note) { setError('برای درخواست مجدد، لطفاً یک توضیح کوتاه بنویسید.'); return; }
+    if (note.length > 500) { setError('متن توضیح حداکثر ۵۰۰ نویسه باشد.'); return; }
+    setBusy(true);
+    setError('');
+    const { error: updateError } = await (supabase as any)
+      .from('member_roles')
+      .update({ approval_status: 'pending', approved_by: null, approved_at: null, request_note: note })
+      .eq('id', request.id)
+      .eq('approval_status', 'rejected');
+    if (updateError) {
+      setError('ارسال مجدد انجام نشد. لطفاً دوباره تلاش کنید یا با مدیر تماس بگیرید.');
+    } else {
+      setResubmitNotes(current => ({ ...current, [request.id]: '' }));
+      refresh();
+    }
+    setBusy(false);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -174,7 +196,16 @@ function MembershipPage() {
                     {statusLabels[request.approval_status]}
                   </span>
                 </div>
-                
+                <p className="mt-2 text-xs text-muted-foreground">تاریخ درخواست: {new Date(request.created_at).toLocaleDateString('fa-IR')}</p>
+                {request.request_note && <p className="mt-2 rounded bg-muted p-2 text-sm">توضیح ثبت‌شده: {request.request_note}</p>}
+                {request.approval_status === 'rejected' && (
+                  <div className="mt-3 grid gap-2">
+                    <label className="field-label">توضیح کوتاه برای درخواست مجدد
+                      <textarea value={resubmitNotes[request.id] ?? ''} onChange={e => setResubmitNotes(current => ({ ...current, [request.id]: e.target.value }))} maxLength={500} className="field-input min-h-20 resize-y" placeholder="مثلاً: اطلاعات فعالیت خود را تکمیل کرده‌ام؛ لطفاً درخواست را دوباره بررسی کنید." />
+                    </label>
+                    <Button type="button" disabled={busy} onClick={() => resubmitRole(request)}><Send className="size-4" />{busy ? 'در حال ارسال…' : 'ارسال درخواست مجدد'}</Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
