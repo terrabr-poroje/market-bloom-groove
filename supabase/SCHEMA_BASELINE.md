@@ -1,8 +1,8 @@
 # Terrabar Supabase schema baseline inventory
 
-> Generated from live Supabase project `gznsxqeyhnuzglliijzz` on 2026-10-15.
+> Original column inventory generated from live Supabase project `gznsxqeyhnuzglliijzz` on 2026-10-15; migration history and live counts refreshed on 2026-10-18.
 > This is an **inventory/reference**, not a runnable migration or full SQL dump. Do not apply it to a database.
-> Refresh after schema changes. Never use this file alone to rebuild production.
+> Detailed per-table column and policy notes below are the original 2026-10-15 snapshot unless updated in the live-access section. Use migration files and the live schema for later changes.
 
 ## Migration history observed in Supabase
 
@@ -13,10 +13,50 @@
 | 20261014215700 | `special_buyer_city_access` |
 | 20261014221645 | `secure_admin_helper_functions` |
 | 20261014221826 | `loads_children_and_internal_rls` |
+| 20261015211128 | `membership_and_load_submission_policies` |
+| 20261015212303 | `approved_members_publish_loads_immediately` |
+| 20261015212626 | `order_payment_and_delivery_lifecycle` |
+| 20261015212721 | `order_lifecycle_read_access` |
+| 20261015222326 | `terrabar_load_photo_storage_policies` |
+| 20261015222806 | `load_sale_type_price_tiers` |
+| 20261015222940 | `orders_sale_type_snapshot` |
+| 20261015223012 | `load_package_type` |
+| 20261015223133 | `order_pricing_uses_sales_tier` |
+| 20261015223242 | `loads_select_enabled_sales_tiers` |
+| 20261017124538 | `restore_authenticated_marketplace_table_privileges` |
+| 20261017131436 | `admin_username_login` |
+| 20261017131642 | `seed_terrabar_market_cities` |
+| 20261017132342 | `fix_terrabar_load_image_read_policy` |
+| 20261017143000 | `seed_market_cities_and_neighbors` |
+| 20261018141011 | `verified_member_load_ratings` |
+| 20261018145608 | `track_authenticated_load_search_visits` |
+| 20261018164650 | `secure_order_linked_private_ratings` |
+| 20261018164803 | `one_rating_per_completed_order` |
+| 20261018175714 | `seller_financial_accounts_and_ledger` |
+| 20261018183200 | `membership_resubmission_note` |
+| 20261018183437 | `rating_feedback_messages` |
+| 20261018183623 | `ratings_admin_review_access` |
+| 20261018184914 | `supplier_professional_marketplace_access` |
+| 20261018193138 | `align_professional_roles_storefront_and_load_access` |
+| 20261018193627 | `remove_legacy_storage_image_policies` |
+| 20261018193810 | `align_order_request_buyer_roles` |
+| 20261018194031 | `enforce_supplier_inventory_and_professional_order_audience` |
+| 20261018194535 | `normalize_supplier_type_for_marketplace_rls` |
+
+## Live access-policy changes verified on 2026-10-18
+
+- Public schema currently contains **24 base tables** and **51 public-schema RLS policies**.
+- Approved supplier and bar_seller roles (including legacy seller) are the professional marketplace audience. Legacy professional_buyer does not grant unrestricted professional access.
+- Supplier-origin inventory is excluded from ordinary-buyer city inventory, even if legacy seller fields are blank or the base sale type is old.
+- Non-professional roles see ordinary active inventory in their own city; city managers are restricted to assigned cities; main administrators retain administrative access.
+- Professional orders require an approved supplier, bar_seller, or legacy seller role. Direct purchase requests accept those approved professional roles as well as ordinary buyers.
+- Storefront identity is exposed through authenticated RPC public.get_storefront_member(uuid) with only minimal approved-member fields; members-table RLS was not broadened.
+- Private load-image storage policies now check ownership and parent-load visibility; permissive legacy storage policies were removed.
+- **Live data caveat:** there are currently 0 rows in public.loads. SQL policies and app build can be verified, but full end-to-end marketplace tests require an approved supplier/bar-seller account to publish a test load and an ordinary buyer account to attempt access.
 
 ## Public tables
 
-Total: **19** tables. Total current policies: **24**.
+Total: **24** base tables. Total public-schema policies: **51** (live count refreshed 2026-10-18).
 
 ### `public.members`
 
