@@ -29,6 +29,7 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           <nav id="terrabar-main-menu" aria-label="منوی اصلی" className="site-container grid gap-1 border-t border-border py-3">
             <Link to="/" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">صفحه اصلی</Link>
             <Link to="/auth" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">ثبت‌نام / ورود</Link>
+            <Link to="/account" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">حساب کاربری من</Link>
             <Link to="/announce" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">اعلام بار و مدیریت محصولات</Link>
             <Link to="/requests" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">درخواست بار</Link>
             <Link to="/membership" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">عضویت و پیگیری تأیید</Link>
