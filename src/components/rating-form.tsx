@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,25 @@ export function RatingForm({ orderId, reviewerMemberId, targetType, targetId, ti
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [existingRating, setExistingRating] = useState<{ score: number; review_text: string | null } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function checkExisting() {
+      const { data, error } = await (supabase as any).from("ratings")
+        .select("score, review_text")
+        .eq("order_id", orderId)
+        .eq("reviewer_member_id", reviewerMemberId)
+        .eq("target_type", targetType)
+        .maybeSingle();
+      if (!active) return;
+      if (!error && data) setExistingRating(data);
+      setCheckingExisting(false);
+    }
+    void checkExisting();
+    return () => { active = false; };
+  }, [orderId, reviewerMemberId, targetType]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -44,6 +63,8 @@ export function RatingForm({ orderId, reviewerMemberId, targetType, targetId, ti
     setBusy(false);
   }
 
+  if (checkingExisting) return <p className="mt-3 text-xs text-muted-foreground">در حال بررسی سابقه امتیاز…</p>;
+  if (existingRating) return <div className="mt-3 rounded-lg border border-border bg-market-surface p-3 text-sm"><p className="font-semibold">امتیاز این بخش ثبت شده است</p><p className="mt-1 text-amber-600">{"★".repeat(existingRating.score)}{"☆".repeat(5 - existingRating.score)} <span className="text-xs text-muted-foreground">{existingRating.score} از ۵</span></p>{existingRating.review_text && <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{existingRating.review_text}</p>}</div>;
   if (submitted) return <p role="status" className="text-xs font-medium text-primary">{message}</p>;
 
   return (
