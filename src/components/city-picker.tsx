@@ -50,6 +50,12 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
         />
         <ChevronDown aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       </div>
+      {!open && value && (
+        <p aria-live="polite" className="mt-2 flex items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm font-semibold text-foreground">
+          <Check aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <span>انتخاب‌شده: {value}</span>
+        </p>
+      )}
       {open && !disabled && (
         <>
           <button type="button" aria-label="بستن فهرست شهرها" className="fixed inset-0 z-10 cursor-default" onClick={() => { setOpen(false); setQuery(""); }} />
@@ -61,8 +67,11 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
                 role="option"
                 aria-selected={city === value}
                 key={city}
-                onPointerDown={event => event.preventDefault()}
-                onClick={() => { onChange(city); setQuery(""); setOpen(false); }}
+                onClick={() => {
+                  onChange(city);
+                  setQuery("");
+                  setOpen(false);
+                }}
                 className="flex w-full items-center justify-between rounded-md px-3 py-3 text-right text-base font-medium leading-7 text-foreground hover:bg-accent focus-visible:bg-accent"
               >
                 <span>{city}</span>
