@@ -1,6 +1,5 @@
-
-
-
+-- HISTORICAL SNAPSHOT: this dump predates the 2026-10-18 role, storefront, order, and storage policy migrations.
+-- Do not apply this file to production; use the ordered files in supabase/migrations and the live schema baseline.
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
