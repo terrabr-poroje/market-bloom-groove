@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { pageHead } from "@/lib/marketplace";
@@ -20,6 +20,39 @@ function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  // Accept both Supabase recovery links and the 8-digit recovery OTP.
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const urlError = params.get("error_description") ?? hash.get("error_description");
+    if (urlError) setError("لینک بازیابی معتبر نیست یا منقضی شده است. از صفحه ورود مدیر دوباره درخواست بازیابی کنید.");
+
+    const tokenHash = params.get("token_hash");
+    const tokenType = params.get("type");
+    if (tokenHash && tokenType === "recovery") {
+      setBusy(true);
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).then(({ error: verifyError }) => {
+        if (!active) return;
+        if (verifyError) {
+          setError("لینک بازیابی معتبر نیست یا منقضی شده است. دوباره درخواست بازیابی کنید.");
+        } else {
+          setStage("password");
+          setNotice("هویت شما از طریق لینک ایمیل تأیید شد. رمز جدید حداقل ۱۰ نویسه‌ای بسازید.");
+        }
+        setBusy(false);
+      });
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" && active) {
+        setStage("password");
+        setNotice("لینک بازیابی تأیید شد. اکنون رمز جدید حداقل ۱۰ نویسه‌ای بسازید.");
+      }
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
+
   async function requestCode(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
@@ -28,7 +61,7 @@ function ResetPasswordPage() {
       redirectTo: "https://terrabar.ir/reset-password",
     });
     if (sendError) {
-      setError("ارسال کد بازیابی انجام نشد. تنظیمات ایمیل و قالب Recovery در Supabase باید بررسی شود.");
+      setError(/after (\\d+) seconds/i.test(sendError.message) ? "برای امنیت، کمی پیش درخواست بازیابی ارسال شده است. لطفاً حدود ۲۰ ثانیه صبر کنید و فقط یک بار دیگر تلاش کنید." : "ارسال ایمیل بازیابی انجام نشد. تنظیمات SMTP و قالب Recovery در Supabase باید بررسی شود.");
     } else {
       setEmail(normalized);
       setStage("verify");
