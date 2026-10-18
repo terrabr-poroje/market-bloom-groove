@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Search, ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { cities } from "@/lib/marketplace";
 
 type CityPickerProps = {
@@ -31,7 +31,6 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
   return (
     <div className="relative">
       <div className="relative">
-        <Search aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           ref={inputRef}
           id={id}
@@ -52,7 +51,7 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
               selectCity(filtered[0]);
             }
           }}
-          className="field-input !pr-10 !pl-10 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
+          className="field-input !pr-4 !pl-10 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
           placeholder={placeholder}
         />
         <ChevronDown aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
