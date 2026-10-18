@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin")({
 const roleLabels: Record<string, string> = { admin: 'مدیر', supplier: 'تأمین‌کننده', seller: 'بارفروش', bar_seller: 'بارفروش', buyer: 'خریدار' };
 const qualityLabels: Record<string, string> = { premium: 'ویژه', standard: 'استاندارد', economy: 'اقتصادی', negotiated: 'توافقی' };
 
-type MemberRequest = { id: string; member_id: string; role_code: string; approval_status: string; created_at: string; members: { full_name: string; phone: string; city: string } | null };
+type MemberRequest = { id: string; member_id: string; role_code: string; approval_status: string; created_at: string; request_note?: string | null; members: { full_name: string; phone: string; city: string } | null };
 type AdminOrder = { id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
 type AdminPurchaseRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
 type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
@@ -47,7 +47,7 @@ function AdminPage() {
 
   function refresh() {
     (supabase as any).from('member_roles')
-      .select('id, member_id, role_code, approval_status, created_at, members!inner(full_name, phone, city)')
+      .select('id, member_id, role_code, approval_status, created_at, request_note, members!inner(full_name, phone, city)')
       .eq('approval_status', 'pending')
       .order('created_at', { ascending: false })
       .then(({ data }: { data: MemberRequest[] | null }) => setRequests(data ?? []));
@@ -167,6 +167,7 @@ function AdminPage() {
                 <span className="text-xs text-muted-foreground" dir="ltr">{request.members?.phone ?? '—'}</span>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{request.members?.city ?? 'شهر ثبت نشده'}</p>
+              {request.request_note && <p className="mt-3 rounded-md bg-muted p-3 text-sm leading-6"><strong>توضیح متقاضی:</strong> {request.request_note}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={() => approveRequest(request)}><CheckCircle2 />تأیید عضویت</Button>
                 <Button size="sm" variant="outline" onClick={() => rejectRequest(request)}><XCircle />رد درخواست</Button>
