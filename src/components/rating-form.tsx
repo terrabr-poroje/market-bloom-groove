@@ -22,6 +22,9 @@ export function RatingForm({ orderId, reviewerMemberId, targetType, targetId, ti
   const [thread, setThread] = useState<{ id: string; sender_user_id: string; message: string; created_at: string }[]>([]);
   const [followUp, setFollowUp] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
+
+  useEffect(() => { void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? "")); }, []);
 
   useEffect(() => {
     let active = true;
@@ -102,7 +105,7 @@ export function RatingForm({ orderId, reviewerMemberId, targetType, targetId, ti
     <div className="mt-3 rounded-md border border-border p-3">
       <p className="font-semibold">پیام تکمیلی برای بررسی نظر</p>
       <p className="mt-1 text-xs text-muted-foreground">اگر لازم است جزئیات بیشتری درباره کیفیت، بسته‌بندی، تازگی یا تحویل توضیح دهید، پیام بفرستید. تیم ترابار می‌تواند از همین مسیر پاسخ دهد.</p>
-      <div className="mt-3 grid gap-2">{thread.map(item => <div key={item.id} className="rounded bg-background p-2"><p className="text-xs text-muted-foreground">{item.sender_user_id === (supabase.auth.getSession() as any)?.user?.id ? "شما" : "پشتیبانی ترابار"} · {new Date(item.created_at).toLocaleString("fa-IR")}</p><p className="mt-1 whitespace-pre-wrap">{item.message}</p></div>)}</div>
+      <div className="mt-3 grid gap-2">{thread.map(item => <div key={item.id} className="rounded bg-background p-2"><p className="text-xs text-muted-foreground">{item.sender_user_id === currentUserId ? "شما" : "پشتیبانی ترابار"} · {new Date(item.created_at).toLocaleString("fa-IR")}</p><p className="mt-1 whitespace-pre-wrap">{item.message}</p></div>)}</div>
       <form onSubmit={sendFollowUp} className="mt-3 grid gap-2"><textarea value={followUp} onChange={e => setFollowUp(e.target.value.slice(0, 2000))} maxLength={2000} rows={3} className="field-input resize-y" placeholder="پیام تکمیلی خود را بنویسید…" /><Button type="submit" size="sm" disabled={sendingMessage || !followUp.trim()}><Send className="ml-1 size-4" />{sendingMessage ? "در حال ارسال…" : "ارسال پیام"}</Button></form>
       {message && <p role="status" className="mt-2 text-xs text-muted-foreground">{message}</p>}
     </div>
