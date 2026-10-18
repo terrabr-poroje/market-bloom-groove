@@ -36,7 +36,7 @@ jobs:
           if [ ! -e "${files[0]}" ]; then echo "No SQL migrations found."; exit 1; fi
           for file in "${files[@]}"; do
             base="$(basename "$file")"
-            [[ "$base" =~ ^[0-9]{14}_[a-z0-9_]+\\.sql$ ]] || { echo "Invalid migration filename: $base"; exit 1; }
+            [[ "$base" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]] || { echo "Invalid migration filename: $base"; exit 1; }
             grep -q '[^[:space:]]' "$file" || { echo "Empty migration: $file"; exit 1; }
           done
           versions="$(printf '%s\\n' "${files[@]}" | sed -E 's#^.*/([0-9]{14})_.*#\\1#' | sort)"
