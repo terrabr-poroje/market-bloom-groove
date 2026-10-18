@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, signOut } from "@/lib/auth";
 import { pageHead } from "@/lib/marketplace";
+import { RatingSummary } from "@/components/rating-summary";
 
 export const Route = createFileRoute("/account")({
   head: () => pageHead("حساب کاربری من", "مدیریت پروفایل، عضویت‌ها، بارها و سفارش‌های حساب ترابار."),
@@ -103,7 +104,7 @@ function AccountPage() {
           <div className="rounded-xl border border-border bg-card p-5 md:col-span-1">
             <div className="flex items-center gap-2"><UserRound className="size-5 text-primary" /><h2 className="font-bold">اطلاعات پروفایل</h2></div>
             {member ? <dl className="mt-4 grid gap-3 text-sm">
-              <div><dt className="text-muted-foreground">نام و نام خانوادگی</dt><dd className="mt-1 font-semibold">{member.full_name || "ثبت نشده"}</dd></div>
+              <div><dt className="text-muted-foreground">نام و نام خانوادگی</dt><dd className="mt-1 font-semibold">{member.full_name || "ثبت نشده"}</dd><div className="mt-2"><RatingSummary targetType="member" targetId={member.id} /></div></div>
               <div><dt className="text-muted-foreground">شماره تماس</dt><dd dir="ltr" className="mt-1 text-right font-semibold">{member.phone || user.email || "ثبت نشده"}</dd></div>
               <div><dt className="text-muted-foreground">شهر عضویت</dt><dd className="mt-1 font-semibold">{member.city || "ثبت نشده"}</dd></div>
               <div><dt className="text-muted-foreground">شناسه حساب</dt><dd className="mt-1 break-all text-xs text-muted-foreground">{user.id}</dd></div>
