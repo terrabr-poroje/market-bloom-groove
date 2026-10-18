@@ -8,8 +8,8 @@ export const Route = createFileRoute("/account-preview")({
 });
 
 const tasks = [
-  { title: "پیگیری سفارش‌های جاری", description: "سفارش‌های نیمه‌تمام؛ در انتظار پرداخت یا در حال ارسال", icon: Truck, color: "bg-emerald-50 text-emerald-800" },
-  { title: "سفارش‌های انجام‌شده", description: "مشاهده سفارش‌های تحویل‌شده و ثبت امتیاز و نظر برای هر سفارش تکمیل‌شده", icon: History, color: "bg-lime-50 text-lime-800" },
+  { title: "پیگیری سفارش‌های جاری", description: "سفارش‌های نیمه‌تمام؛ در انتظار پرداخت یا در حال ارسال", icon: Truck, color: "bg-emerald-50 text-emerald-800", to: "/orders-current-preview" },
+  { title: "سفارش‌های انجام‌شده", description: "مشاهده سفارش‌های تحویل‌شده و ثبت امتیاز و نظر برای هر سفارش تکمیل‌شده", icon: History, color: "bg-lime-50 text-lime-800", to: "/orders-completed-preview" },
 ];
 
 function AccountPreviewPage() {
@@ -42,11 +42,11 @@ function AccountPreviewPage() {
         <div className="grid grid-cols-1 gap-3">
           {tasks.map((task) => {
             const Icon = task.icon;
-            return <div key={task.title} className="flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 shadow-sm sm:gap-5 sm:px-6">
+            return <Link to={task.to} key={task.title} className="flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 shadow-sm transition hover:border-primary/40 hover:shadow-md sm:gap-5 sm:px-6">
               <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${task.color}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
               <span className="min-w-0 flex-1"><strong className="block text-base font-extrabold text-foreground sm:text-lg">{task.title}</strong><span className="mt-1 block text-sm leading-6 text-muted-foreground">{task.description}</span></span>
               <ArrowLeft className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            </div>;
+            </Link>;
           })}
         </div>
         <p className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6 text-muted-foreground">حساب خریدار به تأیید عضویت حرفه‌ای نیاز ندارد. ثبت امتیاز و نظر فقط از داخل جزئیات سفارش‌های انجام‌شده انجام می‌شود؛ برای سفارش‌های جاری امکان ثبت نظر وجود ندارد.</p>
