@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Package, ShieldAlert, Users, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, Package, ShieldAlert, Users, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
@@ -21,6 +21,8 @@ type AdminPurchaseRequest = { id: string; product_type: string; quantity: number
 type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
 type CityManager = { id: string; auth_user_id: string; display_name: string; login_username: string; city: string; is_active: boolean };
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
+type SiteVisit = { id: string; user_id: string; route: string; visited_at: string; members: { full_name: string | null; phone: string | null; city: string | null } | null };
+type SiteVisitSummary = { total_visits: number; unique_visitors: number; visits_last_24_hours: number; visitors_last_24_hours: number };
 
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
@@ -40,6 +42,8 @@ function AdminPage() {
   const [pendingLoads, setPendingLoads] = useState<PendingLoad[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [purchaseRequests, setPurchaseRequests] = useState<AdminPurchaseRequest[]>([]);
+  const [visitSummary, setVisitSummary] = useState<SiteVisitSummary | null>(null);
+  const [recentVisits, setRecentVisits] = useState<SiteVisit[]>([]);
 
   function refresh() {
     (supabase as any).from('member_roles')
@@ -63,6 +67,12 @@ function AdminPage() {
       .limit(100)
       .then(({ data }: { data: AdminPurchaseRequest[] | null }) => setPurchaseRequests(data ?? []));
     if (isAdmin) {
+      void (supabase as any).from('site_visit_summary').select('*').maybeSingle()
+        .then(({ data, error }: { data: SiteVisitSummary | null; error: unknown }) => { if (!error) setVisitSummary(data); });
+      void (supabase as any).from('site_visits')
+        .select('id, user_id, route, visited_at, members(full_name, phone, city)')
+        .order('visited_at', { ascending: false }).limit(100)
+        .then(({ data, error }: { data: SiteVisit[] | null; error: unknown }) => { if (!error) setRecentVisits(data ?? []); });
       void supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } }).then(({ data, error }) => {
         if (error || !data) { setManagerError('فهرست مدیران شهر دریافت نشد.'); return; }
         setManagerCandidates((data.members ?? []) as ManagerCandidate[]);
@@ -144,6 +154,7 @@ function AdminPage() {
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
         {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
+        {isAdmin && <Button variant={tab === 'visits' ? 'default' : 'ghost'} onClick={() => setTab('visits')}><Eye />آمار بازدیدها</Button>}
       </div>
 
       {tab === 'requests' && (
@@ -195,6 +206,33 @@ function AdminPage() {
                 {manager.is_active && <Button type="button" variant="outline" size="sm" onClick={() => void deactivateCityManager(manager)}>غیرفعال‌کردن</Button>}
               </div>
             </div>)}
+          </div>
+        </div>
+      )}
+
+      {tab === 'visits' && isAdmin && (
+        <div className="mt-6 grid gap-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border border-border bg-card p-5"><p className="text-sm text-muted-foreground">کل بازدیدهای جست‌وجوی بار</p><p className="mt-2 text-2xl font-extrabold">{faNumber(visitSummary?.total_visits ?? 0)}</p></div>
+            <div className="rounded-lg border border-border bg-card p-5"><p className="text-sm text-muted-foreground">کاربران واردشدهٔ یکتا</p><p className="mt-2 text-2xl font-extrabold">{faNumber(visitSummary?.unique_visitors ?? 0)}</p></div>
+            <div className="rounded-lg border border-border bg-card p-5"><p className="text-sm text-muted-foreground">بازدید در ۲۴ ساعت اخیر</p><p className="mt-2 text-2xl font-extrabold">{faNumber(visitSummary?.visits_last_24_hours ?? 0)}</p></div>
+            <div className="rounded-lg border border-border bg-card p-5"><p className="text-sm text-muted-foreground">کاربران یکتا در ۲۴ ساعت اخیر</p><p className="mt-2 text-2xl font-extrabold">{faNumber(visitSummary?.visitors_last_24_hours ?? 0)}</p></div>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">آخرین بازدیدهای کاربران واردشده</h2>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">فقط مدیر کل این فهرست را می‌بیند. برای هر بازدید، اطلاعات پروفایل ثبت‌شده نمایش داده می‌شود؛ IP یا اثرانگشت دستگاه ذخیره نمی‌شود.</p>
+            <div className="mt-4 grid gap-3">
+              {recentVisits.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز بازدید ثبت‌شده‌ای وجود ندارد. پس از ورود کاربر و بازکردن جست‌وجوی بار، آمار اینجا نمایش داده می‌شود.</p>}
+              {recentVisits.map(visit => (
+                <div key={visit.id} className="rounded-lg border border-border bg-card p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div><strong>{visit.members?.full_name || 'حساب بدون پروفایل عضو'}</strong><p className="mt-1 text-xs text-muted-foreground">{visit.members?.phone || 'شماره ثبت نشده'} · {visit.members?.city || 'شهر ثبت نشده'}</p></div>
+                    <span className="text-xs text-muted-foreground">{new Date(visit.visited_at).toLocaleString('fa-IR')}</span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">بخش: جست‌وجوی بار · شناسه حساب: {visit.user_id.slice(0, 8)}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
