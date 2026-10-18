@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, BadgeCheck, History, MapPin, Star, Truck, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, History, MapPin, Truck, UserRound } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/account-preview")({
@@ -9,8 +9,7 @@ export const Route = createFileRoute("/account-preview")({
 
 const tasks = [
   { title: "پیگیری سفارش‌های جاری", description: "سفارش‌های نیمه‌تمام؛ در انتظار پرداخت یا در حال ارسال", icon: Truck, color: "bg-emerald-50 text-emerald-800" },
-  { title: "سفارش‌های انجام‌شده", description: "مشاهده سوابق سفارش‌هایی که تحویل گرفته‌اید", icon: History, color: "bg-lime-50 text-lime-800" },
-  { title: "ثبت نظر و امتیاز", description: "ثبت تجربه خرید برای سفارش‌های تکمیل‌شده", icon: Star, color: "bg-amber-50 text-amber-800" },
+  { title: "سفارش‌های انجام‌شده", description: "مشاهده سفارش‌های تحویل‌شده و ثبت امتیاز و نظر برای هر سفارش تکمیل‌شده", icon: History, color: "bg-lime-50 text-lime-800" },
 ];
 
 function AccountPreviewPage() {
@@ -50,7 +49,7 @@ function AccountPreviewPage() {
             </div>;
           })}
         </div>
-        <p className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6 text-muted-foreground">حساب خریدار به تأیید عضویت حرفه‌ای نیاز ندارد. این بخش سه امکان دارد: پیگیری سفارش‌های جاری، مشاهده سفارش‌های انجام‌شده و ثبت نظر و امتیاز.</p>
+        <p className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm leading-6 text-muted-foreground">حساب خریدار به تأیید عضویت حرفه‌ای نیاز ندارد. ثبت امتیاز و نظر فقط از داخل جزئیات سفارش‌های انجام‌شده انجام می‌شود؛ برای سفارش‌های جاری امکان ثبت نظر وجود ندارد.</p>
         <div className="mt-6"><Link to="/member-home" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition hover:opacity-90">بازگشت به صفحه اصلی کاربران <ArrowLeft className="size-4" /></Link></div>
       </div>
     </section>
