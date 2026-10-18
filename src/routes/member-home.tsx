@@ -12,7 +12,7 @@ const options = [
     title: "حساب کاربری",
     description: "مدیریت حساب و اطلاعات شما",
     icon: UserRound,
-    to: "/membership",
+    to: "/account",
     style: "bg-emerald-50 text-emerald-800",
   },
   {
