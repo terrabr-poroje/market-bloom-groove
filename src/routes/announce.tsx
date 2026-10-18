@@ -22,6 +22,10 @@ const salesSections = [
   { key: 'professional', label: 'ویژه حرفه‌ای', defaultMin: 5 },
 ] as const;
 type SaleSectionKey = typeof salesSections[number]['key'];
+
+function allowedSaleSections(role: string): SaleSectionKey[] {
+  return role === 'supplier' ? ['professional'] : ['retail', 'wholesale', 'special'];
+}
 type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; origin: string | null; quality: string | null; quantity: number; count: number | null; price: number; status: string; package_type: string | null; package_weight: number | null; min_order_quantity: number | null; ready_date: string | null; description: string | null; created_at: string };
 type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
@@ -71,7 +75,11 @@ function AnnouncePage() {
       const { data: roleRows } = await (supabase as any).from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved');
       if (!active) return;
       const codes = (roleRows ?? []).map((row: any) => String(row.role_code).toLowerCase());
-      setMemberRole(codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '');
+      const detectedRole = codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '';
+      setMemberRole(detectedRole);
+      const allowedSections = allowedSaleSections(detectedRole);
+      setSaleSectionsEnabled(allowedSections[0] ? [allowedSections[0]] : []);
+      setSaleMinimums(prev => ({ ...prev, professional: '5', retail: '1', wholesale: '2', special: '2' }));
       const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
         (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
         (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
@@ -112,12 +120,12 @@ function AnnouncePage() {
       professional: { enabled: false, price: String(load.price ?? ''), minimum: '5' },
     };
     for (const tier of tiers ?? []) {
-      if (tier.sale_type in nextTiers) {
+      if (tier.sale_type in nextTiers && allowedSaleSections(memberRole).includes(tier.sale_type as SaleSectionKey)) {
         const key = tier.sale_type as SaleSectionKey;
         nextTiers[key] = { enabled: true, price: String(tier.unit_price ?? load.price ?? ''), minimum: String(tier.minimum_packages ?? 1) };
       }
     }
-    if (!Object.values(nextTiers).some(t => t.enabled)) nextTiers.retail.enabled = true;
+    if (!Object.values(nextTiers).some(t => t.enabled)) nextTiers[allowedSaleSections(memberRole)[0] ?? 'retail'].enabled = true;
     setEditTiers(nextTiers);
     setEditValues({
       product: load.product_type || load.name || '',
@@ -141,11 +149,12 @@ function AnnouncePage() {
     if (!editingLoad) return;
     const weight = Number(editValues.weight), count = Number(editValues.count);
     const minimum = Number(editValues.minimum), price = Number(editValues.price);
-    const enabled = salesSections.filter(section => editTiers[section.key].enabled);
+    const allowedSections = allowedSaleSections(memberRole);
+    const enabled = salesSections.filter(section => allowedSections.includes(section.key) && editTiers[section.key].enabled);
     if (!editValues.product.trim() || !editValues.variety.trim() || !editValues.city.trim() || !editValues.origin.trim() ||
         !Number.isFinite(weight) || weight <= 0 || !Number.isInteger(count) || count < 1 ||
         !Number.isInteger(minimum) || minimum < 1 || minimum > count || !Number.isFinite(price) || price <= 0 ||
-        !enabled.length || enabled.some(section => {
+        !enabled.length || salesSections.some(section => editTiers[section.key].enabled && !allowedSections.includes(section.key)) || enabled.some(section => {
           const t = editTiers[section.key];
           return !Number.isFinite(Number(t.price)) || Number(t.price) <= 0 || !Number.isInteger(Number(t.minimum)) || Number(t.minimum) < 1 || Number(t.minimum) > count;
         })) {
@@ -325,6 +334,14 @@ function AnnouncePage() {
       setError('فقط تأمین‌کننده یا بارفروش تأییدشده می‌تواند بار منتشر کند.');
       setBusy(false); return;
     }
+    const allowedSections = allowedSaleSections(actualMemberRole);
+    if (!validSaleSections.length || saleSectionsEnabled.some(key => !allowedSections.includes(key))) {
+      setError(actualMemberRole === 'supplier'
+        ? 'تأمین‌کننده فقط می‌تواند بار را در بخش «ویژه حرفه‌ای» اعلام کند.'
+        : 'بارفروش فقط می‌تواند در بخش‌های «خرده‌فروشی»، «عمده‌فروشی» و «فروش ویژه» اعلام بار کند.');
+      setBusy(false); return;
+    }
+    const roleValidSaleSections = validSaleSections.filter(key => allowedSections.includes(key));
     if (actualMemberRole !== 'supplier' && !member.city) {
       setError('شهر ثابت عضویت شما ثبت نشده است؛ ابتدا اطلاعات عضویت را تکمیل کنید.');
       setBusy(false); return;
@@ -354,13 +371,13 @@ function AnnouncePage() {
       seller_type: actualMemberRole === 'supplier' ? 'supplier' : 'seller',
       member_id: member.id,
       owner_member_id: member.id,
-      sale_type: validSaleSections.length === 1 ? validSaleSections[0] : 'regular',
+      sale_type: roleValidSaleSections.length === 1 ? roleValidSaleSections[0] : 'regular',
       source_region: originCity,
     }).select('id').single();
     if (insertError || !insertedLoad) {
       setError('ثبت بار انجام نشد؛ اطلاعات یا دسترسی دیتابیس را بررسی کنید.');
     } else {
-      const priceRows = validSaleSections.map(key => ({
+      const priceRows = roleValidSaleSections.map(key => ({
         load_id: insertedLoad.id,
         sale_type: key,
         unit_price: Number(salePrices[key] || form.price),
@@ -493,13 +510,13 @@ function AnnouncePage() {
                       <label className="field-label">زمان آماده بودن<input required type="date" className="field-input" value={editValues.ready} onChange={e => setEditValues(v => ({...v, ready:e.target.value}))} /></label>
                     </div>
                     <fieldset className="grid gap-3 rounded-lg border border-border p-3"><legend className="px-2 font-semibold">قیمت و حداقل سفارش هر بخش فروش</legend>
-                      {salesSections.map(section => <div key={section.key} className="grid gap-2 rounded border border-border p-3">
-                        <label className="flex items-center gap-2"><input type="checkbox" checked={editTiers[section.key].enabled} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], enabled:e.target.checked}}))} />{section.label}</label>
+                      {salesSections.map(section => { const roleAllowsSection = allowedSaleSections(memberRole).includes(section.key); return <div key={section.key} className="grid gap-2 rounded border border-border p-3">
+                        <label className="flex items-center gap-2"><input type="checkbox" checked={editTiers[section.key].enabled && roleAllowsSection} disabled={!roleAllowsSection} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], enabled:e.target.checked}}))} />{section.label}</label>
                         {editTiers[section.key].enabled && <div className="grid grid-cols-2 gap-2">
                           <label className="field-label">قیمت هر کیلو<input required type="number" min="1" className="field-input" value={editTiers[section.key].price} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], price:e.target.value}}))} /></label>
                           <label className="field-label">حداقل بسته<input required type="number" min="1" className="field-input" value={editTiers[section.key].minimum} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], minimum:e.target.value}}))} /></label>
                         </div>}
-                      </div>)}
+                      </div>; })}
                     </fieldset>
                     <label className="field-label">توضیحات<textarea className="field-input min-h-20" value={editValues.description} onChange={e => setEditValues(v => ({...v, description:e.target.value}))} /></label>
                     <div className="flex flex-wrap gap-2"><Button type="submit" disabled={!!busyLoadId}>{busyLoadId === load.id ? "در حال ذخیره…" : "ذخیره همه تغییرات"}</Button><Button type="button" variant="outline" disabled={!!busyLoadId} onClick={() => setEditingLoad(null)}>انصراف</Button></div>
@@ -535,11 +552,12 @@ function AnnouncePage() {
             <label className="field-label">قیمت پایه هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => { set('price')(e.target.value); setSalePrices(prev => Object.fromEntries(Object.entries(prev).map(([key, value]) => [key, value || e.target.value])) as Record<SaleSectionKey, string>); }} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
             <fieldset className="grid gap-3 rounded-lg border border-border p-4">
               <legend className="px-2 font-bold">بخش‌های فروش و قیمت اختصاصی هر بخش</legend>
-              <p className="text-xs text-muted-foreground">فقط بخش‌هایی که انتخاب می‌کنید برای خریداران فعال می‌شوند. برای هر بخش قیمت هر کیلو و حداقل تعداد بسته جداگانه ثبت می‌شود.</p>
+              <p className="text-xs text-muted-foreground">{memberRole === 'supplier' ? 'تأمین‌کننده فقط در بخش ویژه حرفه‌ای اعلام بار می‌کند.' : 'بارفروش می‌تواند در بخش‌های خرده‌فروشی، عمده‌فروشی و فروش ویژه اعلام بار کند.'} قیمت و حداقل سفارش هر بخش جداگانه ثبت می‌شود.</p>
               {salesSections.map(section => {
-                const enabled = saleSectionsEnabled.includes(section.key);
+                const roleAllowsSection = allowedSaleSections(memberRole).includes(section.key);
+                const enabled = saleSectionsEnabled.includes(section.key) && roleAllowsSection;
                 return <div key={section.key} className="grid gap-3 rounded-md border border-border p-3">
-                  <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={enabled} onChange={e => toggleSaleSection(section.key, e.target.checked)} />{section.label}</label>
+                  <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={enabled} disabled={!memberRole || !roleAllowsSection} onChange={e => toggleSaleSection(section.key, e.target.checked)} />{section.label}</label>
                   {enabled && <div className="grid grid-cols-2 gap-3">
                     <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="1" step="100" dir="ltr" value={salePrices[section.key] || form.price} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
                     <label className="field-label">حداقل بسته در این بخش<input required type="number" min="1" max={form.stock || undefined} step="1" dir="ltr" value={saleMinimums[section.key]} onChange={e => setSaleMinimums(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
