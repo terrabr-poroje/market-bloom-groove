@@ -42,6 +42,7 @@
 | 20261018193810 | `align_order_request_buyer_roles` |
 | 20261018194031 | `enforce_supplier_inventory_and_professional_order_audience` |
 | 20261018194535 | `normalize_supplier_type_for_marketplace_rls` |
+| 20261018195459 | `restrict_anonymous_data_access` |
 
 ## Live access-policy changes verified on 2026-10-18
 
@@ -51,7 +52,8 @@
 - Non-professional roles see ordinary active inventory in their own city; city managers are restricted to assigned cities; main administrators retain administrative access.
 - Professional orders require an approved supplier, bar_seller, or legacy seller role. Direct purchase requests accept those approved professional roles as well as ordinary buyers.
 - Storefront identity is exposed through authenticated RPC public.get_storefront_member(uuid) with only minimal approved-member fields; members-table RLS was not broadened.
-- Private load-image storage policies now check ownership and parent-load visibility; permissive legacy storage policies were removed.
+- Private load-image storage policies check ownership and parent-load visibility; permissive legacy storage policies were removed.
+- Anonymous grants were removed from private marketplace, finance, ratings, admin-assignment, city-management, and visit analytics data. The visit summary view now uses invoker security so base-table RLS applies.
 - **Live data caveat:** there are currently 0 rows in public.loads. SQL policies and app build can be verified, but full end-to-end marketplace tests require an approved supplier/bar-seller account to publish a test load and an ordinary buyer account to attempt access.
 
 ## Public tables
