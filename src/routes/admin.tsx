@@ -23,6 +23,7 @@ type CityManager = { id: string; auth_user_id: string; display_name: string; log
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
 type SiteVisit = { id: string; user_id: string; route: string; visited_at: string; members: { full_name: string | null; phone: string | null; city: string | null } | null };
 type SiteVisitSummary = { total_visits: number; unique_visitors: number; visits_last_24_hours: number; visitors_last_24_hours: number };
+type AdminRating = { id: string; order_id: string; reviewer_member_id: string; target_type: string; score: number; review_text: string | null; created_at: string; messages: { id: string; sender_user_id: string; message: string; created_at: string }[] };
 
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
@@ -44,6 +45,9 @@ function AdminPage() {
   const [purchaseRequests, setPurchaseRequests] = useState<AdminPurchaseRequest[]>([]);
   const [visitSummary, setVisitSummary] = useState<SiteVisitSummary | null>(null);
   const [recentVisits, setRecentVisits] = useState<SiteVisit[]>([]);
+  const [ratings, setRatings] = useState<AdminRating[]>([]);
+  const [ratingReplies, setRatingReplies] = useState<Record<string, string>>({});
+  const [ratingReplyBusy, setRatingReplyBusy] = useState(false);
 
   function refresh() {
     (supabase as any).from('member_roles')
@@ -67,6 +71,23 @@ function AdminPage() {
       .limit(100)
       .then(({ data }: { data: AdminPurchaseRequest[] | null }) => setPurchaseRequests(data ?? []));
     if (isAdmin) {
+      void (supabase as any).from('ratings')
+        .select('id, order_id, reviewer_member_id, target_type, score, review_text, created_at')
+        .order('created_at', { ascending: false }).limit(100)
+        .then(async ({ data, error }: { data: Omit<AdminRating, 'messages'>[] | null; error: unknown }) => {
+          if (error || !data) return;
+          const ids = data.map(item => item.id);
+          let messages: AdminRating['messages'] = [];
+          if (ids.length) {
+            const result = await (supabase as any).from('rating_messages')
+              .select('id, rating_id, sender_user_id, message, created_at')
+              .in('rating_id', ids).order('created_at', { ascending: true });
+            if (!result.error && result.data) messages = result.data;
+          }
+          setRatings(data.map(item => ({ ...item, messages: messages.filter((message: any) => message.rating_id === item.id) })));
+        });
+    }
+    if (isAdmin) {
       void (supabase as any).from('site_visit_summary').select('*').maybeSingle()
         .then(({ data, error }: { data: SiteVisitSummary | null; error: unknown }) => { if (!error) setVisitSummary(data); });
       void (supabase as any).from('site_visits')
@@ -82,6 +103,16 @@ function AdminPage() {
     }
   }
   useEffect(() => { if (canManage) refresh(); }, [canManage]);
+
+  async function sendRatingReply(ratingId: string) {
+    const message = (ratingReplies[ratingId] ?? '').trim();
+    if (!message || !user) return;
+    setRatingReplyBusy(true);
+    const { error } = await (supabase as any).from('rating_messages').insert({ rating_id: ratingId, sender_user_id: user.id, message });
+    if (error) window.alert('ارسال پاسخ انجام نشد. دسترسی مدیر و اتصال دیتابیس را بررسی کنید.');
+    else { setRatingReplies(current => ({ ...current, [ratingId]: '' })); refresh(); }
+    setRatingReplyBusy(false);
+  }
 
   async function approveRequest(request: MemberRequest) {
     const { error } = await (supabase as any).from('member_roles')
@@ -154,6 +185,7 @@ function AdminPage() {
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
         {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
+        {isAdmin && <Button variant={tab === 'reviews' ? 'default' : 'ghost'} onClick={() => setTab('reviews')}>نظرات خریداران ({faNumber(ratings.length)})</Button>}
         {isAdmin && <Button variant={tab === 'visits' ? 'default' : 'ghost'} onClick={() => setTab('visits')}><Eye />آمار بازدیدها</Button>}
       </div>
 
@@ -208,6 +240,25 @@ function AdminPage() {
               </div>
             </div>)}
           </div>
+        </div>
+      )}
+
+      {tab === 'reviews' && isAdmin && (
+        <div className="mt-6 grid gap-4">
+          <div><h2 className="text-lg font-bold">نظرات و پیگیری خریداران</h2><p className="mt-1 text-sm text-muted-foreground">نظرها فقط از سفارش‌های ثبت‌شده قابل ثبت‌اند. برای بررسی دقیق‌تر می‌توانید در همان گفت‌وگو به خریدار پیام بدهید.</p></div>
+          {ratings.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز نظری ثبت نشده است.</p>}
+          {ratings.map(rating => (
+            <div key={rating.id} className="rounded-lg border border-border bg-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2"><strong>نظر سفارش {rating.order_id.slice(0, 8)}</strong><span className="text-amber-600">{"★".repeat(Math.max(0, Math.min(5, rating.score)))}{"☆".repeat(5 - Math.max(0, Math.min(5, rating.score)))} · {rating.score}/۵</span></div>
+              <p className="mt-1 text-xs text-muted-foreground">شناسه عضو خریدار: {rating.reviewer_member_id} · {rating.target_type === 'load' ? 'درباره بار' : 'درباره فروشنده'} · {new Date(rating.created_at).toLocaleString('fa-IR')}</p>
+              <p className="mt-3 whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">{rating.review_text || 'توضیح متنی ثبت نشده است.'}</p>
+              <div className="mt-4 grid gap-2">{rating.messages.map(message => <div key={message.id} className="rounded-md border border-border p-3"><p className="text-xs text-muted-foreground">{message.sender_user_id === user?.id ? 'پاسخ ترابار' : 'پیام خریدار'} · {new Date(message.created_at).toLocaleString('fa-IR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{message.message}</p></div>)}</div>
+              <form className="mt-4 grid gap-2" onSubmit={event => { event.preventDefault(); void sendRatingReply(rating.id); }}>
+                <label className="field-label">ارسال پیام به خریدار<textarea className="field-input mt-1 resize-y" rows={2} maxLength={2000} value={ratingReplies[rating.id] ?? ''} onChange={event => setRatingReplies(current => ({ ...current, [rating.id]: event.target.value }))} placeholder="برای بررسی دقیق‌تر، سؤال یا پیگیری خود را بنویسید…" /></label>
+                <div><Button type="submit" size="sm" disabled={ratingReplyBusy || !(ratingReplies[rating.id] ?? '').trim()}>ارسال پیام</Button></div>
+              </form>
+            </div>
+          ))}
         </div>
       )}
 
