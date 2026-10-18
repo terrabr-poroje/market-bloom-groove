@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AnnounceRouteImport } from './routes/announce'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -34,6 +35,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnnounceRoute = AnnounceRouteImport.update({
@@ -79,6 +85,7 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/announce': typeof AnnounceRoute
@@ -92,6 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/announce': typeof AnnounceRoute
@@ -104,6 +113,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/admin-login': typeof AdminLoginRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin-login'
     | '/about'
     | '/admin'
     | '/announce'
@@ -132,6 +143,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-login'
+    | '/reset-password'
     | '/about'
     | '/admin'
     | '/announce'
@@ -157,6 +170,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   AnnounceRoute: typeof AnnounceRoute
@@ -253,6 +268,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   AnnounceRoute: AnnounceRoute,
