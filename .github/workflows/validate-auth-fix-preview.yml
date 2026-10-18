@@ -60,7 +60,7 @@ jobs:
           config.routes = [];
           config.workers_dev = true;
           if (config.env) delete config.env;
-          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\\n');
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
           console.log('Verified preview-only config: terrabar-market-preview, no custom domain routes.');
           NODE
 
