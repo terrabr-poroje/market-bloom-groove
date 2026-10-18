@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { CheckCircle2, Clock3, LogIn, Phone, ShieldCheck, Sprout, Store, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +46,9 @@ function normalizeIranPhone(value: string) {
 }
 
 function AuthPage() {
+  const roleParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("role") : null;
+  const fixedRole = roleParam === "supplier" ? "supplier" : roleParam === "seller" || roleParam === "bar_seller" ? "bar_seller" : roleParam === "buyer" ? "buyer" : null;
+  const roleTitle = fixedRole === "buyer" ? "خریدار" : fixedRole === "bar_seller" ? "بارفروش" : fixedRole === "supplier" ? "تأمین‌کننده" : null;
   const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("signup");
@@ -59,6 +62,12 @@ function AuthPage() {
   const [city, setCity] = useState("کرج");
   const [activity, setActivity] = useState("");
   const [role, setRole] = useState<MainRole>("buyer");
+  useEffect(() => {
+    if (fixedRole) {
+      setRole(fixedRole);
+      setMode("login");
+    }
+  }, [fixedRole]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -266,8 +275,8 @@ function AuthPage() {
           <div className="flex items-center gap-3">
             <div className="grid size-12 place-items-center rounded-xl bg-accent text-primary"><Phone className="size-6" /></div>
             <div>
-              <h1 className="text-2xl font-extrabold">{mode === "signup" ? "ثبت‌نام در ترابار" : "ورود به ترابار"}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">ورود امن با کد یک‌بارمصرف پیامکی یا ایمیلی</p>
+              <h1 className="text-2xl font-extrabold">{roleTitle ? `صفحه ورود کاربران ${roleTitle}` : mode === "signup" ? "ثبت‌نام در ترابار" : "ورود به ترابار"}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{roleTitle ? `ورود و ثبت‌نام اختصاصی ${roleTitle} با کد یک‌بارمصرف؛ نقش این صفحه ثابت است.` : "ورود امن با کد یک‌بارمصرف پیامکی یا ایمیلی"}</p>
             </div>
           </div>
 
@@ -286,7 +295,7 @@ function AuthPage() {
                   <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" placeholder="نام کامل شما" autoComplete="name" /></label>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="field-label"><label htmlFor="signup-province">استان محل فعالیت</label><CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="signup-province" options={provinces} placeholder="جست‌وجوی استان…" /></div><div className="field-label"><label htmlFor="signup-city">شهر محل فعالیت</label><CityPicker value={city} onChange={setCity} id="signup-city" options={provinceCities[province] ?? []} disabled={!province} placeholder={province ? "جست‌وجو و انتخاب شهر همین استان…" : "ابتدا استان را انتخاب کنید…"} /></div></div>
                   {role !== "buyer" && <label className="field-label">نوع فعالیت / محصولات<input required value={activity} onChange={e => setActivity(e.target.value)} className="field-input" placeholder={role === "supplier" ? "مثلاً باغدار مرکبات، کشاورز یا سورتینگ" : "مثلاً حجره و نوع محصولات قابل عرضه"} /></label>}
-                  <fieldset className="grid gap-3">
+                  {!fixedRole && <fieldset className="grid gap-3">
                     <legend className="mb-1 text-sm font-bold">نقش اصلی خود را انتخاب کنید</legend>
                     {roleOptions.map(item => {
                       const Icon = item.icon;
@@ -298,7 +307,7 @@ function AuthPage() {
                         </label>
                       );
                     })}
-                  </fieldset>
+                  </fieldset>}
                   <label className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 accent-primary" /><span><Link to="/rules" className="text-primary underline">قوانین و مقررات ترابار</Link> را می‌پذیرم.</span></label>
                 </>
               )}
