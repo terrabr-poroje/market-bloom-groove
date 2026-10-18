@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: terrabar-supabase-schema-capture
@@ -52,21 +51,17 @@ jobs:
           supabase db dump --linked --schema public --password "$SUPABASE_DB_PASSWORD" --file supabase/snapshots/production-public-schema.sql
           supabase gen types typescript --linked --schema public > supabase/database.types.ts
 
-      - name: Open or update a review pull request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: automation/supabase-schema-snapshot
-          delete-branch: false
-          commit-message: "chore: capture current Supabase public schema"
-          title: "chore: review current Supabase schema snapshot"
-          body: |
-            Automated schema snapshot from the existing production Supabase project.
-
-            - Includes schema definitions only, not table rows or user data.
-            - Updates generated TypeScript database types.
-            - This PR does not apply SQL to production.
-            - Review the diff carefully before merging. Snapshot SQL is a reference/restore aid and must not be replayed on top of the existing production database.
-          add-paths: |
-            supabase/snapshots/production-public-schema.sql
-            supabase/database.types.ts
+      - name: Update the schema review branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B automation/supabase-schema-snapshot
+          git add supabase/snapshots/production-public-schema.sql supabase/database.types.ts
+          if git diff --cached --quiet; then
+            echo "Supabase schema snapshot and generated types are unchanged."
+            exit 0
+          fi
+          git commit -m "chore: capture current Supabase public schema"
+          git push --force origin automation/supabase-schema-snapshot
