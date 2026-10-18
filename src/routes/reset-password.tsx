@@ -117,7 +117,7 @@ function ResetPasswordPage() {
     {stage === "request" && <form onSubmit={requestCode} className="mt-6 grid gap-4">
       <label className="field-label">ایمیل حساب<input required type="email" autoComplete="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /></label>
       <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد بازیابی"}</Button>
-      <Button type="button" variant="outline" disabled={busy || !/^\\S+@\\S+\\.\\S+$/.test(email.trim())} onClick={() => { setStage("verify"); setError(""); setNotice("کد ۸ رقمی‌ای را که قبلاً دریافت کرده‌اید وارد کنید. اگر کد ندارید، ابتدا «ارسال کد بازیابی» را بزنید."); }}>کد را دریافت کرده‌ام؛ ورود به مرحله تأیید</Button>
+      <Button type="button" variant="outline" disabled={busy || !email.includes("@") || !email.includes(".")} onClick={() => { setStage("verify"); setError(""); setNotice("کد ۸ رقمی‌ای را که قبلاً دریافت کرده‌اید وارد کنید. اگر کد ندارید، ابتدا «ارسال کد بازیابی» را بزنید."); }}>کد را دریافت کرده‌ام؛ ورود به مرحله تأیید</Button>
     </form>}
     {stage === "verify" && <form onSubmit={verifyCode} className="mt-6 grid gap-4">
       <p className="text-sm">کد ۸ رقمی ارسال‌شده به {email} را وارد کنید. این کد رمز جدید نیست.</p>
