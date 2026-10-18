@@ -3,7 +3,7 @@ import { ArrowRightLeft, ArrowLeft, UserRound } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/seller-accounting-preview")({
-  head: () => pageHead("گردش حساب‌های من | ترابار", "پیش‌نمایش بخش گردش حساب بارفروش ترابار."),
+  head: () => pageHead("اطلاعات حساب و گردش حساب | ترابار", "پیش‌نمایش اطلاعات حساب بانکی و گردش مالی بارفروش ترابار."),
   component: SellerAccountingPreviewPage,
 });
 
@@ -13,9 +13,23 @@ function SellerAccountingPreviewPage() {
       <div className="mx-auto w-full max-w-3xl">
         <header className="rounded-3xl bg-emerald-950 px-5 py-7 text-white shadow-lg sm:px-8 sm:py-9">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50"><UserRound className="size-4" /> TERRABAR | ترابار</span>
-          <h1 className="mt-3 text-2xl font-black leading-relaxed sm:text-3xl">گردش حساب‌های من</h1>
-          <p className="mt-2 text-sm leading-7 text-emerald-50/90">پیش‌نمایش بخش مالی حساب بارفروش.</p>
+          <h1 className="mt-3 text-2xl font-black leading-relaxed sm:text-3xl">اطلاعات حساب و گردش حساب</h1>
+          <p className="mt-2 text-sm leading-7 text-emerald-50/90">اطلاعات حساب بانکی و سوابق مالی بارفروش در یک صفحه.</p>
         </header>
+        <div className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-3">
+            <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-800"><UserRound className="size-7" /></span>
+            <div>
+              <h2 className="font-extrabold text-foreground">اطلاعات حساب بانکی</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">شماره حساب و اطلاعات بانکی تأییدشده برای تسویه با بارفروش.</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl bg-muted/50 p-4">
+            <div className="text-sm text-muted-foreground">شماره حساب / شبا</div>
+            <p className="mt-2 font-bold text-foreground">پس از ثبت و تأیید اطلاعات بانکی نمایش داده می‌شود</p>
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">این پیش‌نمایش به اطلاعات بانکی واقعی متصل نیست؛ شماره حساب واقعی در این صفحه وارد نشده است.</p>
+          </div>
+        </div>
         <div className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-3">
             <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-800"><ArrowRightLeft className="size-7" /></span>
