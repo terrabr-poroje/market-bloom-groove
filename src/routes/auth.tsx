@@ -224,7 +224,9 @@ function AuthPage() {
       setNotice("ورود با موفقیت انجام شد.");
     }
     setBusy(false);
-    window.setTimeout(() => navigate({ to: mode === "signup" && role !== "buyer" ? "/membership" : "/" }), 900);
+    const requestedNext = new URLSearchParams(window.location.search).get("next");
+    const safeNext = requestedNext === "/requests" ? "/requests" : null;
+    window.setTimeout(() => navigate({ to: safeNext ?? (mode === "signup" && role !== "buyer" ? "/membership" : "/") }), 900);
   }
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بررسی حساب…</section>;
