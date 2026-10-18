@@ -209,6 +209,17 @@ function AnnouncePage() {
     if (!window.confirm('بار «' + (load.name || load.product_type) + '» حذف شود؟ این کار قابل بازگشت نیست.')) return;
     setBusyLoadId(load.id);
     setManageError('');
+    const { data: linkedOrders, error: linkedOrderError } = await (supabase as any).from('orders').select('id').eq('load_id', load.id).limit(1);
+    if (linkedOrderError) {
+      setManageError('بررسی سفارش‌های مرتبط ممکن نشد؛ برای جلوگیری از حذف ناقص، عملیات متوقف شد.');
+      setBusyLoadId('');
+      return;
+    }
+    if ((linkedOrders ?? []).length) {
+      setManageError('این بار سفارش مرتبط دارد؛ برای حفظ سوابق خرید، حذف کامل مجاز نیست. در صورت نیاز ابتدا بار را غیرفعال کنید.');
+      setBusyLoadId('');
+      return;
+    }
     const { data: images, error: imageListError } = await (supabase as any).from('load_images').select('storage_path').eq('load_id', load.id);
     if (imageListError) {
       setManageError('فهرست عکس‌های بار دریافت نشد؛ برای جلوگیری از حذف ناقص، عملیات متوقف شد.');
@@ -231,9 +242,7 @@ function AnnouncePage() {
     if (paths.length) {
       const { error: storageError } = await supabase.storage.from('terrabar-load-images').remove(paths);
       if (storageError) {
-        setManageError('پیوندهای عکس حذف شدند اما پاک‌سازی فایل‌های ذخیره‌شده کامل نشد؛ حذف بار ادامه پیدا نکرد.');
-        setBusyLoadId('');
-        return;
+        console.warn('[Terrabar] load image storage cleanup failed', storageError);
       }
     }
     const { error: deleteError } = await (supabase as any).from('loads').delete().eq('id', load.id);
