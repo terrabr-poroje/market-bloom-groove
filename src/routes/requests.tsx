@@ -211,7 +211,6 @@ function Requests() {
   const filtered = displayLoads
     .filter(load => {
       const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
-      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city);
       const isProfessionalInventory = String(load.sellerType || "").toLowerCase() === "supplier" || options.some(option => ["professional", "pro"].includes(option.saleType));
       const professionalCityAccess = purchaseMode === "professional" && canBuySupplierProfessional && isProfessionalInventory;
       const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city) || professionalCityAccess;
