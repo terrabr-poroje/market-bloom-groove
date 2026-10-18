@@ -108,7 +108,7 @@ function ResetPasswordPage() {
     await supabase.auth.signOut();
     setNotice("رمز جدید با موفقیت ذخیره شد. اکنون می‌توانید وارد شوید.");
     setBusy(false);
-    window.setTimeout(() => navigate({ to: "/auth" }), 900);
+    window.setTimeout(() => navigate({ to: "/admin-login" }), 900);
   }
 
   return <section className="bg-market-surface py-12"><div className="site-container max-w-md"><div className="rounded-xl border border-border bg-card p-6 sm:p-8">
