@@ -11,6 +11,7 @@ import {
   Truck,
   Users,
   LogIn,
+  Menu,
 } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
@@ -125,65 +126,19 @@ function Index() {
         </div>
       </section>
 
-      <section className="bg-background py-10 sm:py-14 lg:py-16">
-        <div className="site-container">
-          <div className="mb-7 flex flex-col gap-2 sm:mb-9 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-primary">مسیرهای اصلی</p>
-              <h2 className="mt-2 text-2xl font-black sm:text-3xl">کار خود را از اینجا شروع کنید</h2>
+      <section className="bg-background py-3 sm:py-4">
+        <div className="site-container flex justify-center">
+          <details className="group relative w-full max-w-md">
+            <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:bg-accent [&::-webkit-details-marker]:hidden">
+              <Menu className="size-4" />
+              راهنما و پشتیبانی
+            </summary>
+            <div className="mt-2 grid gap-1 rounded-xl border border-border bg-card p-2 shadow-sm">
+              <Link to="/guide" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">راهنمای استفاده از سایت</Link>
+              <Link to="/contact" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">ارتباط با پشتیبانی</Link>
+              <Link to="/rules" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">قوانین و حریم خصوصی</Link>
             </div>
-            <p className="max-w-lg text-sm leading-7 text-muted-foreground">با توجه به نقش خود، وارد مسیر مناسب شوید و مراحل بعدی را دنبال کنید.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {mainActions.map(item => {
-              const Icon = item.icon;
-              return (
-                <article key={item.to} className="group flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg sm:p-6">
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className={`grid size-14 place-items-center rounded-2xl ${item.tone}`}><Icon className="size-7" /></div>
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">مسیر ترابار</span>
-                  </div>
-                  <h3 className="text-lg font-extrabold">{item.title}</h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-muted-foreground">{item.description}</p>
-                  <Link to={item.to} className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    {item.action}<ArrowLeft className="mr-auto size-4 transition-transform group-hover:-translate-x-1" />
-                  </Link>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y border-border bg-market-surface py-10 sm:py-14">
-        <div className="site-container">
-          <div className="mx-auto mb-8 max-w-2xl text-center">
-            <p className="text-sm font-bold text-primary">مسیر همکاری</p>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">فرآیند ترابار، قدم‌به‌قدم</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">از ساخت حساب تا پیگیری بار، هر بخش برای نیازهای فعالان بازار طراحی شده است.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {steps.map(step => {
-              const Icon = step.icon;
-              return (
-                <div key={step.number} className="relative rounded-2xl border border-border bg-card p-5 sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">{step.number}</span>
-                    <div className="grid size-10 place-items-center rounded-xl bg-accent text-primary"><Icon className="size-5" /></div>
-                  </div>
-                  <h3 className="mt-5 font-extrabold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{step.text}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-2xl border border-emerald-900/10 bg-emerald-950 p-5 text-white sm:flex-row sm:items-center sm:px-7">
-            <div>
-              <h3 className="font-extrabold">آماده شروع هستید؟</h3>
-              <p className="mt-1 text-sm leading-7 text-emerald-100/80">وارد ترابار شوید و مسیر متناسب با فعالیت خود را انتخاب کنید.</p>
-            </div>
-            <Link to="/auth" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50">ورود به ترابار <ArrowLeft className="size-4" /></Link>
-          </div>
+          </details>
         </div>
       </section>
     </div>
