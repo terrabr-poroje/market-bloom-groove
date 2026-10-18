@@ -30,7 +30,7 @@ jobs:
           payload="$(jq -n \
             --arg subject "کد ورود ترابار" \
             --arg content '<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8"><h2>کد ورود ترابار</h2><p>برای ورود یا تأیید ایمیل خود، کد یک‌بارمصرف زیر را در سایت ترابار وارد کنید:</p><p style="font-size:32px;font-weight:bold;letter-spacing:6px;text-align:center">{{ .Token }}</p><p>این کد را در اختیار دیگران قرار ندهید. اگر شما درخواست ورود نداده‌اید، این ایمیل را نادیده بگیرید.</p></div>' \
-            '{mailer_subjects_magic_link:$subject,mailer_templates_magic_link_content:$content}')"
+            '{mailer_subjects_magic_link:$subject,mailer_templates_magic_link_content:$content,mailer_otp_length:6}')"
 
           curl --fail --silent --show-error \
             --request PATCH "$api" \
@@ -50,11 +50,15 @@ jobs:
           const config = JSON.parse(fs.readFileSync('/tmp/supabase-auth-verify.json', 'utf8'));
           const subject = config.mailer_subjects_magic_link || '';
           const template = config.mailer_templates_magic_link_content || '';
+          const otpLength = Number(config.mailer_otp_length);
           if (!template.includes('{{ .Token }}') || template.includes('{{ .ConfirmationURL }}')) {
             throw new Error('Saved Magic Link template did not verify as OTP-only. Please inspect the Supabase Auth template.');
+          }
+          if (otpLength !== 6) {
+            throw new Error(`Saved email OTP length is ${otpLength}, expected 6.`);
           }
           if (!subject.includes('کد ورود ترابار')) {
             throw new Error('Saved email subject did not verify.');
           }
-          console.log('Verified: Magic Link email template contains the OTP token and no confirmation URL.');
+          console.log('Verified: email OTP length is 6; template contains the OTP token and no confirmation URL.');
           NODE
