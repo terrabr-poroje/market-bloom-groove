@@ -5,7 +5,7 @@ import { CheckCircle2, Clock3, Send, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
-import { pageHead, provinces } from '@/lib/marketplace';
+import { pageHead, provinces, provinceCities } from '@/lib/marketplace';
 import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/membership")({
@@ -153,7 +153,7 @@ function MembershipPage() {
             <label className="field-label">شماره تماس<input required dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09…" /></label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="field-label">استان محل فعالیت<CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="membership-province" options={provinces} placeholder="جست‌وجوی استان…" /></label>
-              <label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="membership-city" placeholder="ابتدا استان را انتخاب کنید، سپس شهر را جست‌وجو کنید…" /></label>
+              <label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="membership-city" options={provinceCities[province] ?? []} disabled={!province} placeholder={province ? "جست‌وجو و انتخاب شهر همین استان…" : "ابتدا استان را انتخاب کنید…"} /></label>
             </div>
             <label className="field-label">توضیحات (اختیاری)<textarea value={description} onChange={e => setDescription(e.target.value)} className="field-input min-h-20 resize-y" placeholder="نوع فعالیت، محصولات، سابقه…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
