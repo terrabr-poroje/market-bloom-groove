@@ -152,8 +152,8 @@ function MembershipPage() {
             <label className="field-label">نام و نام خانوادگی<input required value={fullName} onChange={e => setFullName(e.target.value)} className="field-input" /></label>
             <label className="field-label">شماره تماس<input required dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09…" /></label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="field-label">استان محل فعالیت<CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="membership-province" options={provinces} placeholder="جست‌وجوی استان…" /></label>
-              <label className="field-label">شهر محل فعالیت<CityPicker value={city} onChange={setCity} id="membership-city" options={provinceCities[province] ?? []} disabled={!province} placeholder={province ? "جست‌وجو و انتخاب شهر همین استان…" : "ابتدا استان را انتخاب کنید…"} /></label>
+              <div className="field-label"><label htmlFor="membership-province">استان محل فعالیت</label><CityPicker value={province} onChange={value => { setProvince(value); setCity(""); }} id="membership-province" options={provinces} placeholder="جست‌وجوی استان…" /></div>
+              <div className="field-label"><label htmlFor="membership-city">شهر محل فعالیت</label><CityPicker value={city} onChange={setCity} id="membership-city" options={provinceCities[province] ?? []} disabled={!province} placeholder={province ? "جست‌وجو و انتخاب شهر همین استان…" : "ابتدا استان را انتخاب کنید…"} /></div>
             </div>
             <label className="field-label">توضیحات (اختیاری)<textarea value={description} onChange={e => setDescription(e.target.value)} className="field-input min-h-20 resize-y" placeholder="نوع فعالیت، محصولات، سابقه…" /></label>
             {error && <p className="text-sm text-destructive">{error}</p>}
