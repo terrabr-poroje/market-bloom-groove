@@ -22,7 +22,7 @@ const salesSections = [
   { key: 'professional', label: 'ویژه حرفه‌ای', defaultMin: 5 },
 ] as const;
 type SaleSectionKey = typeof salesSections[number]['key'];
-type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; quantity: number; count: number | null; price: number; status: string; created_at: string };
+type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; origin: string | null; quality: string | null; quantity: number; count: number | null; price: number; status: string; package_type: string | null; package_weight: number | null; min_order_quantity: number | null; ready_date: string | null; description: string | null; created_at: string };
 type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
 const orderStatusLabels: Record<string, string> = { pending: 'در انتظار پاسخ شما', accepted: 'تأیید شده توسط فروشنده', rejected: 'رد شده توسط فروشنده' };
@@ -47,6 +47,9 @@ function AnnouncePage() {
   const [loadingOwnedLoads, setLoadingOwnedLoads] = useState(true);
   const [manageError, setManageError] = useState('');
   const [busyLoadId, setBusyLoadId] = useState('');
+  const [editingLoad, setEditingLoad] = useState<OwnedLoad | null>(null);
+  const [editValues, setEditValues] = useState({ product: '', variety: '', quality: 'standard', origin: '', city: '', packageType: 'کارتن', weight: '', count: '', minimum: '', price: '', ready: '', description: '' });
+  const [editTiers, setEditTiers] = useState<Record<SaleSectionKey, { enabled: boolean; price: string; minimum: string }>>({ retail: { enabled: true, price: '', minimum: '1' }, wholesale: { enabled: false, price: '', minimum: '2' }, special: { enabled: false, price: '', minimum: '2' }, professional: { enabled: false, price: '', minimum: '5' } });
   const set = (key: keyof typeof form) => (value: string) => setForm(prev => ({ ...prev, [key]: value }));
   const toggleSaleSection = (key: SaleSectionKey, checked: boolean) => {
     setSaleSectionsEnabled(prev => checked ? [...new Set([...prev, key])] : prev.filter(item => item !== key));
@@ -67,7 +70,7 @@ function AnnouncePage() {
       const codes = (roleRows ?? []).map((row: any) => String(row.role_code).toLowerCase());
       setMemberRole(codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '');
       const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
-        (supabase as any).from('loads').select('id, name, product_type, engine, city, quantity, count, price, status, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
+        (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
         (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
       ]);
       if (!active) return;
@@ -89,6 +92,160 @@ function AnnouncePage() {
     if (responseError) setManageError('ثبت پاسخ به سفارش انجام نشد؛ دسترسی فروشنده را بررسی کنید.');
     else setIncomingOrders(items => items.map(item => item.id === orderId ? { ...item, status } : item));
     setBusyLoadId('');
+  }
+
+  async function startEditLoad(load: OwnedLoad) {
+    setManageError('');
+    const { data: tiers, error: tierError } = await (supabase as any).from('load_price_tiers')
+      .select('sale_type, unit_price, minimum_packages').eq('load_id', load.id);
+    if (tierError) {
+      setManageError('اطلاعات قیمت‌گذاری این بار دریافت نشد؛ ویرایش انجام نشد.');
+      return;
+    }
+    const nextTiers: Record<SaleSectionKey, { enabled: boolean; price: string; minimum: string }> = {
+      retail: { enabled: false, price: String(load.price ?? ''), minimum: '1' },
+      wholesale: { enabled: false, price: String(load.price ?? ''), minimum: '2' },
+      special: { enabled: false, price: String(load.price ?? ''), minimum: '2' },
+      professional: { enabled: false, price: String(load.price ?? ''), minimum: '5' },
+    };
+    for (const tier of tiers ?? []) {
+      if (tier.sale_type in nextTiers) {
+        const key = tier.sale_type as SaleSectionKey;
+        nextTiers[key] = { enabled: true, price: String(tier.unit_price ?? load.price ?? ''), minimum: String(tier.minimum_packages ?? 1) };
+      }
+    }
+    if (!Object.values(nextTiers).some(t => t.enabled)) nextTiers.retail.enabled = true;
+    setEditTiers(nextTiers);
+    setEditValues({
+      product: load.product_type || load.name || '',
+      variety: load.engine || '',
+      quality: load.quality || 'standard',
+      origin: load.origin || '',
+      city: load.city || '',
+      packageType: load.package_type || 'کارتن',
+      weight: String(load.package_weight ?? (load.count ? Number(load.quantity) / Number(load.count) : '')),
+      count: String(load.count ?? ''),
+      minimum: String(load.min_order_quantity ?? 1),
+      price: String(load.price ?? ''),
+      ready: load.ready_date || new Date().toISOString().slice(0, 10),
+      description: load.description || '',
+    });
+    setEditingLoad(load);
+  }
+
+  async function saveEditedLoad(event: FormEvent) {
+    event.preventDefault();
+    if (!editingLoad) return;
+    const weight = Number(editValues.weight), count = Number(editValues.count);
+    const minimum = Number(editValues.minimum), price = Number(editValues.price);
+    const enabled = salesSections.filter(section => editTiers[section.key].enabled);
+    if (!editValues.product.trim() || !editValues.variety.trim() || !editValues.city.trim() || !editValues.origin.trim() ||
+        !Number.isFinite(weight) || weight <= 0 || !Number.isInteger(count) || count < 1 ||
+        !Number.isInteger(minimum) || minimum < 1 || minimum > count || !Number.isFinite(price) || price <= 0 ||
+        !enabled.length || enabled.some(section => {
+          const t = editTiers[section.key];
+          return !Number.isFinite(Number(t.price)) || Number(t.price) <= 0 || !Number.isInteger(Number(t.minimum)) || Number(t.minimum) < 1 || Number(t.minimum) > count;
+        })) {
+      setManageError('ویرایش ذخیره نشد؛ همه اطلاعات ضروری، موجودی، حداقل سفارش و قیمت‌های بخش‌های فروش را بررسی کنید.');
+      return;
+    }
+    setBusyLoadId(editingLoad.id);
+    setManageError('');
+    const { error: updateError } = await (supabase as any).from('loads').update({
+      name: [editValues.product.trim(), editValues.variety.trim()].join(' '),
+      product_type: editValues.product.trim(),
+      engine: editValues.variety.trim(),
+      quality: editValues.quality,
+      origin: editValues.origin.trim(),
+      source_region: editValues.origin.trim(),
+      city: editValues.city.trim(),
+      package_type: editValues.packageType,
+      package_weight: weight,
+      quantity: weight * count,
+      count,
+      min_quantity: Number(editValues.minimum) * weight,
+      min_order_quantity: minimum,
+      price,
+      ready_date: editValues.ready,
+      description: editValues.description.trim() || null,
+    }).eq('id', editingLoad.id);
+    if (updateError) {
+      setManageError('ذخیره ویرایش بار انجام نشد؛ ممکن است ستون یا سیاست دسترسی دیتابیس نیاز به بررسی داشته باشد.');
+      setBusyLoadId('');
+      return;
+    }
+    const { error: clearTierError } = await (supabase as any).from('load_price_tiers').delete().eq('load_id', editingLoad.id);
+    if (clearTierError) {
+      setManageError('اطلاعات اصلی ذخیره شد، اما به‌روزرسانی قیمت‌های اختصاصی ناموفق بود. بار را دوباره بررسی کنید.');
+      setBusyLoadId('');
+      return;
+    }
+    const tierRows = enabled.map(section => ({
+      load_id: editingLoad.id, sale_type: section.key,
+      unit_price: Number(editTiers[section.key].price),
+      minimum_packages: Number(editTiers[section.key].minimum),
+      min_quantity: Number(editTiers[section.key].minimum) * weight, max_quantity: null,
+    }));
+    const { error: insertTierError } = await (supabase as any).from('load_price_tiers').insert(tierRows);
+    if (insertTierError) {
+      setManageError('اطلاعات اصلی ذخیره شد، اما ذخیره قیمت‌های بخش فروش ناموفق بود؛ بار را بررسی کنید.');
+      setBusyLoadId('');
+      return;
+    }
+    setOwnedLoads(items => items.map(item => item.id === editingLoad.id ? {
+      ...item, name: [editValues.product.trim(), editValues.variety.trim()].join(' '),
+      product_type: editValues.product.trim(), engine: editValues.variety.trim(),
+      quality: editValues.quality, origin: editValues.origin.trim(), city: editValues.city.trim(),
+      package_type: editValues.packageType, package_weight: weight, quantity: weight * count,
+      count, min_order_quantity: minimum, price, ready_date: editValues.ready,
+      description: editValues.description.trim() || null,
+    } : item));
+    setEditingLoad(null);
+    setBusyLoadId('');
+    setManageError('ویرایش بار و قیمت‌های فروش ذخیره شد.');
+  }
+
+  async function deleteLoad(load: OwnedLoad) {
+    if (!window.confirm('بار «' + (load.name || load.product_type) + '» حذف شود؟ این کار قابل بازگشت نیست.')) return;
+    setBusyLoadId(load.id);
+    setManageError('');
+    const { data: images, error: imageListError } = await (supabase as any).from('load_images').select('storage_path').eq('load_id', load.id);
+    if (imageListError) {
+      setManageError('فهرست عکس‌های بار دریافت نشد؛ برای جلوگیری از حذف ناقص، عملیات متوقف شد.');
+      setBusyLoadId('');
+      return;
+    }
+    const { error: tierDeleteError } = await (supabase as any).from('load_price_tiers').delete().eq('load_id', load.id);
+    if (tierDeleteError) {
+      setManageError('حذف قیمت‌های وابسته ممکن نشد؛ بار حذف نشد.');
+      setBusyLoadId('');
+      return;
+    }
+    const { error: imageDeleteError } = await (supabase as any).from('load_images').delete().eq('load_id', load.id);
+    if (imageDeleteError) {
+      setManageError('حذف اطلاعات عکس‌های بار ممکن نشد؛ حذف بار متوقف شد.');
+      setBusyLoadId('');
+      return;
+    }
+    const paths = (images ?? []).map((image: any) => image.storage_path).filter(Boolean);
+    if (paths.length) {
+      const { error: storageError } = await supabase.storage.from('terrabar-load-images').remove(paths);
+      if (storageError) {
+        setManageError('پیوندهای عکس حذف شدند اما پاک‌سازی فایل‌های ذخیره‌شده کامل نشد؛ حذف بار ادامه پیدا نکرد.');
+        setBusyLoadId('');
+        return;
+      }
+    }
+    const { error: deleteError } = await (supabase as any).from('loads').delete().eq('id', load.id);
+    if (deleteError) {
+      setManageError('حذف خود بار انجام نشد؛ اگر سفارش مرتبط دارد ممکن است پایگاه داده مانع حذف باشد.');
+      setBusyLoadId('');
+      return;
+    }
+    setOwnedLoads(items => items.filter(item => item.id !== load.id));
+    setEditingLoad(current => current?.id === load.id ? null : current);
+    setBusyLoadId('');
+    setManageError('بار و اطلاعات وابسته آن حذف شد.');
   }
 
   async function deactivateLoad(loadId: string) {
@@ -285,7 +442,38 @@ function AnnouncePage() {
                     </div>
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs">{loadStatusLabels[load.status] ?? load.status}</span>
                   </div>
-                  {["active", "pending"].includes(load.status) && <Button type="button" variant="outline" size="sm" className="mt-3" disabled={busyLoadId === load.id} onClick={() => void deactivateLoad(load.id)}>{busyLoadId === load.id ? "در حال غیرفعال‌کردن…" : "غیرفعال‌کردن بار"}</Button>}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={!!busyLoadId} onClick={() => void startEditLoad(load)}>ویرایش همه اطلاعات</Button>
+                    {["active", "pending"].includes(load.status) && <Button type="button" variant="outline" size="sm" disabled={!!busyLoadId} onClick={() => void deactivateLoad(load.id)}>{busyLoadId === load.id ? "در حال انجام…" : "غیرفعال‌کردن"}</Button>}
+                    <Button type="button" variant="destructive" size="sm" disabled={!!busyLoadId} onClick={() => void deleteLoad(load)}>{busyLoadId === load.id ? "در حال انجام…" : "حذف بار"}</Button>
+                  </div>
+                  {editingLoad?.id === load.id && <form onSubmit={saveEditedLoad} className="mt-4 grid gap-3 rounded-xl border border-primary/30 bg-muted/30 p-4">
+                    <h3 className="font-bold">ویرایش کامل بار</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="field-label">نام محصول<input required className="field-input" value={editValues.product} onChange={e => setEditValues(v => ({...v, product:e.target.value}))} /></label>
+                      <label className="field-label">رقم / نوع<input required className="field-input" value={editValues.variety} onChange={e => setEditValues(v => ({...v, variety:e.target.value}))} /></label>
+                      <label className="field-label">کیفیت<select className="field-input" value={editValues.quality} onChange={e => setEditValues(v => ({...v, quality:e.target.value}))}><option value="premium">ویژه</option><option value="standard">استاندارد</option><option value="economy">اقتصادی</option><option value="negotiated">توافقی</option></select></label>
+                      <label className="field-label">شهر مبدأ<input required className="field-input" value={editValues.origin} onChange={e => setEditValues(v => ({...v, origin:e.target.value}))} /></label>
+                      <label className="field-label">شهر محل عرضه<input required className="field-input" value={editValues.city} onChange={e => setEditValues(v => ({...v, city:e.target.value}))} /></label>
+                      <label className="field-label">نوع بسته<input required className="field-input" value={editValues.packageType} onChange={e => setEditValues(v => ({...v, packageType:e.target.value}))} /></label>
+                      <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="0.1" step="0.1" className="field-input" value={editValues.weight} onChange={e => setEditValues(v => ({...v, weight:e.target.value}))} /></label>
+                      <label className="field-label">تعداد بسته‌ها<input required type="number" min="1" step="1" className="field-input" value={editValues.count} onChange={e => setEditValues(v => ({...v, count:e.target.value}))} /></label>
+                      <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" className="field-input" value={editValues.minimum} onChange={e => setEditValues(v => ({...v, minimum:e.target.value}))} /></label>
+                      <label className="field-label">قیمت پایه هر کیلو (تومان)<input required type="number" min="1" step="1" className="field-input" value={editValues.price} onChange={e => setEditValues(v => ({...v, price:e.target.value}))} /></label>
+                      <label className="field-label">زمان آماده بودن<input required type="date" className="field-input" value={editValues.ready} onChange={e => setEditValues(v => ({...v, ready:e.target.value}))} /></label>
+                    </div>
+                    <fieldset className="grid gap-3 rounded-lg border border-border p-3"><legend className="px-2 font-semibold">قیمت و حداقل سفارش هر بخش فروش</legend>
+                      {salesSections.map(section => <div key={section.key} className="grid gap-2 rounded border border-border p-3">
+                        <label className="flex items-center gap-2"><input type="checkbox" checked={editTiers[section.key].enabled} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], enabled:e.target.checked}}))} />{section.label}</label>
+                        {editTiers[section.key].enabled && <div className="grid grid-cols-2 gap-2">
+                          <label className="field-label">قیمت هر کیلو<input required type="number" min="1" className="field-input" value={editTiers[section.key].price} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], price:e.target.value}}))} /></label>
+                          <label className="field-label">حداقل بسته<input required type="number" min="1" className="field-input" value={editTiers[section.key].minimum} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], minimum:e.target.value}}))} /></label>
+                        </div>}
+                      </div>)}
+                    </fieldset>
+                    <label className="field-label">توضیحات<textarea className="field-input min-h-20" value={editValues.description} onChange={e => setEditValues(v => ({...v, description:e.target.value}))} /></label>
+                    <div className="flex flex-wrap gap-2"><Button type="submit" disabled={!!busyLoadId}>{busyLoadId === load.id ? "در حال ذخیره…" : "ذخیره همه تغییرات"}</Button><Button type="button" variant="outline" disabled={!!busyLoadId} onClick={() => setEditingLoad(null)}>انصراف</Button></div>
+                  </form>}
                 </li>
               ))}
             </ul>
