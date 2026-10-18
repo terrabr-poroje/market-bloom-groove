@@ -27,6 +27,30 @@ jobs:
         with:
           version: latest
 
+      - name: Validate migration repository before touching production
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx 'project_id = "gznsxqeyhnuzglliijzz"' supabase/config.toml
+          files=(supabase/migrations/*.sql)
+          if [ ! -e "${files[0]}" ]; then echo "No SQL migrations found."; exit 1; fi
+          for file in "${files[@]}"; do
+            base="$(basename "$file")"
+            [[ "$base" =~ ^[0-9]{14}_[a-z0-9_]+\\.sql$ ]] || { echo "Invalid migration filename: $base"; exit 1; }
+            grep -q '[^[:space:]]' "$file" || { echo "Empty migration: $file"; exit 1; }
+          done
+          versions="$(printf '%s\\n' "${files[@]}" | sed -E 's#^.*/([0-9]{14})_.*#\\1#' | sort)"
+          duplicates="$(printf '%s\\n' "$versions" | uniq -d)"
+          [ -z "$duplicates" ] || { echo "Duplicate migration versions: $duplicates"; exit 1; }
+          guardrails="supabase/migrations/20261015211128_membership_and_load_submission_policies.sql"
+          test -f "$guardrails"
+          grep -Fq 'CREATE POLICY loads_select_authorized' "$guardrails"
+          grep -Fq 'CREATE POLICY loads_city_manager_review_update' "$guardrails"
+          grep -Fq 'CREATE POLICY members_city_manager_read_assigned_city' "$guardrails"
+          grep -Fq "mr.role_code = 'professional_buyer'" "$guardrails"
+          grep -Fq "mr.role_code = 'special_buyer'" "$guardrails"
+          echo "Migration structure and critical access guardrails passed."
+
       - name: Require repository secrets
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
