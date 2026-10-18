@@ -35,9 +35,9 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
             <Link to="/membership" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">عضویت و پیگیری تأیید</Link>
             <Link to="/admin" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">پنل مدیریت</Link>
             <Link to="/about" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">درباره ترابار</Link>
-            <Link to="/guide" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">راهنمای معامله</Link>
+            <Link to="/guide" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">راهنمای استفاده از سایت</Link>
             <Link to="/rules" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">قوانین و حریم خصوصی</Link>
-            <Link to="/contact" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">تماس با ما</Link>
+            <Link to="/contact" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">ارتباط با پشتیبانی</Link>
           </nav>
         )}
       </header>
