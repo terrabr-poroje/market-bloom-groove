@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     if (!validAdmin) {
       return json(req, {
         ok: true,
-        message: "اگر نام کاربری متعلق به مدیر فعال باشد، لینک بازیابی به ایمیل ثبت‌شده ارسال می‌شود.",
+        message: "اگر نام کاربری متعلق به مدیر فعال باشد، کد بازیابی به ایمیل ثبت‌شده ارسال می‌شود.",
       });
     }
 
@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { error: resetError } = await auth.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://terrabar.ir/admin-reset-password",
+      redirectTo: "https://terrabar.ir/reset-password",
     });
 
     if (resetError) {
