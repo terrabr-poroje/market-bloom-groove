@@ -83,7 +83,8 @@ function AdminLoginPage() {
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
             <Button type="submit" disabled={busy}>{busy ? "در حال بررسی…" : "ورود به پنل مدیریت"}<KeyRound className="mr-2 size-4" /></Button>
-            <Button type="button" variant="outline" disabled={busy || !username.trim()} onClick={resetPassword}>ارسال لینک تنظیم / فراموشی رمز</Button>
+            <Button type="button" variant="outline" disabled={busy || !username.trim()} onClick={resetPassword}>ارسال کد / بازیابی رمز</Button>
+            <Link to="/reset-password" className="text-center text-sm text-primary underline">کد ۸ رقمی را دریافت کرده‌ام؛ تأیید و تنظیم رمز جدید</Link>
           </form>
           <p className="mt-4 text-xs leading-6 text-muted-foreground">نام کاربری و رمز عبور فقط برای حساب‌هایی معتبر است که در پایگاه داده به‌عنوان مدیر فعال ثبت شده‌اند. کاربران عادی از مسیر ورود عمومی استفاده می‌کنند.</p>
           <div className="mt-5 flex justify-between text-sm"><Link to="/auth" className="text-primary underline">ورود کاربران</Link><Link to="/" className="text-primary underline">صفحه اصلی</Link></div>
