@@ -245,7 +245,7 @@ function AuthPage() {
     if (safeNext) sessionStorage.removeItem("terrabar:after-auth");
     window.setTimeout(() => {
       if (safeNext) window.location.assign(safeNext);
-      else void navigate({ to: mode === "signup" && role !== "buyer" ? "/membership" : "/" });
+      else void navigate({ to: "/member-home" });
     }, 900);
   }
 
@@ -261,7 +261,7 @@ function AuthPage() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {isAdmin ? <Button asChild><Link to="/admin">ورود به پنل مدیریت</Link></Button> : <Button onClick={async () => { await supabase.auth.signOut(); await navigate({ to: "/admin-login" }); }}>تغییر حساب / ورود مدیر</Button>}
             <Button asChild variant="outline"><Link to="/membership">درخواست عضویت و پیگیری وضعیت</Link></Button>
-            <Button asChild variant="outline"><Link to="/">بازگشت به صفحه اصلی</Link></Button>
+            <Button asChild variant="outline"><Link to="/member-home">ورود به صفحه اصلی کاربران</Link></Button>
           </div>
         </div>
       </section>
