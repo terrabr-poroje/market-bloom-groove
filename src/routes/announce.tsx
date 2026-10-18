@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from 'react';
-import { CheckCircle2, Megaphone, ShieldAlert } from 'lucide-react';
+import { Check, CheckCircle2, Copy, Megaphone, ShieldAlert, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -33,6 +33,8 @@ function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
   const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: 'کرج', province: 'البرز', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
   const [memberCity, setMemberCity] = useState('');
+  const [storefrontMemberId, setStorefrontMemberId] = useState('');
+  const [storeLinkCopied, setStoreLinkCopied] = useState(false);
   const [memberRole, setMemberRole] = useState<'supplier' | 'bar_seller' | 'seller' | ''>('');
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [saleSectionsEnabled, setSaleSectionsEnabled] = useState<SaleSectionKey[]>(['retail']);
@@ -64,6 +66,7 @@ function AnnouncePage() {
       if (!active) return;
       if (!member) { setOwnedLoads([]); setIncomingOrders([]); setLoadingOwnedLoads(false); setLoadingIncomingOrders(false); return; }
       setMemberCity(String(member.city ?? '').trim());
+      setStorefrontMemberId(String(member.id));
       if (member.city) setForm(prev => ({ ...prev, city: String(member.city).trim(), province: String(member.city).trim() }));
       const { data: roleRows } = await (supabase as any).from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved');
       if (!active) return;
@@ -419,6 +422,24 @@ function AnnouncePage() {
 
   return (
     <section className="bg-market-surface py-12"><div className="site-container max-w-2xl">
+      {user && !loadingOwnedLoads && memberRole && storefrontMemberId && <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-emerald-100 text-emerald-800"><Store className="size-5" /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-extrabold text-emerald-950">ویترین اختصاصی من</h2>
+            <p className="mt-1 text-sm leading-6 text-emerald-900">این لینک را برای مشتری‌های خود بفرستید. اگر مشتری وارد ترابار نشده باشد، ابتدا ثبت‌نام یا ورود می‌کند و سپس مستقیم به ویترین شما برمی‌گردد.</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input readOnly dir="ltr" aria-label="لینک اختصاصی ویترین" value={typeof window !== 'undefined' ? window.location.origin + '/store/' + encodeURIComponent(storefrontMemberId) : '/store/' + storefrontMemberId} className="field-input min-w-0 flex-1 bg-white text-left text-sm" />
+              <Button type="button" className="shrink-0" onClick={async () => {
+                const link = window.location.origin + '/store/' + encodeURIComponent(storefrontMemberId);
+                try { await navigator.clipboard.writeText(link); setStoreLinkCopied(true); window.setTimeout(() => setStoreLinkCopied(false), 2500); }
+                catch { const field = document.querySelector<HTMLInputElement>('input[aria-label="لینک اختصاصی ویترین"]'); field?.focus(); field?.select(); setManageError('کپی خودکار انجام نشد؛ لینک انتخاب شده است، آن را کپی کنید.'); }
+              }}>{storeLinkCopied ? <Check className="ml-2 size-4" /> : <Copy className="ml-2 size-4" />}{storeLinkCopied ? 'کپی شد' : 'کپی لینک ویترین'}</Button>
+            </div>
+            {storeLinkCopied && <p role="status" className="mt-2 text-xs font-semibold text-emerald-800">لینک ویترین کپی شد؛ می‌توانید آن را برای مشتری بفرستید.</p>}
+          </div>
+        </div>
+      </div>
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
         <p className="mt-2 text-sm text-muted-foreground">پس از تأیید عضویت، بار شما بلافاصله منتشر می‌شود؛ محدودیت‌های نقش و شهر در سیستم کنترل می‌شوند.</p>
