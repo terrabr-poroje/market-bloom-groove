@@ -439,7 +439,7 @@ function AnnouncePage() {
             {storeLinkCopied && <p role="status" className="mt-2 text-xs font-semibold text-emerald-800">لینک ویترین کپی شد؛ می‌توانید آن را برای مشتری بفرستید.</p>}
           </div>
         </div>
-      </div>
+      </div>}
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
         <p className="mt-2 text-sm text-muted-foreground">پس از تأیید عضویت، بار شما بلافاصله منتشر می‌شود؛ محدودیت‌های نقش و شهر در سیستم کنترل می‌شوند.</p>
