@@ -8,11 +8,13 @@ const allowedOrigins = new Set([
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
+  const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://terrabar.ir",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Origin": origin || "https://terrabar.ir",
+    "Access-Control-Allow-Headers": requestedHeaders ?? "authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin, Access-Control-Request-Headers",
   };
 }
 
@@ -93,10 +95,11 @@ Deno.serve(async (req: Request) => {
 
     if (resetError) {
       console.error("[admin-login] password recovery email failed:", resetError.message);
-      return json(req, {
-        ok: false,
-        error: "ارسال ایمیل بازیابی انجام نشد. تنظیم SMTP در Supabase و مجازبودن آدرس https://terrabar.ir/admin-reset-password را بررسی کنید.",
-      });
+      const waitMatch = resetError.message.match(/after (\d+) seconds/i);
+      const userMessage = waitMatch
+        ? `برای امنیت، درخواست بازیابی اخیراً ارسال شده است. لطفاً ${waitMatch[1]} ثانیه صبر کنید و سپس فقط یک بار تلاش کنید.`
+        : "ارسال ایمیل بازیابی ناموفق بود. لطفاً تنظیم SMTP و قالب Recovery در Supabase بررسی شود.";
+      return json(req, { ok: false, error: userMessage }, waitMatch ? 429 : 502);
     }
 
     return json(req, {
