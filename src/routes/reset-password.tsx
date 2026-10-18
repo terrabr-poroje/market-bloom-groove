@@ -32,7 +32,7 @@ function ResetPasswordPage() {
     } else {
       setEmail(normalized);
       setStage("verify");
-      setNotice("اگر این ایمیل به حسابی در ترابار متصل باشد، پیام بازیابی ارسال می‌شود. صندوق ورودی و هرزنامه را بررسی کنید.");
+      setNotice("کد تأیید ایمیل جدا از رمز جدید است. کد ۸ رقمی را در مرحله بعد وارد کنید؛ سپس رمز جدیدی با حداقل ۱۰ نویسه بسازید.");
     }
     setBusy(false);
   }
@@ -40,6 +40,10 @@ function ResetPasswordPage() {
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
+    if (!/^\d{8}$/.test(code.trim())) {
+      setError("کد ایمیل باید دقیقاً ۸ رقم باشد؛ این کد با رمز جدید متفاوت است.");
+      setBusy(false); return;
+    }
     const { error: verifyError } = await supabase.auth.verifyOtp({
       email: email.trim().toLowerCase(), token: code.trim(), type: "recovery",
     });
@@ -47,7 +51,7 @@ function ResetPasswordPage() {
       setError("کد بازیابی معتبر نیست یا منقضی شده است. کد جدید درخواست کنید.");
     } else {
       setStage("password");
-      setNotice("کد تأیید شد. اکنون رمز جدید را تعیین کنید.");
+      setNotice("کد ایمیل تأیید شد. اکنون رمز جدید را وارد کنید؛ رمز باید حداقل ۱۰ نویسه داشته باشد و خودِ کد ایمیل نیست.");
     }
     setBusy(false);
   }
@@ -56,10 +60,12 @@ function ResetPasswordPage() {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
     if (password.length < 10) {
-      setError("رمز باید دست‌کم ۱۰ نویسه داشته باشد."); setBusy(false); return;
+      setError("رمز جدید باید دست‌کم ۱۰ نویسه داشته باشد؛ لازم نیست با کد ۸ رقمی ایمیل یکسان باشد.");
+      setBusy(false); return;
     }
     if (password !== confirm) {
-      setError("تکرار رمز با رمز جدید یکسان نیست."); setBusy(false); return;
+      setError("تکرار رمز با رمز جدید یکسان نیست.");
+      setBusy(false); return;
     }
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
@@ -74,19 +80,19 @@ function ResetPasswordPage() {
 
   return <section className="bg-market-surface py-12"><div className="site-container max-w-md"><div className="rounded-xl border border-border bg-card p-6 sm:p-8">
     <h1 className="text-2xl font-extrabold">بازیابی رمز عبور</h1>
-    <p className="mt-2 text-sm leading-6 text-muted-foreground">کد عددی فقط به ایمیل ثبت‌شده حساب ارسال می‌شود. این صفحه برای کاربران و مدیران ترابار است.</p>
+    <p className="mt-2 text-sm leading-6 text-muted-foreground">کد ۸ رقمی ایمیل فقط برای تأیید هویت است. رمز جدید مدیر باید حداقل ۱۰ نویسه داشته باشد؛ این دو را با هم اشتباه نگیرید.</p>
     {stage === "request" && <form onSubmit={requestCode} className="mt-6 grid gap-4">
       <label className="field-label">ایمیل حساب<input required type="email" autoComplete="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /></label>
       <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد بازیابی"}</Button>
     </form>}
     {stage === "verify" && <form onSubmit={verifyCode} className="mt-6 grid gap-4">
-      <p className="text-sm">کد ارسال‌شده به {email} را وارد کنید.</p>
-      <label className="field-label">کد عددی<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" minLength={6} maxLength={10} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ""))} className="field-input text-center text-lg tracking-widest" /></label>
-      <Button type="submit" disabled={busy || code.length < 6}>{busy ? "در حال بررسی…" : "تأیید کد"}</Button>
+      <p className="text-sm">کد ۸ رقمی ارسال‌شده به {email} را وارد کنید. این کد رمز جدید نیست.</p>
+      <label className="field-label">کد ۸ رقمی ایمیل<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" minLength={8} maxLength={8} pattern="[0-9]{8}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))} className="field-input text-center text-lg tracking-widest" /></label>
+      <Button type="submit" disabled={busy || code.length !== 8}>{busy ? "در حال بررسی…" : "تأیید کد ایمیل"}</Button>
       <Button type="button" variant="outline" disabled={busy} onClick={() => { setStage("request"); setCode(""); setError(""); setNotice(""); }}>ارسال دوباره / تغییر ایمیل</Button>
     </form>}
     {stage === "password" && <form onSubmit={savePassword} className="mt-6 grid gap-4">
-      <label className="field-label">رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={password} onChange={e => setPassword(e.target.value)} className="field-input" /></label>
+      <label className="field-label">رمز جدید (حداقل ۱۰ نویسه، جدا از کد ایمیل)<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={password} onChange={e => setPassword(e.target.value)} className="field-input" /></label>
       <label className="field-label">تکرار رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={confirm} onChange={e => setConfirm(e.target.value)} className="field-input" /></label>
       <Button type="submit" disabled={busy}>{busy ? "در حال ذخیره…" : "ذخیره رمز جدید"}</Button>
     </form>}
