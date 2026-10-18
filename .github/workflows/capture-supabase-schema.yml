@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: terrabar-supabase-schema-capture
@@ -65,3 +66,21 @@ jobs:
           fi
           git commit -m "chore: capture current Supabase public schema"
           git push --force origin automation/supabase-schema-snapshot
+
+      - name: Open a review PR when GitHub allows it
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_prs="$(gh pr list --head automation/supabase-schema-snapshot --base main --state open --json number --jq 'length')"
+          if [ "$open_prs" = "0" ]; then
+            gh pr create \\
+              --base main \\
+              --head automation/supabase-schema-snapshot \\
+              --title "chore: review current Supabase schema snapshot" \\
+              --body "Automated snapshot from the existing Terrabar Supabase project. Schema and generated TypeScript types only; no row data and no production SQL is applied by this PR. Review before merging. The SQL snapshot is reference-only and must not be replayed on top of the existing database." \\
+              || echo "::warning::Snapshot branch updated, but GitHub repository settings currently block Actions from creating pull requests. Enable this permission to automate PR creation."
+          else
+            echo "An open Supabase schema review PR already exists; its branch was updated."
+          fi
