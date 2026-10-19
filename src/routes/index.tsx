@@ -101,21 +101,21 @@ function Index() {
                     <div className="grid size-11 place-items-center rounded-xl bg-lime-300 text-emerald-950"><Sprout className="size-6" /></div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
+                    <Link to="/auth" aria-label="ثبت‌نام یا ورود به ترابار" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Users className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">عضو بازار شوید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ورود و ثبت‌نام در ترابار</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
+                    </Link>
+                    <Link to="/announce" aria-label="اعلام بار و مدیریت محصولات" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><PackagePlus className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">بار خود را معرفی کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ثبت اطلاعات و موجودی محصول</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
+                    </Link>
+                    <Link to="/requests" aria-label="جست‌وجوی بار و ثبت درخواست خرید" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Search className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">بار موردنیاز را پیدا کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">جست‌وجو و ثبت درخواست خرید</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
+                    </Link>
                   </div>
                   <p className="mt-4 flex items-center gap-2 border-t border-white/10 pt-4 text-xs leading-6 text-emerald-100/70"><ShieldCheck className="size-4 shrink-0 text-lime-200" /> دسترسی‌ها بر اساس نقش کاربری و شهر فعالیت تنظیم می‌شوند.</p>
                 </div>
