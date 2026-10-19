@@ -107,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           npm install --no-save --package-lock=false --legacy-peer-deps playwright
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
 
       - name: Start the built Worker locally
         run: |
