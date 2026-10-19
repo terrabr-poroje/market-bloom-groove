@@ -84,8 +84,27 @@ function Requests() {
         if (!active) return;
         setAllowedCities([...new Set([...(assigned ?? []).map((r: any) => String(r.city_name)), ...((adminRows ?? []).map((r: any) => r.city).filter(Boolean) as string[])])]);
         setCityAccess("assigned");
+      } else if (roles.some((role: string) => ["supplier", "bar_seller", "seller"].includes(role))) {
+        // Suppliers and bar sellers are professional buyers and can browse all cities.
+        setAllowedCities([]); setCityAccess("all");
+      } else if (roles.some((role: string) => ["special_buyer", "buyer_special"].includes(role))) {
+        // Special buyers can browse their city plus explicitly enabled neighboring cities.
+        const [{ data: outgoing, error: outgoingError }, { data: incoming, error: incomingError }] = await Promise.all([
+          (supabase as any).from("city_neighbors").select("neighbor_city_name").eq("city_name", ownCity).eq("is_enabled", true),
+          (supabase as any).from("city_neighbors").select("city_name").eq("neighbor_city_name", ownCity).eq("is_enabled", true),
+        ]);
+        if (!active) return;
+        if (outgoingError || incomingError) {
+          setAllowedCities([ownCity]); setCityAccess("own");
+        } else {
+          const neighbors = [
+            ...(outgoing ?? []).map((row: any) => String(row.neighbor_city_name)),
+            ...(incoming ?? []).map((row: any) => String(row.city_name)),
+          ];
+          setAllowedCities([...new Set([ownCity, ...neighbors])]); setCityAccess("nearby");
+        }
       } else {
-        // All non-professional roles are ordinary buyers: own city only.
+        // Ordinary buyers are limited to their registered city.
         setAllowedCities([ownCity]); setCityAccess("own");
       }
       setCityAccessReady(true);
