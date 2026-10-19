@@ -13,6 +13,18 @@ on:
       - "wrangler.toml"
       - ".github/workflows/deploy-terrabar-cloudflare.yml"
       - "scripts/browser-smoke.mjs"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "bun.lock"
+      - "bun.lockb"
+      - "vite.config.*"
+      - "wrangler.toml"
+      - ".github/workflows/deploy-terrabar-cloudflare.yml"
+      - "scripts/browser-smoke.mjs"
   workflow_dispatch:
 
 permissions:
@@ -120,6 +132,7 @@ jobs:
 
   deploy:
     name: Deploy the verified commit to the existing Worker
+    if: github.event_name != 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
