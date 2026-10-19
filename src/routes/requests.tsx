@@ -9,7 +9,7 @@ import { LoadCard } from "@/components/load-card";
 import { cities, faNumber, loads as sampleLoads, pageHead, qualities, type Load, type Quality } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/requests")({
-  head: () => pageHead("درخواست خرید", "جست‌وجوی بارهای مجاز و ثبت درخواست سفارش چندمحصولی در ترابار."),
+  head: () => pageHead("درخواست خرید", "جست‌وجوی بارهای مجاز و ثبت درخواست سفارش چندمحصولی در ترابار.", "/requests"),
   component: Requests,
 });
 
