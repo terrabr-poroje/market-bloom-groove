@@ -72,7 +72,16 @@ function AnnouncePage() {
       setMemberCity(String(member.city ?? '').trim());
       setStorefrontMemberId(String(member.id));
       if (member.city) setForm(prev => ({ ...prev, city: String(member.city).trim(), province: String(member.city).trim() }));
-      const { data: roleRows } = await (supabase as any).from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved');
+      // Run independent membership, load-list and order-list reads together to avoid an extra network round trip.
+      const [
+        { data: roleRows },
+        { data, error: listError },
+        { data: orderData, error: orderListError },
+      ] = await Promise.all([
+        (supabase as any).from('member_roles').select('role_code, approval_status').eq('member_id', member.id).eq('approval_status', 'approved'),
+        (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
+        (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
+      ]);
       if (!active) return;
       const codes = (roleRows ?? []).map((row: any) => String(row.role_code).toLowerCase());
       const detectedRole = codes.includes('supplier') ? 'supplier' : codes.includes('bar_seller') ? 'bar_seller' : codes.includes('seller') ? 'seller' : '';
@@ -80,11 +89,6 @@ function AnnouncePage() {
       const allowedSections = allowedSaleSections(detectedRole);
       setSaleSectionsEnabled(allowedSections[0] ? [allowedSections[0]] : []);
       setSaleMinimums(prev => ({ ...prev, professional: '5', retail: '1', wholesale: '2', special: '2' }));
-      const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
-        (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
-        (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
-      ]);
-      if (!active) return;
       if (listError) setManageError('فهرست بارهای شما دریافت نشد؛ دسترسی مشاهده را بررسی کنید.');
       else setOwnedLoads((data ?? []) as OwnedLoad[]);
       if (orderListError) setManageError('فهرست درخواست‌های سفارش دریافت نشد؛ ممکن است سیاست‌های سفارش هنوز روی دیتابیس اعمال نشده باشند.');
