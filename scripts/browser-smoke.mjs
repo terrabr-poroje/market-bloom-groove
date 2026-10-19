@@ -48,6 +48,18 @@ try {
           await page.getByRole("heading", { name: /بازار میوه و تره.?بار ایران/ }).waitFor({ state: "visible" });
           await page.getByRole("link", { name: /شروع همکاری/ }).waitFor({ state: "visible" });
           await page.getByRole("link", { name: /جست.?وجوی بار/ }).first().waitFor({ state: "visible" });
+
+          // Prove client-side hydration by exercising the menu, not only SSR HTML.
+          await page.getByRole("button", { name: "باز کردن منو" }).click();
+          await page.locator("#terrabar-main-menu").waitFor({ state: "visible" });
+          await page.getByRole("link", { name: "ثبت‌نام / ورود" }).first().click();
+          await page.waitForURL("**/auth");
+
+          // Revisit the homepage to catch intermittent first-load / stale-asset failures.
+          for (let reload = 1; reload <= 2; reload++) {
+            await page.goto(new URL("/", baseURL).href, { waitUntil: "domcontentloaded" });
+            await page.getByRole("heading", { name: /بازار میوه و تره.?بار ایران/ }).waitFor({ state: "visible" });
+          }
         }
       } catch (error) {
         failures.push(`[${viewport.name}] ${route}: page stayed blank or expected content was not visible — ${error.message}`);
