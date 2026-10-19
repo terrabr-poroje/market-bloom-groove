@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initializePostHog } from "../lib/posthog-analytics";
 import { MarketplaceShell } from '@/components/marketplace-shell';
 import { Button } from '@/components/ui/button';
 
@@ -117,6 +118,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    initializePostHog();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
