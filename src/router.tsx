@@ -9,7 +9,11 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
+    // Warm lazy route chunks when a visitor points to or touches an internal link,
+    // so navigation does not wait until the click to start downloading the next page.
+    defaultPreload: "intent",
+    // Keep the warmed route fresh briefly instead of immediately discarding it.
+    defaultPreloadStaleTime: 30_000,
   });
 
   return router;
