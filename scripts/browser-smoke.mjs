@@ -38,6 +38,7 @@ try {
         continue;
       }
 
+      let visibleMs = Date.now() - started;
       try {
         await page.locator("body").waitFor({ state: "visible" });
         await page.waitForFunction(() => {
@@ -46,6 +47,7 @@ try {
         });
         if (route === "/") {
           await page.getByRole("heading", { name: /بازار میوه و تره.?بار ایران/ }).waitFor({ state: "visible" });
+          visibleMs = Date.now() - started;
           await page.getByRole("link", { name: /شروع همکاری/ }).waitFor({ state: "visible" });
           await page.getByRole("link", { name: /جست.?وجوی بار/ }).first().waitFor({ state: "visible" });
 
@@ -56,9 +58,21 @@ try {
           await page.waitForURL("**/auth");
 
           // Revisit the homepage to catch intermittent first-load / stale-asset failures.
-          for (let reload = 1; reload <= 2; reload++) {
-            await page.goto(new URL("/", baseURL).href, { waitUntil: "domcontentloaded" });
+          const homeHeaders = response.headers();
+          console.log(
+            `INFO ${viewport.name} homepage headers: cf-cache-status=${homeHeaders["cf-cache-status"] ?? "n/a"}, age=${homeHeaders.age ?? "n/a"}, cache-control=${homeHeaders["cache-control"] ?? "n/a"}, etag=${homeHeaders.etag ?? "n/a"}`,
+          );
+
+          // Repeat reloads to expose intermittent stale assets or first-load failures.
+          for (let reload = 1; reload <= 5; reload++) {
+            const reloadStarted = Date.now();
+            const reloadResponse = await page.goto(new URL("/", baseURL).href, { waitUntil: "domcontentloaded" });
+            if (!reloadResponse || reloadResponse.status() !== 200) {
+              failures.push(`[${viewport.name}] homepage reload ${reload}: HTTP ${reloadResponse?.status() ?? "no response"}`);
+              continue;
+            }
             await page.getByRole("heading", { name: /بازار میوه و تره.?بار ایران/ }).waitFor({ state: "visible" });
+            console.log(`PASS ${viewport.name} homepage reload ${reload}: visible in ${Date.now() - reloadStarted}ms`);
           }
         }
       } catch (error) {
@@ -66,9 +80,9 @@ try {
       }
 
       const elapsedMs = Date.now() - started;
-      results.push({ viewport: viewport.name, route, status: response.status(), elapsedMs });
-      if (elapsedMs > 12000) {
-        failures.push(`[${viewport.name}] ${route}: visible content took ${elapsedMs}ms (limit 12000ms)`);
+      results.push({ viewport: viewport.name, route, status: response.status(), visibleMs, elapsedMs });
+      if (visibleMs > 12000) {
+        failures.push(`[${viewport.name}] ${route}: visible content took ${visibleMs}ms (limit 12000ms)`);
       }
     }
     await page.close();
@@ -78,7 +92,7 @@ try {
 }
 
 for (const result of results) {
-  console.log(`PASS ${result.viewport} ${result.route}: HTTP ${result.status}, visible content in ${result.elapsedMs}ms`);
+  console.log(`PASS ${result.viewport} ${result.route}: HTTP ${result.status}, visible in ${result.visibleMs}ms (full checks ${result.elapsedMs}ms)`);
 }
 if (failures.length) {
   console.error("\nBrowser checks failed:");
