@@ -1,0 +1,3 @@
+Terrabar production release baseline: 2026-10-18 night release.
+Application source baseline: 5f61b36eb9a9b22383896322668afe68392133f9
+This marker triggers deployment from the approved release branch; it does not change application code or database schema.
