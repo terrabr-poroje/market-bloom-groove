@@ -129,6 +129,13 @@ jobs:
         env:
           BROWSER_TEST_BASE_URL: http://127.0.0.1:8787
 
+      - name: Diagnose the current live homepage in a real browser (read-only)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: node scripts/browser-smoke.mjs
+        env:
+          BROWSER_TEST_BASE_URL: https://terrabar.ir
+
       - name: Stop local Worker
         if: always()
         run: |
