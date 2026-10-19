@@ -1,0 +1,4 @@
+Terrabar production environment configuration synchronized with the approved Supabase project.
+
+This marker triggers a fresh production build after production environment variables were added in Cloudflare Pages.
+No database schema or authentication settings were changed.
