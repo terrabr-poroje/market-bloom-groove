@@ -218,6 +218,16 @@ export const loads: Load[] = [
 ];
 export const faNumber = (value: number) => new Intl.NumberFormat('fa-IR').format(value);
 export const calculateOrder = (load: Pick<Load, 'weight' | 'price'>, count: number) => ({ weight: count * load.weight, total: count * load.weight * load.price });
-export function pageHead(title: string, description: string) {
-  return { meta: [{ title: `${title} | ترابار TERRABAR` }, { name: 'description', content: description }, { property: 'og:title', content: `${title} | ترابار TERRABAR` }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary_large_image' }] };
+export function pageHead(title: string, description: string, canonicalPath?: string) {
+  return {
+    meta: [
+      { title: `${title} | ترابار TERRABAR` },
+      { name: 'description', content: description },
+      { property: 'og:title', content: `${title} | ترابار TERRABAR` },
+      { property: 'og:description', content: description },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+    ...(canonicalPath ? { links: [{ rel: 'canonical', href: `https://terrabar.ir${canonicalPath}` }] } : {}),
+  };
 }
