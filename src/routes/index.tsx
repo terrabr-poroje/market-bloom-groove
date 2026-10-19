@@ -78,12 +78,12 @@ function Index() {
                   برای معرفی بار و پیدا کردن محصول موردنیاز بازار.
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link to="/auth" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                  <a href="/auth" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                     شروع همکاری <ArrowLeft className="size-4" />
-                  </Link>
-                  <Link to="/requests" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                  </a>
+                  <a href="/requests" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                     جست‌وجوی بار <Search className="size-4" />
-                  </Link>
+                  </a>
                 </div>
                 <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs text-emerald-100/90">
                   <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-4" /> مسیرهای مجزا برای هر نقش</span>
@@ -101,21 +101,21 @@ function Index() {
                     <div className="grid size-11 place-items-center rounded-xl bg-lime-300 text-emerald-950"><Sprout className="size-6" /></div>
                   </div>
                   <div className="space-y-3">
-                    <Link to="/auth" aria-label="ثبت‌نام یا ورود به ترابار" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
+                    <a href="/auth" aria-label="ثبت‌نام یا ورود به ترابار" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Users className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">عضو بازار شوید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ورود و ثبت‌نام در ترابار</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </Link>
-                    <Link to="/announce" aria-label="اعلام بار و مدیریت محصولات" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
+                    </a>
+                    <a href="/announce" aria-label="اعلام بار و مدیریت محصولات" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><PackagePlus className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">بار خود را معرفی کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ثبت اطلاعات و موجودی محصول</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </Link>
-                    <Link to="/requests" aria-label="جست‌وجوی بار و ثبت درخواست خرید" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
+                    </a>
+                    <a href="/requests" aria-label="جست‌وجوی بار و ثبت درخواست خرید" className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 transition hover:border-lime-200/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-200">
                       <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Search className="size-5 text-lime-200" /></div>
                       <div><p className="text-sm font-bold">بار موردنیاز را پیدا کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">جست‌وجو و ثبت درخواست خرید</p></div>
                       <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </Link>
+                    </a>
                   </div>
                   <p className="mt-4 flex items-center gap-2 border-t border-white/10 pt-4 text-xs leading-6 text-emerald-100/70"><ShieldCheck className="size-4 shrink-0 text-lime-200" /> دسترسی‌ها بر اساس نقش کاربری و شهر فعالیت تنظیم می‌شوند.</p>
                 </div>
