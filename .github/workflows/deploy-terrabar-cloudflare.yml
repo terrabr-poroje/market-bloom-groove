@@ -34,9 +34,10 @@ on:
 permissions:
   contents: read
 
+# Serialize actual production deployments, but let PR diagnostics run independently.
 concurrency:
-  group: terrabar-production-deploy
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('terrabar-pr-{0}', github.event.pull_request.number) || 'terrabar-production-deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
