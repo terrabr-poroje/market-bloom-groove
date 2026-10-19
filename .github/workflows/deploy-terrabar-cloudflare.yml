@@ -105,7 +105,7 @@ jobs:
       - name: Install browser-test runner without changing project manifests
         run: |
           set -euo pipefail
-          npm install --no-save --package-lock=false playwright
+          npm install --no-save --package-lock=false --legacy-peer-deps playwright
           npx playwright install --with-deps chromium
 
       - name: Start the built Worker locally
