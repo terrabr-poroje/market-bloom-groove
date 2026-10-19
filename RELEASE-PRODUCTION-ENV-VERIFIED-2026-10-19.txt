@@ -3,3 +3,5 @@ Terrabar production release marker.
 Production Supabase environment variables were re-applied and read-back verified in the Cloudflare Pages production configuration on 2026-10-19, including a follow-up check confirming the production deployment configuration contains the expected values.
 This marker triggers a new production build so the deployed release picks up the corrected configuration.
 No database schema, RLS, or administrator authentication settings were changed.
+
+Production Cloudflare Pages environment variables re-verified and aligned with preview on 2026-10-19. Rebuild required for VITE_* build-time injection.
