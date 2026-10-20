@@ -19,6 +19,7 @@ import { Route as AdminResetPasswordRouteImport } from './routes/admin-reset-pas
 import { Route as AnnounceRouteImport } from './routes/announce'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DesignPreviewRouteImport } from './routes/design-preview'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as LoginBuyerRouteImport } from './routes/login-buyer'
 import { Route as LoginSellerRouteImport } from './routes/login-seller'
@@ -85,6 +86,11 @@ const AuthRoute = AuthRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignPreviewRoute = DesignPreviewRouteImport.update({
+  id: '/design-preview',
+  path: '/design-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuideRoute = GuideRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/design-preview': typeof DesignPreviewRoute
   '/guide': typeof GuideRoute
   '/login-buyer': typeof LoginBuyerRoute
   '/login-seller': typeof LoginSellerRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/design-preview': typeof DesignPreviewRoute
   '/guide': typeof GuideRoute
   '/login-buyer': typeof LoginBuyerRoute
   '/login-seller': typeof LoginSellerRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/announce': typeof AnnounceRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/design-preview': typeof DesignPreviewRoute
   '/guide': typeof GuideRoute
   '/login-buyer': typeof LoginBuyerRoute
   '/login-seller': typeof LoginSellerRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/announce'
     | '/auth'
     | '/contact'
+    | '/design-preview'
     | '/guide'
     | '/login-buyer'
     | '/login-seller'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/announce'
     | '/auth'
     | '/contact'
+    | '/design-preview'
     | '/guide'
     | '/login-buyer'
     | '/login-seller'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/announce'
     | '/auth'
     | '/contact'
+    | '/design-preview'
     | '/guide'
     | '/login-buyer'
     | '/login-seller'
@@ -362,6 +374,7 @@ export interface RootRouteChildren {
   AnnounceRoute: typeof AnnounceRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  DesignPreviewRoute: typeof DesignPreviewRoute
   GuideRoute: typeof GuideRoute
   LoginBuyerRoute: typeof LoginBuyerRoute
   LoginSellerRoute: typeof LoginSellerRoute
@@ -451,6 +464,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-preview': {
+      id: '/design-preview'
+      path: '/design-preview'
+      fullPath: '/design-preview'
+      preLoaderRoute: typeof DesignPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide': {
@@ -586,6 +606,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnounceRoute: AnnounceRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  DesignPreviewRoute: DesignPreviewRoute,
   GuideRoute: GuideRoute,
   LoginBuyerRoute: LoginBuyerRoute,
   LoginSellerRoute: LoginSellerRoute,
