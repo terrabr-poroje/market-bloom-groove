@@ -1,0 +1,44 @@
+name: Verify Terrabar Oct 18 rebuild candidate
+
+on:
+  push:
+    branches:
+      - rebuild/oct18-release-baseline-2026-10-20
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rebuild candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate approved Supabase URL
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${VITE_SUPABASE_URL:-}" || { echo "::error::Missing VITE_SUPABASE_URL secret"; exit 1; }
+          test -n "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" || { echo "::error::Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
+          test "${VITE_SUPABASE_URL%/}" = "https://gznsxqeyhnuzglliijzz.supabase.co" || { echo "::error::Refusing non-approved Supabase project"; exit 1; }
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build without deploying
+        run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Run automated tests
+        run: bun run test
