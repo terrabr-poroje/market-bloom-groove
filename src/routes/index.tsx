@@ -1,86 +1,83 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, PackagePlus, Search, LogIn, Leaf, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShoppingBasket, PackagePlus, Store, Sprout, ShieldCheck } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/")({
   head: () =>
     pageHead(
-      "ترابار | بازار میوه و تره‌بار ایران",
-      "ترابار؛ بستری برای معرفی بار، درخواست خرید و همکاری فعالان بازار میوه و تره‌بار.",
+      "ترابار | بازار خرید و اعلام بار میوه و تره‌بار",
+      "در ترابار بار پیدا کنید، بار خود را اعلام کنید و ویترین اختصاصی خود را برای نمایش بارهای فعال بسازید.",
       "/"
     ),
   component: Index,
 });
 
-const actions = [
+const introductions = [
   {
-    title: "ثبت‌نام / ورود",
-    description: "برای شروع همکاری یا ورود به حساب کاربری",
-    to: "/auth",
-    icon: LogIn,
+    title: "خرید بار",
+    description:
+      "بارهای قابل عرضه را بررسی کنید، محصول موردنیازتان را پیدا کنید و برای خرید یا تأمین آن درخواست بفرستید. دسترسی به بارها بر اساس نوع حساب و شهر فعالیت تنظیم می‌شود.",
+    icon: ShoppingBasket,
+    tone: "bg-emerald-50 text-emerald-800",
   },
   {
     title: "اعلام بار",
-    description: "ثبت و مدیریت محصول، کیفیت، موجودی و قیمت",
-    to: "/announce",
+    description:
+      "اگر باغدار، کشاورز، تأمین‌کننده یا بارفروش هستید، اطلاعات محصول، کیفیت، مقدار و قیمت را ثبت کنید تا خریداران بتوانند بار شما را پیدا کنند. اعلام بار حرفه‌ای پس از تأیید عضویت فعال می‌شود.",
     icon: PackagePlus,
+    tone: "bg-lime-50 text-lime-800",
   },
   {
-    title: "درخواست بار",
-    description: "جست‌وجوی بار و ثبت درخواست تأمین محصول",
-    to: "/requests",
-    icon: Search,
+    title: "ویترین اختصاصی هر شخص",
+    description:
+      "هر عضو می‌تواند لینک ویترین اختصاصی خود را در اختیار مشتریان بگذارد. ویترین، بارهای فعال همان عضو را نمایش می‌دهد تا مشتریان راحت‌تر محصولات او را ببینند و درخواست خرید ثبت کنند.",
+    icon: Store,
+    tone: "bg-teal-50 text-teal-800",
   },
 ];
 
 function Index() {
   return (
-    <div className="min-h-[70vh] bg-background">
-      <section className="site-container py-8 sm:py-12">
+    <div className="min-h-[75vh] bg-background">
+      <section className="site-container py-8 sm:py-14">
         <div className="mx-auto max-w-5xl">
-          <div className="grid gap-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:grid-cols-[1fr_2fr] sm:items-center sm:p-8">
-            <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border-2 border-dashed border-emerald-700/30 bg-emerald-50/50 p-5 text-center text-emerald-900">
-              <Leaf className="mb-3 size-9" aria-hidden="true" />
-              <p className="font-bold">نشان ترابار</p>
-              <p className="mt-1 text-sm leading-6">محل قرارگیری لوگوی رسمی</p>
+          <div className="overflow-hidden rounded-3xl border border-emerald-900/10 bg-gradient-to-br from-emerald-50 via-white to-lime-50 px-5 py-8 text-center shadow-sm sm:px-10 sm:py-12">
+            <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-emerald-700 text-white shadow-sm">
+              <Sprout className="size-8" aria-hidden="true" />
             </div>
-            <div className="py-2">
-              <p className="text-sm font-bold tracking-wide text-emerald-700">TERRABAR | ترابار</p>
-              <h1 className="mt-3 text-2xl font-black leading-relaxed text-foreground sm:text-4xl">
-                فروش عمده میوه و تره‌بار
-              </h1>
-              <p className="mt-3 text-sm leading-8 text-muted-foreground sm:text-base">
-                ارتباط باغدار، کشاورز، تأمین‌کننده، بارفروش و خریدار؛ از معرفی بار تا پیدا کردن محصول موردنیاز بازار.
-              </p>
-              <p className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-800">
-                <MapPin className="size-4" aria-hidden="true" />
-                دسترسی‌ها بر اساس نقش کاربری و شهر فعالیت تنظیم می‌شوند.
-              </p>
-            </div>
+            <p className="mt-5 text-sm font-extrabold tracking-wide text-emerald-800">TERRABAR | ترابار</p>
+            <h1 className="mx-auto mt-3 max-w-3xl text-2xl font-black leading-relaxed text-emerald-950 sm:text-4xl">
+              بازار ارتباطی خرید و اعلام بار میوه و تره‌بار
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-8 text-slate-700 sm:text-base">
+              ترابار برای ارتباط ساده‌تر خریداران، باغداران، کشاورزان، تأمین‌کنندگان و بارفروشان ساخته می‌شود؛ از معرفی بار تا درخواست خرید و ویترین اختصاصی اعضا.
+            </p>
           </div>
 
-          <div className="mt-7 grid gap-4 sm:grid-cols-3">
-            {actions.map(({ title, description, to, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className="group flex min-h-44 flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-700/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-              >
-                <span className="grid size-11 place-items-center rounded-xl bg-emerald-50 text-emerald-800">
-                  <Icon className="size-5" aria-hidden="true" />
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            {introductions.map(({ title, description, icon: Icon, tone }) => (
+              <article key={title} className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                <span className={`grid size-12 place-items-center rounded-xl ${tone}`}>
+                  <Icon className="size-6" aria-hidden="true" />
                 </span>
-                <span className="mt-4 text-lg font-extrabold text-foreground">{title}</span>
-                <span className="mt-2 text-sm leading-7 text-muted-foreground">{description}</span>
-                <span className="mt-auto flex items-center gap-2 pt-4 text-sm font-bold text-emerald-800">
-                  ورود به بخش <ArrowLeft className="size-4 transition group-hover:-translate-x-1" />
-                </span>
-              </Link>
+                <h2 className="mt-4 text-lg font-extrabold text-foreground">{title}</h2>
+                <p className="mt-2 text-sm leading-8 text-muted-foreground">{description}</p>
+              </article>
             ))}
           </div>
 
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-emerald-700/20 bg-emerald-50/50 p-4 text-sm leading-7 text-emerald-950">
-            <ShieldCheck className="mt-1 size-5 shrink-0" aria-hidden="true" />
-            <p>ثبت و انتشار بار برای اعضای تأییدشده انجام می‌شود. برای جست‌وجو و ثبت درخواست، وارد حساب کاربری شوید تا محدودیت‌های شهر و نقش شما رعایت شود.</p>
+          <div className="mt-7 rounded-2xl border border-emerald-800/15 bg-white p-5 text-center shadow-sm sm:p-7">
+            <div className="mx-auto flex max-w-2xl items-start justify-center gap-2 text-sm leading-7 text-emerald-950">
+              <ShieldCheck className="mt-1 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
+              <p>برای شروع استفاده از امکانات ترابار، ابتدا وارد بخش ثبت‌نام و ورود شوید. فعال‌شدن امکانات حرفه‌ای به تأیید عضویت مربوط است.</p>
+            </div>
+            <Link
+              to="/auth"
+              className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 font-extrabold text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 sm:w-auto"
+            >
+              مرحلهٔ بعد
+              <ArrowLeft className="size-5" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>
