@@ -45,6 +45,6 @@ test("protected marketplace routes render a useful unauthenticated state", async
   await expect(page.getByText(/ابتدا وارد حساب شوید|ورود به حساب|ورود \/ ثبت‌نام/).first()).toBeVisible();
 
   await page.goto("/requests");
-  await expect(page.getByRole("heading", { name: /درخواست خرید/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /برای جست‌وجوی بار وارد ترابار شوید|بارهای فعال/ })).toBeVisible();
   await expect(page.getByText(/وارد حساب|ثبت‌نام/).first()).toBeVisible();
 });
