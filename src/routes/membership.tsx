@@ -13,7 +13,7 @@ export const Route = createFileRoute("/membership")({
   component: MembershipPage,
 });
 
-const roleLabels: Record<AppRole, string> = { admin: 'مدیر', supplier: 'تأمین‌کننده (باغدار، کشاورز، سورتینگ)', seller: 'بارفروش / حجره‌دار میدان', buyer: 'خریدار' };
+const roleLabels: Record<AppRole, string> = { admin: 'مدیر', city_manager: 'مدیر شهری', supplier: 'تأمین‌کننده (باغدار، کشاورز، سورتینگ)', seller: 'بارفروش / حجره‌دار میدان', buyer: 'خریدار' };
 const statusLabels: Record<string, string> = { pending: 'در انتظار بررسی مدیر', approved: 'تأیید شده', rejected: 'رد شده' };
 
 type Request = { id: string; role_code: string; approval_status: string; created_at: string; request_note?: string | null };
@@ -39,7 +39,7 @@ function MembershipPage() {
   function refresh() {
     if (!user) return;
     (supabase as any).from('member_roles').select('id, role_code, approval_status, created_at, request_note, members!inner(auth_user_id)').eq('members.auth_user_id', user.id).order('created_at', { ascending: false })
-      .then(({ data }) => setRequests((data ?? []) as unknown as Request[]));
+      .then(({ data }: { data: unknown }) => setRequests((data ?? []) as unknown as Request[]));
   }
   useEffect(refresh, [user]);
 

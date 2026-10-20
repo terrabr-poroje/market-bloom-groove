@@ -117,13 +117,13 @@ function Requests() {
     if (!user) return;
     let active = true;
     async function recordSearchVisit() {
-      const { data: member } = await (supabase as any).from("members").select("id").eq("auth_user_id", user.id).maybeSingle();
+      const { data: member } = await (supabase as any).from("members").select("id").eq("auth_user_id", user!.id).maybeSingle();
       if (!active) return;
-      const storageKey = `terrabar:visit:/requests:${user.id}`;
+      const storageKey = `terrabar:visit:/requests:${user!.id}`;
       const now = Date.now();
       const previous = Number(sessionStorage.getItem(storageKey) || 0);
       if (previous && now - previous < 30 * 60 * 1000) return;
-      const { error } = await (supabase as any).from("site_visits").insert({ user_id: user.id, member_id: member?.id ?? null, route: "/requests" });
+      const { error } = await (supabase as any).from("site_visits").insert({ user_id: user!.id, member_id: member?.id ?? null, route: "/requests" });
       if (!error && active) sessionStorage.setItem(storageKey, String(now));
     }
     void recordSearchVisit();
