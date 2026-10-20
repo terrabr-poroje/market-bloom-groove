@@ -52,30 +52,7 @@ const mainActions = [
 ];
 
 
-const mainActions = [
-  {
-    title: "ثبت‌نام / ورود",
-    description: "حساب خود را بسازید یا وارد ترابار شوید و نقش کاری و شهر فعالیت خود را مشخص کنید.",
-    icon: LogIn,
-    to: "/auth",
-    tone: "bg-emerald-50 text-emerald-800",
-  },
-  {
-    title: "اعلام بار",
-    description: "باغداران، کشاورزان، تأمین‌کنندگان و بارفروشان می‌توانند بار خود را معرفی کنند؛ امکانات حرفه‌ای پس از تأیید عضویت فعال می‌شود.",
-    icon: PackagePlus,
-    to: "/announce",
-    tone: "bg-lime-50 text-lime-800",
-  },
-  {
-    title: "درخواست بار",
-    description: "بارهای قابل عرضه را جست‌وجو کنید یا درخواست تأمین محصول ثبت کنید. نمایش بارها بر اساس نقش و محدوده شهر انجام می‌شود.",
-    icon: Search,
-    to: "/requests",
-    tone: "bg-teal-50 text-teal-800",
-  },
-];
-\nconst steps = [
+const steps = [
   { number: "۱", title: "عضویت و انتخاب شهر", text: "با نقش کاری و شهر فعالیت خود شروع کنید.", icon: Users },
   { number: "۲", title: "معرفی یا جست‌وجوی بار", text: "اطلاعات محصول و شرایط خرید را بررسی کنید.", icon: Store },
   { number: "۳", title: "هماهنگی و تحویل", text: "فرآیند سفارش را طبق دسترسی‌ها و مقررات ترابار پیگیری کنید.", icon: Truck },
