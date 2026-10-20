@@ -78,10 +78,10 @@ function ResetPasswordPage() {
   async function saveEmergencyPassword(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
-    if (!/^\\d{12}$/.test(emergencyCode)) {
+    if (!/^\d{12}$/.test(emergencyCode)) {
       setError("کد اضطراری باید دقیقاً ۱۲ رقم باشد."); setBusy(false); return;
     }
-    if (!/^\\d{10}$/.test(password)) {
+    if (!/^\d{10}$/.test(password)) {
       setError("رمز جدید باید دقیقاً ۱۰ رقم عددی باشد."); setBusy(false); return;
     }
     if (password !== confirm) {
