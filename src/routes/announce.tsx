@@ -24,7 +24,7 @@ const salesSections = [
 type SaleSectionKey = typeof salesSections[number]['key'];
 
 function allowedSaleSections(role: string): SaleSectionKey[] {
-  return role === 'supplier' ? ['professional'] : ['retail', 'wholesale', 'special'];
+  return role === 'supplier' ? ['professional'] : ['retail', 'wholesale', 'special', 'professional'];
 }
 type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; origin: string | null; quality: string | null; quantity: number; count: number | null; price: number; status: string; package_type: string | null; package_weight: number | null; min_order_quantity: number | null; ready_date: string | null; description: string | null; created_at: string };
 type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
@@ -338,7 +338,7 @@ function AnnouncePage() {
     if (!validSaleSections.length || saleSectionsEnabled.some(key => !allowedSections.includes(key))) {
       setError(actualMemberRole === 'supplier'
         ? 'تأمین‌کننده فقط می‌تواند بار را در بخش «ویژه حرفه‌ای» اعلام کند.'
-        : 'بارفروش فقط می‌تواند در بخش‌های «خرده‌فروشی»، «عمده‌فروشی» و «فروش ویژه» اعلام بار کند.');
+        : 'بارفروش می‌تواند در بخش‌های «خرده‌فروشی»، «عمده‌فروشی»، «فروش ویژه» و «ویژه حرفه‌ای» اعلام بار کند.');
       setBusy(false); return;
     }
     const roleValidSaleSections = validSaleSections.filter(key => allowedSections.includes(key));
@@ -420,7 +420,7 @@ function AnnouncePage() {
     return (
       <section className="bg-market-surface py-16"><div className="site-container max-w-md text-center">
         <h1 className="text-2xl font-extrabold">ابتدا وارد حساب شوید</h1>
-        <p className="mt-3 text-sm text-muted-foreground">اعلام بار فقط برای اعضای تأییدشده (تأمین‌کننده یا بارفروش) فعال است.</p>
+        <p className="mt-3 text-sm text-muted-foreground">اعلام بار فقط پس از ثبت‌نام و تأیید عضویت حرفه‌ای توسط مدیریت فعال می‌شود.</p>
         <Button asChild className="mt-6"><Link to="/auth">ورود / ثبت‌نام</Link></Button>
       </div></section>
     );
@@ -459,7 +459,7 @@ function AnnouncePage() {
       </div>}
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
-        <p className="mt-2 text-sm text-muted-foreground">پس از تأیید عضویت، بار شما بلافاصله منتشر می‌شود؛ محدودیت‌های نقش و شهر در سیستم کنترل می‌شوند.</p>
+        <p className="mt-2 text-sm text-muted-foreground">اعلام بار فقط برای عضویت حرفه‌ای تأییدشده فعال است. تأمین‌کننده فقط در «ویژه حرفه‌ای» و بارفروش در بخش‌های مجاز از جمله «ویژه حرفه‌ای» بار اعلام می‌کند.</p>
         <div className="mt-6 border-t border-border pt-5">
           <h2 className="text-lg font-bold">درخواست‌های سفارش برای بارهای من</h2>
           {loadingIncomingOrders ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت درخواست‌ها…</p> : incomingOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">درخواست سفارشی برای بارهای شما ثبت نشده است.</p> : (
