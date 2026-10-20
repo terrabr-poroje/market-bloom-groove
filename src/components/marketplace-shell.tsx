@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase schema queries use dynamic types while generated DB types are stale. */
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -65,7 +66,7 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
   if (user && !loading && roleLookupDone) {
     memberItems.push({ label: "صفحه اصلی حساب من", to: "/member-home", icon: UserRound });
     memberItems.push({ label: "حساب کاربری و پیگیری سفارش‌ها", to: "/account", icon: ClipboardList });
-    if (isBuyer || isProBuyer || (!isSeller && !isSupplier && !isCityManager && !isMainAdmin)) {
+    if (isBuyer || isProBuyer || isSeller || isSupplier || (!isSeller && !isSupplier && !isCityManager && !isMainAdmin)) {
       memberItems.push({ label: "درخواست خرید و مشاهده بارها", to: "/requests", icon: ShoppingBasket });
     }
     if (isSeller || isSupplier) {
