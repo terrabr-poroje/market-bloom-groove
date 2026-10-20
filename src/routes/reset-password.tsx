@@ -73,8 +73,8 @@ function ResetPasswordPage() {
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
-    if (!/^\d{8}$/.test(code.trim())) {
-      setError("کد ایمیل باید دقیقاً ۸ رقم باشد؛ این کد با رمز جدید متفاوت است.");
+    if (!/^(?:\d{6}|\d{8})$/.test(code.trim())) {
+      setError("کد ایمیل باید دقیقاً ۶ یا ۸ رقم باشد؛ همان تعداد رقمی را وارد کنید که در ایمیل تازه دریافت کرده‌اید.");
       setBusy(false); return;
     }
     const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -113,16 +113,16 @@ function ResetPasswordPage() {
 
   return <section className="bg-market-surface py-12"><div className="site-container max-w-md"><div className="rounded-xl border border-border bg-card p-6 sm:p-8">
     <h1 className="text-2xl font-extrabold">بازیابی رمز عبور</h1>
-    <p className="mt-2 text-sm leading-6 text-muted-foreground">کد ۸ رقمی ایمیل فقط برای تأیید هویت است. رمز جدید مدیر باید حداقل ۱۰ نویسه داشته باشد؛ این دو را با هم اشتباه نگیرید.</p>
+    <p className="mt-2 text-sm leading-6 text-muted-foreground">کد ایمیل (۶ یا ۸ رقم، مطابق تنظیمات Auth) فقط برای تأیید هویت است. رمز جدید مدیر باید حداقل ۱۰ نویسه داشته باشد؛ این دو را با هم اشتباه نگیرید.</p>
     {stage === "request" && <form onSubmit={requestCode} className="mt-6 grid gap-4">
       <label className="field-label">ایمیل حساب<input required type="email" autoComplete="email" dir="ltr" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /></label>
       <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد بازیابی"}</Button>
-      <Button type="button" variant="outline" disabled={busy || !email.includes("@") || !email.includes(".")} onClick={() => { setStage("verify"); setError(""); setNotice("کد ۸ رقمی‌ای را که قبلاً دریافت کرده‌اید وارد کنید. اگر کد ندارید، ابتدا «ارسال کد بازیابی» را بزنید."); }}>کد را دریافت کرده‌ام؛ ورود به مرحله تأیید</Button>
+      <Button type="button" variant="outline" disabled={busy || !email.includes("@") || !email.includes(".")} onClick={() => { setStage("verify"); setError(""); setNotice("کدی را که دریافت کرده‌اید وارد کنید. اگر کد ندارید، ابتدا «ارسال کد بازیابی» را بزنید."); }}>کد را دریافت کرده‌ام؛ ورود به مرحله تأیید</Button>
     </form>}
     {stage === "verify" && <form onSubmit={verifyCode} className="mt-6 grid gap-4">
-      <p className="text-sm">کد ۸ رقمی ارسال‌شده به {email} را وارد کنید. این کد رمز جدید نیست.</p>
-      <label className="field-label">کد ۸ رقمی ایمیل<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" minLength={8} maxLength={8} pattern="[0-9]{8}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))} className="field-input text-center text-lg tracking-widest" /></label>
-      <Button type="submit" disabled={busy || code.length !== 8}>{busy ? "در حال بررسی…" : "تأیید کد ایمیل"}</Button>
+      <p className="text-sm">کد تازه ارسال‌شده به {email} را با همان تعداد رقم درج‌شده در ایمیل وارد کنید. این کد رمز جدید نیست؛ اگر کد قبلی را با لینک ایمیل باز کرده‌اید، یک کد تازه درخواست کنید.</p>
+      <label className="field-label">کد ایمیل (۶ یا ۸ رقم)<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" minLength={6} maxLength={8} pattern="([0-9]{6}|[0-9]{8})" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))} className="field-input text-center text-lg tracking-widest" /></label>
+      <Button type="submit" disabled={busy || !/^([0-9]{6}|[0-9]{8})$/.test(code)}>{busy ? "در حال بررسی…" : "تأیید کد ایمیل"}</Button>
       <Button type="button" variant="outline" disabled={busy} onClick={() => { setStage("request"); setCode(""); setError(""); setNotice(""); }}>ارسال دوباره / تغییر ایمیل</Button>
     </form>}
     {stage === "password" && <form onSubmit={savePassword} className="mt-6 grid gap-4">
