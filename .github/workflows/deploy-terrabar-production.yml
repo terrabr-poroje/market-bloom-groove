@@ -22,7 +22,7 @@ jobs:
       - name: Checkout the exact release candidate being published
         uses: actions/checkout@v4
         with:
-          ref: 6ab02ced4bc91afa9d15c969c90364f70fc5d0fa
+          ref: 93b167e08359cce29266c9f3103ec77ca3bedb0b
 
       - uses: oven-sh/setup-bun@v2
         with:
