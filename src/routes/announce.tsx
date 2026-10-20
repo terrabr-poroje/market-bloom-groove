@@ -5,7 +5,7 @@ import { Check, CheckCircle2, Copy, Megaphone, ShieldAlert, Store } from 'lucide
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { faNumber, pageHead, provinces, qualities } from '@/lib/marketplace';
+import { faNumber, normalizeNumericInput, pageHead, provinces, qualities } from '@/lib/marketplace';
 import { CityPicker } from '@/components/city-picker';
 
 export const Route = createFileRoute("/announce")({
@@ -83,6 +83,24 @@ function JalaliDateField({ label, value, min, onChange }: { label: string; value
   </div>;
 }
 
+async function optimizeLoadPhoto(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size <= 1_200_000) return file;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+    if (!blob || blob.size >= file.size) return file;
+    const baseName = file.name.replace(/\\.[^.]+$/, '') || 'load-photo';
+    return new File([blob], baseName + '.webp', { type: 'image/webp', lastModified: Date.now() });
+  } finally { bitmap.close(); }
+}
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
   const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: 'کرج', province: 'البرز', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: localIsoDate(), adStart: localIsoDate(), adEnd: localIsoDate(), responseStart: '08:00', responseEnd: '18:00', description: '' });
@@ -448,9 +466,12 @@ function AnnouncePage() {
       if (photoFiles.length) {
         const imageRows: { load_id: string; storage_path: string; display_order: number }[] = [];
         for (const [index, file] of photoFiles.entries()) {
-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          let optimizedFile: File;
+          try { optimizedFile = await optimizeLoadPhoto(file); }
+          catch { optimizedFile = file; }
+          const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const path = `${user.id}/${insertedLoad.id}/${crypto.randomUUID()}-${safeName}`;
-          const { error: uploadError } = await supabase.storage.from('terrabar-load-images').upload(path, file, { contentType: file.type, upsert: false });
+          const { error: uploadError } = await supabase.storage.from('terrabar-load-images').upload(path, optimizedFile, { contentType: optimizedFile.type, upsert: false });
           if (uploadError) {
             const uploadedPaths = imageRows.map(image => image.storage_path);
             if (uploadedPaths.length) await supabase.storage.from('terrabar-load-images').remove(uploadedPaths);
@@ -561,18 +582,18 @@ function AnnouncePage() {
                       <label className="field-label">شهر مبدأ<input required className="field-input" value={editValues.origin} onChange={e => setEditValues(v => ({...v, origin:e.target.value}))} /></label>
                       <label className="field-label">شهر محل عرضه<input required className="field-input" value={editValues.city} onChange={e => setEditValues(v => ({...v, city:e.target.value}))} /></label>
                       <label className="field-label">نوع بسته<input required className="field-input" value={editValues.packageType} onChange={e => setEditValues(v => ({...v, packageType:e.target.value}))} /></label>
-                      <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="0.1" step="0.1" className="field-input" value={editValues.weight} onChange={e => setEditValues(v => ({...v, weight:e.target.value}))} /></label>
-                      <label className="field-label">تعداد بسته‌ها<input required type="number" min="1" step="1" className="field-input" value={editValues.count} onChange={e => setEditValues(v => ({...v, count:e.target.value}))} /></label>
-                      <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" className="field-input" value={editValues.minimum} onChange={e => setEditValues(v => ({...v, minimum:e.target.value}))} /></label>
-                      <label className="field-label">قیمت پایه هر کیلو (تومان)<input required type="number" min="1" step="1" className="field-input" value={editValues.price} onChange={e => setEditValues(v => ({...v, price:e.target.value}))} /></label>
+                      <label className="field-label">وزن هر بسته (کیلو)<input required type="text" inputMode="decimal" min="0.1" step="0.1" className="field-input" value={editValues.weight} onChange={e => setEditValues(v => ({...v, weight:normalizeNumericInput(e.target.value)}))} /></label>
+                      <label className="field-label">تعداد بسته‌ها<input required type="text" inputMode="decimal" min="1" step="1" className="field-input" value={editValues.count} onChange={e => setEditValues(v => ({...v, count:normalizeNumericInput(e.target.value)}))} /></label>
+                      <label className="field-label">حداقل سفارش (بسته)<input required type="text" inputMode="decimal" min="1" step="1" className="field-input" value={editValues.minimum} onChange={e => setEditValues(v => ({...v, minimum:normalizeNumericInput(e.target.value)}))} /></label>
+                      <label className="field-label">قیمت پایه هر کیلو (تومان)<input required type="text" inputMode="decimal" min="1" step="1" className="field-input" value={editValues.price} onChange={e => setEditValues(v => ({...v, price:normalizeNumericInput(e.target.value)}))} /></label>
                       <JalaliDateField label="زمان آماده بودن (شمسی)" value={editValues.ready} onChange={value => setEditValues(v => ({ ...v, ready: value }))} />
                     </div>
                     <fieldset className="grid gap-3 rounded-lg border border-border p-3"><legend className="px-2 font-semibold">قیمت و حداقل سفارش هر بخش فروش</legend>
                       {salesSections.map(section => { const roleAllowsSection = allowedSaleSections(memberRole).includes(section.key); return <div key={section.key} className="grid gap-2 rounded border border-border p-3">
                         <label className="flex items-center gap-2"><input type="checkbox" checked={editTiers[section.key].enabled && roleAllowsSection} disabled={!roleAllowsSection} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], enabled:e.target.checked}}))} />{section.label}</label>
                         {editTiers[section.key].enabled && <div className="grid grid-cols-2 gap-2">
-                          <label className="field-label">قیمت هر کیلو<input required type="number" min="1" className="field-input" value={editTiers[section.key].price} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], price:e.target.value}}))} /></label>
-                          <label className="field-label">حداقل بسته<input required type="number" min="1" className="field-input" value={editTiers[section.key].minimum} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], minimum:e.target.value}}))} /></label>
+                          <label className="field-label">قیمت هر کیلو<input required type="text" inputMode="decimal" min="1" className="field-input" value={editTiers[section.key].price} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], price:normalizeNumericInput(e.target.value)}}))} /></label>
+                          <label className="field-label">حداقل بسته<input required type="text" inputMode="decimal" min="1" className="field-input" value={editTiers[section.key].minimum} onChange={e => setEditTiers(v => ({...v, [section.key]: {...v[section.key], minimum:normalizeNumericInput(e.target.value)}}))} /></label>
                         </div>}
                       </div>; })}
                     </fieldset>
@@ -611,8 +632,8 @@ function AnnouncePage() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <label className="field-label">نوع بسته<select required value={form.packageType} onChange={e => set('packageType')(e.target.value)} className="field-input"><option>کارتن</option><option>سبد</option><option>کیسه</option><option>جعبه</option><option>بسته‌بندی فله</option><option>بسته‌بندی اختصاصی</option></select></label>
-              <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="1" step="0.5" dir="ltr" value={form.weight} onChange={e => set('weight')(e.target.value)} className="field-input text-left" /></label>
-              <label className="field-label">موجودی (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.stock} onChange={e => set('stock')(e.target.value)} className="field-input text-left" /></label>
+              <label className="field-label">وزن هر بسته (کیلو)<input required type="text" inputMode="decimal" min="1" step="0.5" dir="ltr" value={form.weight} onChange={e => set('weight')(normalizeNumericInput(e.target.value))} className="field-input text-left" /></label>
+              <label className="field-label">موجودی (بسته)<input required type="text" inputMode="decimal" min="1" step="1" dir="ltr" value={form.stock} onChange={e => set('stock')(normalizeNumericInput(e.target.value))} className="field-input text-left" /></label>
             </div>
             <fieldset className="grid gap-3 rounded-lg border border-border p-4">
               <legend className="px-2 font-bold">بخش‌های فروش و قیمت اختصاصی هر بخش</legend>
@@ -623,8 +644,8 @@ function AnnouncePage() {
                 return <div key={section.key} className="grid gap-3 rounded-md border border-border p-3">
                   <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={enabled} disabled={!memberRole || !roleAllowsSection} onChange={e => toggleSaleSection(section.key, e.target.checked)} />{section.label}</label>
                   {enabled && <div className="grid grid-cols-2 gap-3">
-                    <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="10000" step="100" dir="ltr" value={salePrices[section.key]} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" placeholder="حداقل ۱۰۰۰۰ تومان" /></label>
-                    <label className="field-label">حداقل بسته در این بخش<input required type="number" min="1" max={form.stock || undefined} step="1" dir="ltr" value={saleMinimums[section.key]} onChange={e => setSaleMinimums(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
+                    <label className="field-label">قیمت هر کیلو (تومان)<input required type="text" inputMode="decimal" min="10000" step="100" dir="ltr" value={salePrices[section.key]} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: normalizeNumericInput(e.target.value) }))} className="field-input text-left" placeholder="حداقل ۱۰۰۰۰ تومان" /></label>
+                    <label className="field-label">حداقل بسته در این بخش<input required type="text" inputMode="decimal" min="1" max={form.stock || undefined} step="1" dir="ltr" value={saleMinimums[section.key]} onChange={e => setSaleMinimums(prev => ({ ...prev, [section.key]: normalizeNumericInput(e.target.value) }))} className="field-input text-left" /></label>
                   </div>}
                 </div>;
               })}
