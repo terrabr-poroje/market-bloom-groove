@@ -99,8 +99,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Keep recovery links on the same approved host where the admin requested the code.
+    // This lets the Render preview be tested without sending preview users back to production.
+    const recoveryOrigin = origin && allowedOrigins.has(origin) ? origin : "https://terrabar.ir";
     const { error: resetError } = await auth.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://terrabar.ir/reset-password",
+      redirectTo: `${recoveryOrigin}/reset-password`,
     });
 
     if (resetError) {
