@@ -96,7 +96,7 @@ function AccountPage() {
     <section className="bg-market-surface py-8 sm:py-12">
       <div className="site-container grid gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-sm font-semibold text-primary">TERRABAR</p><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">حساب کاربری من</h1><p className="mt-2 text-sm text-muted-foreground">پروفایل، عضویت‌ها، بارهای من و سوابق سفارش در یک صفحه.</p></div>
+          <div><p className="text-sm font-semibold text-primary">TERRABAR</p><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">حساب کاربری من</h1><p className="mt-2 text-sm text-muted-foreground">پروفایل، عضویت‌ها، بارهای من و سوابق سفارش در یک صفحه.</p></div><Button asChild variant="outline"><Link to="/requests#tracking"><ClipboardList className="ml-2 size-4" />پیگیری درخواست‌ها و سفارش‌ها</Link></Button>
           <Button variant="outline" onClick={handleSignOut}>خروج از حساب</Button>
         </div>
         {error && <p role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}

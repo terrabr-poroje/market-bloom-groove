@@ -332,7 +332,7 @@ function Requests() {
           <div className="mb-5">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />درخواست خرید</div>
             <h1 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h1>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. بخش «ویژه حرفه‌ای» فقط برای نقش‌های تأییدشده مجاز نمایش داده می‌شود.</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. برای خریدار عادی گزینه‌های خرده، عمده و ویژه در دسترس است؛ گزینه حرفه‌ای فقط برای نقش‌های حرفه‌ای مجاز نمایش داده می‌شود.</p>
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -403,7 +403,7 @@ function Requests() {
               </form>
             )}
           </div>
-          <div className="mt-8 border-t border-border pt-6">
+          <div id="tracking" className="mt-8 scroll-mt-6 border-t border-border pt-6">
             <h2 className="text-xl font-extrabold">پیگیری درخواست‌های سفارش من</h2>
             {!user ? <p className="mt-3 text-sm text-muted-foreground">برای دیدن وضعیت درخواست‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت وضعیت درخواست‌ها…</p> : myDirectRequests.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز درخواست سفارش مستقیمی ثبت نکرده‌اید.</p> : (
               <ul className="mt-4 grid gap-3">
