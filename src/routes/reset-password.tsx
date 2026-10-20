@@ -17,7 +17,7 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [emergencyCode, setEmergencyCode] = useState("");
-  const [stage, setStage] = useState<Stage>("request");
+  const [stage, setStage] = useState<Stage>("emergency");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -147,10 +147,12 @@ function ResetPasswordPage() {
       <label className="field-label">رمز جدید (دقیقاً ۱۰ رقم)<input required type="password" inputMode="numeric" autoComplete="new-password" maxLength={10} pattern="[0-9]{10}" dir="ltr" value={password} onChange={e => setPassword(e.target.value.replace(/\\D/g, "").slice(0, 10))} className="field-input" /></label>
       <label className="field-label">تکرار رمز جدید<input required type="password" inputMode="numeric" autoComplete="new-password" maxLength={10} pattern="[0-9]{10}" dir="ltr" value={confirm} onChange={e => setConfirm(e.target.value.replace(/\\D/g, "").slice(0, 10))} className="field-input" /></label>
       <Button type="submit" disabled={busy || !username.trim() || emergencyCode.length !== 12 || password.length !== 10 || confirm.length !== 10}>{busy ? "در حال تغییر رمز…" : "تأیید کد و تغییر رمز مدیر کل"}</Button>
+      <Button type="button" variant="outline" onClick={() => { setStage("request"); setError(""); setNotice(""); }}>بازیابی از طریق ایمیل</Button>
     </form>}
     {stage === "request" && <form onSubmit={requestRecovery} className="mt-6 grid gap-4">
       <label className="field-label">نام کاربری مدیر<input required autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} className="field-input" /></label>
       <Button type="submit" disabled={busy || !username.trim()}>{busy ? "در حال ارسال…" : "ارسال ایمیل بازیابی"}</Button>
+      <Button type="button" variant="outline" onClick={() => { setStage("emergency"); setError(""); setNotice(""); }}>بازگشت به بازیابی اضطراری با کد</Button>
     </form>}
     {stage === "waiting" && <div className="mt-6 grid gap-4">
       <p className="text-sm text-muted-foreground">ایمیل را در همان صندوقی بررسی کنید که برای حساب مدیر ثبت شده است. اگر لینک را باز کردید و این صفحه هنوز تغییر نکرد، صفحه را یک‌بار تازه‌سازی کنید.</p>
