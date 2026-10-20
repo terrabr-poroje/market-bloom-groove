@@ -19,8 +19,8 @@ type MemberRequest = { id: string; member_id: string; role_code: string; approva
 type AdminOrder = { id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
 type AdminPurchaseRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
 type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
-type CityMember = { id: string; full_name: string; phone: string | null; city: string; role: string; verification_status: string | null; joined_at: string };
-type AllLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string; members: { full_name: string | null; phone: string | null } | null };
+type CityMember = { id: string; full_name: string; phone: string | null; city: string; role: string; verification_status: string | null; joined_at: string; is_archived: boolean };
+type AllLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string; archived_at: string | null; members: { full_name: string | null; phone: string | null } | null };
 type CityManager = { id: string; auth_user_id: string; display_name: string; login_username: string; city: string; is_active: boolean };
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
 type SiteVisit = { id: string; user_id: string; route: string; visited_at: string; members: { full_name: string | null; phone: string | null; city: string | null } | null };
@@ -71,11 +71,11 @@ function AdminPage() {
       .order('created_at', { ascending: false })
       .then(({ data }: { data: MemberRequest[] | null }) => setRequests(data ?? []));
     (supabase as any).from('members')
-      .select('id, full_name, phone, city, role, verification_status, joined_at')
+      .select('id, full_name, phone, city, role, verification_status, joined_at, is_archived')
       .order('city', { ascending: true }).order('full_name', { ascending: true }).limit(1000)
       .then(({ data, error }: { data: CityMember[] | null; error: unknown }) => { if (!error) setCityMembers(data ?? []); });
     (supabase as any).from('loads')
-      .select('id, name, engine, quality, city, price, count, quantity, unit, status, created_at, members(full_name, phone)')
+      .select('id, name, engine, quality, city, price, count, quantity, unit, status, created_at, archived_at, members(full_name, phone)')
       .order('created_at', { ascending: false }).limit(300)
       .then(({ data, error }: { data: AllLoad[] | null; error: unknown }) => { if (!error) setAllLoads(data ?? []); });
     (supabase as any).from('loads')
@@ -158,6 +158,30 @@ function AdminPage() {
       .update({ approval_status: 'rejected', approved_by: null, approved_at: null })
       .eq('id', request.id);
     if (error) { window.alert('رد درخواست انجام نشد؛ دسترسی مدیر را بررسی کنید.'); return; }
+    refresh();
+  }
+  async function archiveMember(member: CityMember) {
+    if (!window.confirm(`عضو «${member.full_name}» به‌صورت قابل‌بازگشت بایگانی شود؟ سوابق سفارش و مالی حذف نمی‌شوند.`)) return;
+    const { error } = await (supabase as any).rpc('terrabar_admin_archive_member', { p_member_id: member.id });
+    if (error) { window.alert('بایگانی عضو انجام نشد: ' + error.message); return; }
+    refresh();
+  }
+  async function restoreMember(member: CityMember) {
+    if (!isAdmin) return;
+    const { error } = await (supabase as any).rpc('terrabar_admin_restore_member', { p_member_id: member.id });
+    if (error) { window.alert('بازگردانی عضو انجام نشد: ' + error.message); return; }
+    refresh();
+  }
+  async function archiveLoad(load: AllLoad) {
+    if (!window.confirm(`اعلام بار «${load.name}» به‌صورت قابل‌بازگشت بایگانی شود؟`)) return;
+    const { error } = await (supabase as any).rpc('terrabar_admin_archive_load', { p_load_id: load.id });
+    if (error) { window.alert('بایگانی بار انجام نشد: ' + error.message); return; }
+    refresh();
+  }
+  async function restoreLoad(load: AllLoad) {
+    if (!isAdmin) return;
+    const { error } = await (supabase as any).rpc('terrabar_admin_restore_load', { p_load_id: load.id });
+    if (error) { window.alert('بازگردانی بار انجام نشد: ' + error.message); return; }
     refresh();
   }
   async function publishLoad(load: PendingLoad) {
@@ -484,7 +508,7 @@ function AdminPage() {
           {cityMembers.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">عضوی برای نمایش در محدوده دسترسی شما پیدا نشد.</p>}
           {cityMembers.map(member => <article key={member.id} className="rounded-lg border border-border bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{member.full_name}</strong><p className="mt-1 text-sm text-muted-foreground">شهر: {member.city} · نقش اصلی: {roleLabels[member.role] ?? member.role}</p></div><span className="rounded bg-secondary px-2 py-1 text-xs">{member.verification_status || 'وضعیت تأیید ثبت نشده'}</span></div>
-            <p className="mt-2 text-sm" dir="ltr">{member.phone || 'شماره ثبت نشده'}</p><p className="mt-1 text-xs text-muted-foreground">عضویت: {new Date(member.joined_at).toLocaleDateString('fa-IR')}</p>
+            <p className="mt-2 text-sm" dir="ltr">{member.phone || 'شماره ثبت نشده'}</p><p className="mt-1 text-xs text-muted-foreground">عضویت: {new Date(member.joined_at).toLocaleDateString('fa-IR')}</p><div className="mt-3 flex flex-wrap gap-2">{member.is_archived ? <><span className="rounded bg-muted px-2 py-1 text-xs">بایگانی‌شده</span>{isAdmin && <Button size="sm" variant="outline" onClick={() => void restoreMember(member)}>بازگردانی عضو</Button>}</> : <Button size="sm" variant="outline" onClick={() => void archiveMember(member)}>بایگانی قابل‌بازگشت</Button>}</div>
           </article>)}
         </div>
       )}
@@ -495,7 +519,7 @@ function AdminPage() {
           {allLoads.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">اعلام باری برای نمایش در محدوده دسترسی شما وجود ندارد.</p>}
           {allLoads.map(load => <article key={load.id} className="rounded-lg border border-border bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{load.name} {load.engine || ''}</strong><p className="mt-1 text-sm text-muted-foreground">شهر: {load.city} · ثبت‌کننده: {load.members?.full_name || 'عضو ترابار'} · {load.members?.phone || 'شماره ثبت نشده'}</p></div><span className="rounded bg-secondary px-2 py-1 text-xs">{load.status === 'active' ? 'منتشرشده' : load.status === 'pending' ? 'در انتظار بررسی' : load.status === 'rejected' ? 'ردشده' : load.status}</span></div>
-            <p className="mt-2 text-sm">کیفیت: {qualityLabels[load.quality || 'standard'] || load.quality || 'استاندارد'} · {faNumber(load.count ?? load.quantity)} {load.unit} · هر کیلو {faNumber(load.price)} تومان</p><p className="mt-1 text-xs text-muted-foreground">تاریخ ثبت: {new Date(load.created_at).toLocaleString('fa-IR')}</p>
+            <p className="mt-2 text-sm">کیفیت: {qualityLabels[load.quality || 'standard'] || load.quality || 'استاندارد'} · {faNumber(load.count ?? load.quantity)} {load.unit} · هر کیلو {faNumber(load.price)} تومان</p><p className="mt-1 text-xs text-muted-foreground">تاریخ ثبت: {new Date(load.created_at).toLocaleString('fa-IR')}</p><div className="mt-3 flex flex-wrap gap-2">{load.archived_at ? <><span className="rounded bg-muted px-2 py-1 text-xs">بایگانی‌شده</span>{isAdmin && <Button size="sm" variant="outline" onClick={() => void restoreLoad(load)}>بازگردانی بار</Button>}</> : <Button size="sm" variant="outline" onClick={() => void archiveLoad(load)}>بایگانی قابل‌بازگشت</Button>}</div>
           </article>)}
         </div>
       )}
