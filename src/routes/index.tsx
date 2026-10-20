@@ -3,13 +3,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   MapPinned,
-  PackagePlus,
   Search,
-  ShieldCheck,
   Sprout,
-  Store,
-  Truck,
-  Users,
   LogIn,
   Menu,
 } from "lucide-react";
@@ -60,33 +55,12 @@ function Index() {
               </div>
 
               <div className="relative mx-auto w-full max-w-sm">
-                <div className="rounded-2xl border border-white/15 bg-white/[0.08] p-4 shadow-2xl backdrop-blur-sm sm:p-5">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-emerald-100/70">بازار ترابار</p>
-                      <h2 className="mt-1 text-lg font-extrabold">از کجا شروع می‌کنید؟</h2>
-                    </div>
-                    <div className="grid size-11 place-items-center rounded-xl bg-lime-300 text-emerald-950"><Sprout className="size-6" /></div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
-                      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Users className="size-5 text-lime-200" /></div>
-                      <div><p className="text-sm font-bold">عضو بازار شوید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ورود و ثبت‌نام در ترابار</p></div>
-                      <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
-                      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><PackagePlus className="size-5 text-lime-200" /></div>
-                      <div><p className="text-sm font-bold">بار خود را معرفی کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">ثبت اطلاعات و موجودی محصول</p></div>
-                      <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
-                    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
-                      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/10"><Search className="size-5 text-lime-200" /></div>
-                      <div><p className="text-sm font-bold">بار موردنیاز را پیدا کنید</p><p className="mt-1 text-xs leading-5 text-emerald-100/70">جست‌وجو و ثبت درخواست خرید</p></div>
-                      <ArrowLeft className="mr-auto size-4 text-emerald-100/70" />
-                    </div>
-                  </div>
-                  <p className="mt-4 flex items-center gap-2 border-t border-white/10 pt-4 text-xs leading-6 text-emerald-100/70"><ShieldCheck className="size-4 shrink-0 text-lime-200" /> دسترسی‌ها بر اساس نقش کاربری و شهر فعالیت تنظیم می‌شوند.</p>
-                </div>
+                <Link
+                  to="/auth"
+                  className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-lime-300 px-10 text-lg font-extrabold text-emerald-950 shadow-lg transition hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  مرحله بعد <ArrowLeft className="size-5" />
+                </Link>
                 <div className="absolute -bottom-4 -left-3 -z-10 size-24 rounded-2xl bg-lime-300/20 blur-xl" />
               </div>
             </div>
