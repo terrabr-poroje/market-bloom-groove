@@ -51,7 +51,7 @@ function AuthPage() {
   const roleTitle = fixedRole === "buyer" ? "خریدار" : fixedRole === "bar_seller" ? "بارفروش" : fixedRole === "supplier" ? "تأمین‌کننده" : null;
   const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [adminLogin, setAdminLogin] = useState(false);
   const [authMethod, setAuthMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
@@ -276,7 +276,7 @@ function AuthPage() {
             <div className="grid size-12 place-items-center rounded-xl bg-accent text-primary"><Phone className="size-6" /></div>
             <div>
               <h1 className="text-2xl font-extrabold">{roleTitle ? `صفحه ورود کاربران ${roleTitle}` : mode === "signup" ? "ثبت‌نام در ترابار" : "ورود به ترابار"}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">{roleTitle ? `ورود و ثبت‌نام اختصاصی ${roleTitle} با کد یک‌بارمصرف؛ نقش این صفحه ثابت است.` : "ورود امن با کد یک‌بارمصرف پیامکی یا ایمیلی"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{roleTitle ? `ورود و ثبت‌نام اختصاصی ${roleTitle} با کد یک‌بارمصرف؛ نقش این صفحه ثابت است.` : mode === "login" ? "برای ورود، همان شماره موبایل یا ایمیلی را وارد کنید که قبلاً با آن ثبت‌نام کرده‌اید." : "ورود امن با کد یک‌بارمصرف پیامکی یا ایمیلی"}</p>
             </div>
           </div>
 
@@ -320,7 +320,7 @@ function AuthPage() {
               </fieldset>}
               {authMethod === "phone" && !adminLogin
                 ? <label className="field-label">شماره موبایل<input required dir="ltr" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} className="field-input text-left" placeholder="09123456789" /></label>
-                : <label className="field-label">ایمیل<input required type="email" dir="ltr" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /><span className="text-xs font-normal text-muted-foreground">{adminLogin ? "کد ورود فقط برای ایمیل حساب مدیر فعال ارسال می‌شود." : "می‌توانید بدون شماره موبایل با ایمیل ثبت‌نام کنید."}</span></label>}
+                : <label className="field-label">ایمیل<input required type="email" dir="ltr" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} className="field-input text-left" placeholder="name@example.com" /><span className="text-xs font-normal text-muted-foreground">{adminLogin ? "کد ورود فقط برای ایمیل حساب مدیر فعال ارسال می‌شود." : "برای ورود، همان ایمیل ثبت‌شده قبلی را وارد کنید؛ برای ثبت‌نام حساب جدید، زبانه ثبت‌نام را انتخاب کنید."}</span></label>}
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
               <Button type="submit" disabled={busy}>{busy ? "در حال ارسال…" : "ارسال کد تأیید"}<Phone className="mr-2 size-4" /></Button>
