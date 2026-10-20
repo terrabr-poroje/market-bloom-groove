@@ -100,8 +100,8 @@ export function useAuth() {
 
         // Only the main administrator receives the global admin UI role.
         if (!adminError) {
-          const adminRoleCodes = (adminRows ?? []).map(row => String(row.admin_role).toLowerCase());
-          if (adminRoleCodes.some(code => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
+          const adminRoleCodes = (adminRows ?? []).map((row: any) => String(row.admin_role).toLowerCase());
+          if (adminRoleCodes.some((code: string) => ['main_admin', 'main-administrator', 'admin'].includes(code))) {
             nextRoles.add('admin');
           }
           if (adminRoleCodes.includes('city_manager')) nextRoles.add('city_manager');
