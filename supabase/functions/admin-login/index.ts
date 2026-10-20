@@ -8,9 +8,10 @@ const allowedOrigins = new Set([
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
+  const safeOrigin = allowedOrigins.has(origin) ? origin : "https://terrabar.ir";
   const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
   return {
-    "Access-Control-Allow-Origin": origin || "https://terrabar.ir",
+    "Access-Control-Allow-Origin": safeOrigin,
     "Access-Control-Allow-Headers": requestedHeaders ?? "authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
@@ -30,6 +31,10 @@ function normalizeUsername(value: unknown): string {
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin") ?? "";
+  if (origin && !allowedOrigins.has(origin)) {
+    return json(req, { error: "مبدأ درخواست مجاز نیست." }, 403);
+  }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   if (req.method !== "POST") return json(req, { error: "درخواست نامعتبر است." }, 405);
 
