@@ -62,8 +62,8 @@ jobs:
           const config = JSON.parse(fs.readFileSync(path, 'utf8'));
           config.name = 'terrabar-market';
           config.routes = [
-            { pattern: 'terrabar.ir/*', zone_name: 'terrabar.ir' },
-            { pattern: 'www.terrabar.ir/*', zone_name: 'terrabar.ir' }
+            { pattern: 'terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' },
+            { pattern: 'www.terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' }
           ];
           if (!config.main) {
             throw new Error('Refusing deployment: generated Worker entry point is missing.');
@@ -75,14 +75,14 @@ jobs:
           }
           const routes = verified.routes || [];
           for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
-            if (!routes.some(route => route.pattern === hostname + '/*' && route.zone_name === 'terrabar.ir' && !route.custom_domain)) {
+            if (!routes.some(route => route.pattern === hostname + '/*' && route.zone_id === '5abde3806e64424f9179eb509cabe824' && !route.custom_domain)) {
               throw new Error('Refusing deployment: approved custom domain missing: ' + hostname);
             }
           }
           if (routes.some(route => !['terrabar.ir/*', 'www.terrabar.ir/*'].includes(route.pattern))) {
             throw new Error('Refusing deployment: unexpected route found in production config');
           }
-          console.log('Verified: Worker terrabar-market uses only the two approved zone routes; existing DNS records are preserved.');
+          console.log('Verified: Worker terrabar-market uses only the two approved zone-ID routes; existing DNS records are preserved.');
           NODE
 
       - name: Deploy to the existing production Worker
