@@ -19,6 +19,8 @@ type MemberRequest = { id: string; member_id: string; role_code: string; approva
 type AdminOrder = { id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
 type AdminPurchaseRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
 type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
+type CityMember = { id: string; full_name: string; phone: string | null; city: string; role: string; verification_status: string | null; joined_at: string };
+type AllLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string; members: { full_name: string | null; phone: string | null } | null };
 type CityManager = { id: string; auth_user_id: string; display_name: string; login_username: string; city: string; is_active: boolean };
 type PendingLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string };
 type SiteVisit = { id: string; user_id: string; route: string; visited_at: string; members: { full_name: string | null; phone: string | null; city: string | null } | null };
@@ -30,13 +32,16 @@ type AdminFinanceTransaction = { id: string; member_id: string; order_id: string
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
   const canManage = isAdmin || roles.includes('city_manager');
-  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers' | 'reviews' | 'visits' | 'finance'>('requests');
+  const [tab, setTab] = useState<'requests' | 'loads' | 'allloads' | 'members' | 'orders' | 'purchases' | 'managers' | 'reviews' | 'visits' | 'finance'>('requests');
   const [managerCandidates, setManagerCandidates] = useState<ManagerCandidate[]>([]);
   const [cityManagers, setCityManagers] = useState<CityManager[]>([]);
   const [activeCities, setActiveCities] = useState<string[]>([]);
   const [managerUserId, setManagerUserId] = useState('');
   const [managerName, setManagerName] = useState('');
   const [managerUsername, setManagerUsername] = useState('');
+  const [managerPassword, setManagerPassword] = useState('');
+  const [cityMembers, setCityMembers] = useState<CityMember[]>([]);
+  const [allLoads, setAllLoads] = useState<AllLoad[]>([]);
   const [managerCity, setManagerCity] = useState('');
   const [managerBusy, setManagerBusy] = useState(false);
   const [managerError, setManagerError] = useState('');
@@ -65,6 +70,14 @@ function AdminPage() {
       .eq('approval_status', 'pending')
       .order('created_at', { ascending: false })
       .then(({ data }: { data: MemberRequest[] | null }) => setRequests(data ?? []));
+    (supabase as any).from('members')
+      .select('id, full_name, phone, city, role, verification_status, joined_at')
+      .order('city', { ascending: true }).order('full_name', { ascending: true }).limit(1000)
+      .then(({ data, error }: { data: CityMember[] | null; error: unknown }) => { if (!error) setCityMembers(data ?? []); });
+    (supabase as any).from('loads')
+      .select('id, name, engine, quality, city, price, count, quantity, unit, status, created_at, members(full_name, phone)')
+      .order('created_at', { ascending: false }).limit(300)
+      .then(({ data, error }: { data: AllLoad[] | null; error: unknown }) => { if (!error) setAllLoads(data ?? []); });
     (supabase as any).from('loads')
       .select('id, name, engine, quality, city, price, count, quantity, unit, status, created_at')
       .eq('status', 'pending')
@@ -160,10 +173,11 @@ function AdminPage() {
   async function saveCityManager(event: React.FormEvent) {
     event.preventDefault(); setManagerBusy(true); setManagerError(''); setManagerNotice('');
     const selected = managerCandidates.find(item => item.auth_user_id === managerUserId);
-    if (!selected || !managerCity || !managerName.trim() || !managerUsername.trim()) { setManagerError('حساب، نام و نام کاربری و شهر را کامل انتخاب کنید.'); setManagerBusy(false); return; }
-    const { data, error } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'assign', targetAuthUserId: managerUserId, city: managerCity, displayName: managerName.trim(), username: managerUsername.trim() } });
+    if (!selected || !managerCity || !managerName.trim() || !managerUsername.trim() || managerPassword.length < 10 || !/[\\p{L}]/u.test(managerPassword) || !/\\p{N}/u.test(managerPassword)) { setManagerError('حساب تأییدشده، نام، نام کاربری، شهر و رمز حداقل ۱۰ نویسه‌ای شامل حرف و عدد را کامل کنید.'); setManagerBusy(false); return; }
+    const { data, error } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'assign', targetAuthUserId: managerUserId, city: managerCity, displayName: managerName.trim(), username: managerUsername.trim(), password: managerPassword } });
     if (error || data?.error) { setManagerError(data?.error ?? 'ثبت مدیر شهر انجام نشد.'); setManagerBusy(false); return; }
     setManagerNotice(data?.message ?? 'مدیر شهر ثبت شد.');
+    setManagerPassword('');
     const { data: refreshed } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } });
     if (refreshed) { setManagerCandidates((refreshed.members ?? []) as ManagerCandidate[]); setCityManagers((refreshed.managers ?? []) as CityManager[]); setActiveCities((refreshed.cities ?? []).map((item: { city_name: string }) => item.city_name)); }
     setManagerBusy(false);
@@ -239,6 +253,8 @@ function AdminPage() {
       <div className="mt-6 flex flex-wrap gap-2 border-b border-border pb-3">
         <Button variant={tab === 'requests' ? 'default' : 'ghost'} onClick={() => setTab('requests')}><Users />عضویت ({faNumber(requests.length)})</Button>
         <Button variant={tab === 'loads' ? 'default' : 'ghost'} onClick={() => setTab('loads')}><Package />بارهای در انتظار تأیید ({faNumber(pendingLoads.length)})</Button>
+        <Button variant={tab === 'allloads' ? 'default' : 'ghost'} onClick={() => setTab('allloads')}><Package />همه اعلام بارها ({faNumber(allLoads.length)})</Button>
+        <Button variant={tab === 'members' ? 'default' : 'ghost'} onClick={() => setTab('members')}><Users />اعضای شهرها ({faNumber(cityMembers.length)})</Button>
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
         {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
@@ -284,6 +300,7 @@ function AdminPage() {
               <label className="field-label">نام و نام خانوادگی مدیر<input required className="field-input" value={managerName} onChange={event => setManagerName(event.target.value)} /></label>
               <label className="field-label">نام کاربری ورود<input required className="field-input" value={managerUsername} onChange={event => setManagerUsername(event.target.value)} /></label>
               <label className="field-label">شهر تحت مدیریت<select required className="field-input" value={managerCity} onChange={event => setManagerCity(event.target.value)}><option value="">انتخاب شهر</option>{activeCities.map(city => <option key={city} value={city}>{city}</option>)}</select></label>
+              <label className="field-label">رمز عبور مدیر (حداقل ۱۰ نویسه، شامل حرف و عدد)<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" className="field-input" value={managerPassword} onChange={event => setManagerPassword(event.target.value)} /></label>
               {managerError && <p role="alert" className="text-sm text-destructive">{managerError}</p>}
               {managerNotice && <p role="status" className="text-sm text-primary">{managerNotice}</p>}
               <Button type="submit" disabled={managerBusy}>{managerBusy ? 'در حال ذخیره…' : 'ثبت / به‌روزرسانی مدیر شهر'}</Button>
@@ -456,6 +473,28 @@ function AdminPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'members' && (
+        <div className="mt-6 grid gap-3">
+          <div><h2 className="text-lg font-bold">فهرست اعضا به تفکیک شهر</h2><p className="mt-1 text-sm text-muted-foreground">اطلاعات از حساب‌های عضو ثبت‌شده خوانده می‌شود؛ مدیر شهر فقط اعضای محدوده مجاز خود را می‌بیند.</p></div>
+          {cityMembers.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">عضوی برای نمایش در محدوده دسترسی شما پیدا نشد.</p>}
+          {cityMembers.map(member => <article key={member.id} className="rounded-lg border border-border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{member.full_name}</strong><p className="mt-1 text-sm text-muted-foreground">شهر: {member.city} · نقش اصلی: {roleLabels[member.role] ?? member.role}</p></div><span className="rounded bg-secondary px-2 py-1 text-xs">{member.verification_status || 'وضعیت تأیید ثبت نشده'}</span></div>
+            <p className="mt-2 text-sm" dir="ltr">{member.phone || 'شماره ثبت نشده'}</p><p className="mt-1 text-xs text-muted-foreground">عضویت: {new Date(member.joined_at).toLocaleDateString('fa-IR')}</p>
+          </article>)}
+        </div>
+      )}
+
+      {tab === 'allloads' && (
+        <div className="mt-6 grid gap-3">
+          <div><h2 className="text-lg font-bold">تمام اعلام بارهای اعضا</h2><p className="mt-1 text-sm text-muted-foreground">وضعیت، شهر و مشخصات ثبت‌کننده در یک فهرست نمایش داده می‌شود.</p></div>
+          {allLoads.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">اعلام باری برای نمایش در محدوده دسترسی شما وجود ندارد.</p>}
+          {allLoads.map(load => <article key={load.id} className="rounded-lg border border-border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{load.name} {load.engine || ''}</strong><p className="mt-1 text-sm text-muted-foreground">شهر: {load.city} · ثبت‌کننده: {load.members?.full_name || 'عضو ترابار'} · {load.members?.phone || 'شماره ثبت نشده'}</p></div><span className="rounded bg-secondary px-2 py-1 text-xs">{load.status === 'active' ? 'منتشرشده' : load.status === 'pending' ? 'در انتظار بررسی' : load.status === 'rejected' ? 'ردشده' : load.status}</span></div>
+            <p className="mt-2 text-sm">کیفیت: {qualityLabels[load.quality || 'standard'] || load.quality || 'استاندارد'} · {faNumber(load.count ?? load.quantity)} {load.unit} · هر کیلو {faNumber(load.price)} تومان</p><p className="mt-1 text-xs text-muted-foreground">تاریخ ثبت: {new Date(load.created_at).toLocaleString('fa-IR')}</p>
+          </article>)}
         </div>
       )}
 
