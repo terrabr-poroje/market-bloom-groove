@@ -101,13 +101,13 @@ function SellerStorefront() {
 
   return <section className="site-container py-8 sm:py-12">
     <div className="mb-7 rounded-2xl bg-emerald-950 p-5 text-white sm:p-8">
-      <p className="flex items-center gap-2 text-sm text-emerald-100"><Store className="size-4" /> ویترین اختصاصی ترابار</p>
+      <p className="flex items-center gap-2 text-sm text-emerald-100"><Store className="size-4" />{seller?.role === "supplier" ? "ویترین اختصاصی تأمین‌کننده" : "ویترین اختصاصی بارفروش و حجره‌دار"}</p>
       <h1 className="mt-3 text-2xl font-black sm:text-3xl">{seller?.full_name || "فروشنده ترابار"}</h1>
       {seller?.city && <p className="mt-3 flex items-center gap-2 text-sm text-emerald-100"><MapPin className="size-4" />{seller.city}</p>}
-      <p className="mt-3 text-sm text-emerald-100">بارهای فعال و موجود این فروشنده</p>
+      <p className="mt-3 text-sm text-emerald-100">بارهای فعال و موجود {seller?.role === "supplier" ? "این تأمین‌کننده" : "این بارفروش"}</p>
     </div>
     {error && <p role="alert" className="mb-5 rounded-lg border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}
-    {!error && loads.length === 0 ? <div className="rounded-xl border border-border bg-card p-8 text-center"><Store className="mx-auto size-9 text-muted-foreground" /><h2 className="mt-3 font-bold">فعلاً بار فعالی در این ویترین وجود ندارد</h2><p className="mt-2 text-sm text-muted-foreground">با ثبت بار جدید توسط فروشنده، آگهی در همین صفحه نمایش داده می‌شود.</p></div> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{loads.map(load => <LoadCard key={String(load.id)} load={load} />)}</div>}
+    {!error && loads.length === 0 ? <div className="rounded-xl border border-border bg-card p-8 text-center"><Store className="mx-auto size-9 text-muted-foreground" /><h2 className="mt-3 font-bold">فعلاً بار فعالی در این ویترین وجود ندارد</h2><p className="mt-2 text-sm text-muted-foreground">با ثبت بار جدید توسط صاحب ویترین، آگهی در همین صفحه نمایش داده می‌شود.</p></div> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{loads.map(load => <LoadCard key={String(load.id)} load={load} />)}</div>}
     <div className="mt-8"><Button variant="outline" onClick={() => window.location.href = "/member-home"}><ArrowRight className="ml-2 size-4" />بازگشت به صفحه کاربران ترابار</Button></div>
   </section>;
 }
