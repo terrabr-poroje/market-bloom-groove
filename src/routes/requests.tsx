@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadCard } from "@/components/load-card";
-import { cities, faNumber, loads as sampleLoads, pageHead, qualities, type Load, type Quality } from "@/lib/marketplace";
+import { cities, faNumber, loads as sampleLoads, normalizeNumericInput, pageHead, qualities, type Load, type Quality } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/requests")({
   head: () => pageHead("درخواست خرید", "جست‌وجوی بارهای مجاز و ثبت درخواست سفارش چندمحصولی در ترابار.", "/requests"),
@@ -367,7 +367,7 @@ function Requests() {
             <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground"><SlidersHorizontal className="size-3.5" /><select aria-label="مرتب‌سازی بارها" className="max-w-36 bg-transparent text-foreground outline-none" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">تازه‌ترین بارها</option><option value="price">کمترین قیمت</option><option value="stock">بیشترین موجودی</option></select></label>
           </div>
           {loadError && <p role="alert" className="mt-4 text-sm text-destructive">{loadError}</p>}
-          {filtered.length ? <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{filtered.map(load => <LoadCard key={`${load.isSample ? "sample" : "live"}-${load.id}`} load={load} />)}</div> : <div className="py-16 text-center"><Search className="mx-auto mb-4 size-10 text-muted-foreground" /><h3 className="text-lg font-bold">باری با این مشخصات پیدا نشد</h3><p className="mt-3 text-sm text-muted-foreground">در این نوع خرید، در حال حاضر بار فعالی با این مشخصات پیدا نشد.</p><Button variant="outline" className="mt-5" onClick={reset}>حذف فیلترها</Button></div>}
+          {filtered.length ? <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">{filtered.map(load => <LoadCard key={`${load.isSample ? "sample" : "live"}-${load.id}`} load={load} />)}</div> : <div className="py-16 text-center"><Search className="mx-auto mb-4 size-10 text-muted-foreground" /><h3 className="text-lg font-bold">باری با این مشخصات پیدا نشد</h3><p className="mt-3 text-sm text-muted-foreground">در این نوع خرید، در حال حاضر بار فعالی با این مشخصات پیدا نشد.</p><Button variant="outline" className="mt-5" onClick={reset}>حذف فیلترها</Button></div>}
           <div className="mt-7 flex items-center justify-center gap-2 text-xs text-muted-foreground"><PackageCheck className="size-4 text-primary" />{liveLoads.length ? "بارهای ثبت‌شده از دیتابیس نمایش داده می‌شوند؛ کارت‌های نمونه در محیط توسعه مشخص‌اند." : "تا زمان ثبت بار واقعی، کارت‌های نمایشی نمونه هستند."}</div>
         </div>
       </section>
@@ -390,7 +390,7 @@ function Requests() {
                       <label className="field-label">رقم / مشخصات<input value={item.variety} onChange={e => updateItem(index, "variety", e.target.value)} className="field-input" placeholder="نوع یا مشخصات دلخواه" /></label>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-3">
-                      <label className="field-label">مقدار<input required type="number" min="0.01" step="any" dir="ltr" value={item.quantity} onChange={e => updateItem(index, "quantity", e.target.value)} className="field-input text-left" /></label>
+                      <label className="field-label">مقدار<input required type="text" inputMode="decimal" dir="ltr" value={item.quantity} onChange={e => updateItem(index, "quantity", normalizeNumericInput(e.target.value))} className="field-input text-left" /></label>
                       <label className="field-label">واحد<select className="field-input" value={item.unit} onChange={e => updateItem(index, "unit", e.target.value)}><option value="kg">کیلوگرم</option><option value="package">بسته</option><option value="ton">تن</option></select></label>
                       <label className="field-label">کیفیت<select className="field-input" value={item.quality} onChange={e => updateItem(index, "quality", e.target.value)}>{qualities.map(q => <option key={q}>{q}</option>)}</select></label>
                     </div>
