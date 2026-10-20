@@ -1,11 +1,12 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { ArrowRight, Headphones, MapPin, Menu, X } from "lucide-react";
+import { ArrowRight, Headphones, MapPin, Menu, X, ShieldCheck, LogIn } from "lucide-react";
 import { Brand } from "./marketplace-brand";
 
 export function MarketplaceShell({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const closeMenu = () => setMenu(false);
 
   return (
@@ -27,35 +28,42 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           </button>
         </div>
         {menu && (
-          <nav id="terrabar-main-menu" aria-label="منوی اصلی" className="site-container grid gap-1 border-t border-border py-3">
-            <Link to="/" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">صفحه اصلی</Link>
-            <Link to="/auth" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">ثبت‌نام / ورود</Link>
-            <Link to="/account" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">حساب کاربری من</Link>
-            <Link to="/announce" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">اعلام بار و مدیریت محصولات</Link>
-            <Link to="/requests" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">درخواست بار</Link>
-            <Link to="/membership" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">عضویت و پیگیری تأیید</Link>
-            <Link to="/admin" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">پنل مدیریت</Link>
-            <Link to="/about" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">درباره ترابار</Link>
-            <Link to="/guide" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">راهنمای استفاده از سایت</Link>
-            <Link to="/rules" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">قوانین و حریم خصوصی</Link>
-            <Link to="/contact" onClick={closeMenu} className="rounded-md px-3 py-2.5 text-sm hover:bg-secondary">ارتباط با پشتیبانی</Link>
+          <nav id="terrabar-main-menu" aria-label="منوی اصلی" className="site-container grid gap-2 border-t border-border py-4 sm:max-w-md sm:mr-auto">
+            <Link
+              to="/admin-login"
+              onClick={closeMenu}
+              className="flex min-h-12 items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm font-bold hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ShieldCheck className="size-5 text-emerald-700" aria-hidden="true" />
+              ورود مدیران
+            </Link>
+            <Link
+              to="/auth"
+              onClick={closeMenu}
+              className="flex min-h-12 items-center gap-3 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <LogIn className="size-5" aria-hidden="true" />
+              ثبت‌نام / ورود
+            </Link>
           </nav>
         )}
       </header>
 
-      <div className="site-container py-3">
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== "undefined" && window.history.length > 1) window.history.back();
-            else void navigate({ to: "/" });
-          }}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowRight className="size-4" aria-hidden="true" />
-          بازگشت به صفحه قبل
-        </button>
-      </div>
+      {pathname !== "/" && (
+        <div className="site-container py-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) window.history.back();
+              else void navigate({ to: "/" });
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowRight className="size-4" aria-hidden="true" />
+            بازگشت به صفحه قبل
+          </button>
+        </div>
+      )}
 
       <main>{children}</main>
 
