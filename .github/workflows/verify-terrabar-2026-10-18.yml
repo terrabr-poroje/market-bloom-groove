@@ -1,0 +1,56 @@
+name: Verify Terrabar 2026-10-18 baseline
+
+on:
+  push:
+    branches:
+      - rebuild/terrabar-2026-10-18
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "bun.lock"
+      - "vite.config.*"
+      - "supabase/**"
+      - ".github/workflows/verify-terrabar-2026-10-18.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terrabar-oct18-baseline-verify
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://example.invalid
+      VITE_SUPABASE_PUBLISHABLE_KEY: rebuild-test-only-not-a-secret
+    steps:
+      - name: Checkout Oct 18 baseline rebuild branch
+        uses: actions/checkout@v4
+        with:
+          ref: rebuild/terrabar-2026-10-18
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run unit tests
+        run: bun run test
+
+      - name: Build the Oct 18 baseline
+        run: bun run build
+
+      - name: Verify generated application output exists
+        run: |
+          set -euo pipefail
+          test -d .output
+          find .output -maxdepth 3 -type f | head -40
+          echo "Baseline build output exists."
