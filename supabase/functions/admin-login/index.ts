@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const allowedOrigins = new Set([
   "https://terrabar.ir",
   "https://www.terrabar.ir",
+  "https://terrabar-preview.onrender.com",
   "http://localhost:8080",
 ]);
 
