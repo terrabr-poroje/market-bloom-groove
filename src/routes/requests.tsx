@@ -403,7 +403,7 @@ function Requests() {
               </form>
             )}
           </div>
-          <div className="mt-8 border-t border-border pt-6">
+          <div id="tracking" className="mt-8 scroll-mt-6 border-t border-border pt-6">
             <h2 className="text-xl font-extrabold">پیگیری درخواست‌های سفارش من</h2>
             {!user ? <p className="mt-3 text-sm text-muted-foreground">برای دیدن وضعیت درخواست‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت وضعیت درخواست‌ها…</p> : myDirectRequests.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز درخواست سفارش مستقیمی ثبت نکرده‌اید.</p> : (
               <ul className="mt-4 grid gap-3">
