@@ -42,6 +42,7 @@ const localIsoDate = (date = new Date()) => {
 };
 const jalaliFormatter = new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' });
 const jalaliDisplayFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'long', day: 'numeric' });
+const jalaliMonthFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long' });
 const jalaliParts = (date: Date) => Object.fromEntries(jalaliFormatter.formatToParts(date).filter(p => p.type !== 'literal').map(p => [p.type, Number(p.value)])) as { year: number; month: number; day: number };
 function JalaliDateField({ label, value, min, onChange }: { label: string; value: string; min?: string; onChange: (value: string) => void }) {
   const [open, setOpen] = useState(false);
