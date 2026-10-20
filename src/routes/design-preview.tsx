@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Info, LogIn, Menu, PackagePlus, Search, Sprout, X } from "lucide-react";
+import { Info, Menu, Sprout, X } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 import appleImage from "@/assets/apples.jpg";
 import tomatoImage from "@/assets/tomatoes.jpg";
@@ -14,11 +14,6 @@ export const Route = createFileRoute("/design-preview")({
   component: DesignPreview,
 });
 
-const actions = [
-  { icon: LogIn, title: "ثبت‌نام / ورود", text: "عضویت در بازار ترابار با نقش موردنظر" },
-  { icon: PackagePlus, title: "اعلام بار", text: "معرفی محصول، وزن بسته و موجودی" },
-  { icon: Search, title: "درخواست بار", text: "جست‌وجو و ثبت نیاز خرید" },
-];
 
 const products = [
   { img: appleImage, name: "سیب قرمز", city: "ارومیه", grade: "درجه یک", price: "۴۵٬۰۰۰" },
@@ -58,15 +53,13 @@ function DesignPreview() {
           <p className="mt-4 max-w-xl text-sm leading-8 text-emerald-50/90 sm:text-base">ارتباط باغدار، تأمین‌کننده، بارفروش و خریدار در یک مسیر شفاف.</p>
         </section>
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-3">
-          {actions.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <span className="grid size-12 place-items-center rounded-xl bg-primary/10 text-primary"><Icon className="size-6" /></span>
-              <h2 className="mt-4 text-lg font-extrabold text-foreground">{title}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-primary">نمونه دکمه <ArrowLeft className="size-4" /></span>
-            </div>
-          ))}
+        <section className="mt-8 flex justify-center">
+          <Link
+            to="/auth"
+            className="inline-flex min-h-14 items-center justify-center rounded-2xl bg-primary px-10 text-lg font-extrabold text-primary-foreground shadow-lg transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            مرحله بعد
+          </Link>
         </section>
 
         <section className="mt-10">
