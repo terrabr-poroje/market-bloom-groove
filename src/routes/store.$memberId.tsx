@@ -82,7 +82,7 @@ function SellerStorefront() {
           price: Number(row.price) || 0, ready: row.ready_date ? new Date(row.ready_date).toLocaleDateString("fa-IR") : "زمان بارگیری هماهنگ شود",
           validity: "طبق وضعیت بار", seller: String(member.full_name || "فروشنده ترابار"),
           sellerType: String(row.seller_type || row.role || member.role || "فروشنده"),
-          image: sampleLoads[0].image, isSample: false,
+          image: sampleLoads[0]?.image ?? "", isSample: false,
         } as Load;
       }));
       setLoading(false);

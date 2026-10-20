@@ -178,7 +178,7 @@ function Requests() {
             ready: row.ready_date ? new Date(row.ready_date).toLocaleDateString("fa-IR") : "زمان بارگیری هماهنگ شود",
             validity: "طبق وضعیت بار", seller: "عضو تأییدشدهٔ ترابار",
             sellerType: String(row.seller_type || row.role || "فروشنده"),
-            image: sampleLoads[0].image, isSample: false,
+            image: sampleLoads[0]?.image ?? "", isSample: false,
           } as Load;
         }));
       }
@@ -236,7 +236,7 @@ function Requests() {
       const professionalAudienceAllowed = purchaseMode !== "professional" || !isProfessionalInventory || canBuySupplierProfessional;
       return cityAllowed
         && professionalAudienceAllowed
-        && options.some(option => selectedMode.saleTypes.includes(option.saleType))
+        && options.some(option => selectedMode?.saleTypes.includes(option.saleType))
         && (!filters.category || load.category === filters.category)
         && (!filters.quality || load.quality === filters.quality)
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
