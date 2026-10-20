@@ -50,8 +50,8 @@ function ResetPasswordPage() {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
     const normalized = username.normalize("NFKC").trim().replace(/\s+/g, " ");
-    if (!/^\d{8}$/.test(code)) {
-      setError("کد ایمیل باید دقیقاً ۸ رقم باشد.");
+    if (!/^\d{10}$/.test(code)) {
+      setError("کد ایمیل باید دقیقاً ۱۰ رقم باشد.");
       setBusy(false); return;
     }
     if (password.length < 10 || !/\p{L}/u.test(password) || !/\p{N}/u.test(password)) {
@@ -78,13 +78,13 @@ function ResetPasswordPage() {
     <h1 className="text-2xl font-extrabold">بازیابی رمز مدیر</h1>
     {stage === "request" ? <form onSubmit={requestCode} className="mt-6 grid gap-4">
       <label className="field-label">نام کاربری مدیر<input required autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} className="field-input" /></label>
-      <Button type="submit" disabled={busy || !username.trim()}>{busy ? "در حال ارسال…" : "ارسال کد ۸ رقمی"}</Button>
+      <Button type="submit" disabled={busy || !username.trim()}>{busy ? "در حال ارسال…" : "ارسال کد ۱۰ رقمی"}</Button>
     </form> : <form onSubmit={savePassword} className="mt-6 grid gap-4">
       <label className="field-label">نام کاربری مدیر<input required autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} className="field-input" /></label>
-      <label className="field-label">کد ۸ رقمی ایمیل<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={8} pattern="[0-9]{8}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))} className="field-input text-center text-lg tracking-widest" /></label>
+      <label className="field-label">کد ۱۰ رقمی ایمیل<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={10} pattern="[0-9]{10}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 10))} className="field-input text-center text-lg tracking-widest" /></label>
       <label className="field-label">رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={password} onChange={e => setPassword(e.target.value)} className="field-input" /></label>
       <label className="field-label">تکرار رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={confirm} onChange={e => setConfirm(e.target.value)} className="field-input" /></label>
-      <Button type="submit" disabled={busy || code.length !== 8}>{busy ? "در حال بررسی…" : "تأیید کد و ذخیره رمز"}</Button>
+      <Button type="submit" disabled={busy || code.length !== 10}>{busy ? "در حال بررسی…" : "تأیید کد و ذخیره رمز"}</Button>
       <Button type="button" variant="outline" disabled={busy} onClick={() => { setStage("request"); setCode(""); setPassword(""); setConfirm(""); setError(""); setNotice(""); }}>ارسال کد جدید</Button>
     </form>}
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
