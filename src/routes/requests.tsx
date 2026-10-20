@@ -332,7 +332,7 @@ function Requests() {
           <div className="mb-5">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />درخواست خرید</div>
             <h1 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h1>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. بخش «ویژه حرفه‌ای» فقط برای نقش‌های تأییدشده مجاز نمایش داده می‌شود.</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. برای خریدار عادی گزینه‌های خرده، عمده و ویژه در دسترس است؛ گزینه حرفه‌ای فقط برای نقش‌های حرفه‌ای مجاز نمایش داده می‌شود.</p>
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
