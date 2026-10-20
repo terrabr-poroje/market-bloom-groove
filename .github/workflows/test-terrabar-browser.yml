@@ -1,0 +1,64 @@
+name: Browser-test isolated Terrabar rebuild
+
+on:
+  push:
+    branches:
+      - rebuild/terrabar-clean-rebuild
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "bun.lock"
+      - "vite.config.*"
+      - "playwright.rebuild.config.ts"
+      - "tests/browser/**"
+      - ".github/workflows/test-terrabar-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terrabar-rebuild-browser-tests
+  cancel-in-progress: true
+
+jobs:
+  browser-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://example.invalid
+      VITE_SUPABASE_PUBLISHABLE_KEY: rebuild-test-only-not-a-secret
+    steps:
+      - name: Checkout isolated rebuild branch
+        uses: actions/checkout@v4
+        with:
+          ref: rebuild/terrabar-clean-rebuild
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install locked application dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install temporary browser-test runner (CI only)
+        run: npm install --no-save --no-package-lock @playwright/test
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser interaction tests
+        run: npx playwright test --config=playwright.rebuild.config.ts
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terrabar-browser-test-results
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
