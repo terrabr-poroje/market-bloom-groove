@@ -54,8 +54,8 @@ function ResetPasswordPage() {
       setError("کد ایمیل باید دقیقاً ۱۰ رقم باشد.");
       setBusy(false); return;
     }
-    if (password.length < 10 || !/\p{L}/u.test(password) || !/\p{N}/u.test(password)) {
-      setError("رمز جدید باید حداقل ۱۰ نویسه و شامل حروف و عدد باشد.");
+    if (!/^\d{10}$/.test(password)) {
+      setError("رمز جدید باید دقیقاً ۱۰ رقم عددی باشد.");
       setBusy(false); return;
     }
     if (password !== confirm) {
@@ -82,8 +82,8 @@ function ResetPasswordPage() {
     </form> : <form onSubmit={savePassword} className="mt-6 grid gap-4">
       <label className="field-label">نام کاربری مدیر<input required autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} className="field-input" /></label>
       <label className="field-label">کد ۱۰ رقمی ایمیل<input required inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={10} pattern="[0-9]{10}" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 10))} className="field-input text-center text-lg tracking-widest" /></label>
-      <label className="field-label">رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={password} onChange={e => setPassword(e.target.value)} className="field-input" /></label>
-      <label className="field-label">تکرار رمز جدید<input required type="password" autoComplete="new-password" minLength={10} dir="ltr" value={confirm} onChange={e => setConfirm(e.target.value)} className="field-input" /></label>
+      <label className="field-label">رمز جدید (دقیقاً ۱۰ رقم)<input required type="password" inputMode="numeric" autoComplete="new-password" minLength={10} maxLength={10} pattern="[0-9]{10}" dir="ltr" value={password} onChange={e => setPassword(e.target.value.replace(/\D/g, "").slice(0, 10))} className="field-input" /></label>
+      <label className="field-label">تکرار رمز جدید<input required type="password" inputMode="numeric" autoComplete="new-password" minLength={10} maxLength={10} pattern="[0-9]{10}" dir="ltr" value={confirm} onChange={e => setConfirm(e.target.value.replace(/\D/g, "").slice(0, 10))} className="field-input" /></label>
       <Button type="submit" disabled={busy || code.length !== 10}>{busy ? "در حال بررسی…" : "تأیید کد و ذخیره رمز"}</Button>
       <Button type="button" variant="outline" disabled={busy} onClick={() => { setStage("request"); setCode(""); setPassword(""); setConfirm(""); setError(""); setNotice(""); }}>ارسال کد جدید</Button>
     </form>}
