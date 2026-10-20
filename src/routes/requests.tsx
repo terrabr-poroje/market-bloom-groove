@@ -91,9 +91,6 @@ function Requests() {
         if (!active) return;
         setAllowedCities([...new Set([...(assigned ?? []).map((r: any) => String(r.city_name)), ...((adminRows ?? []).map((r: any) => r.city).filter(Boolean) as string[])])]);
         setCityAccess("assigned");
-      } else if (roles.some((role: string) => ["supplier", "bar_seller", "seller"].includes(role))) {
-        // Registered suppliers and bar sellers may browse professional inventory across all cities; approval is required only for posting loads.
-        setAllowedCities([]); setCityAccess("all");
       } else if (roles.some((role: string) => ["special_buyer", "buyer_special"].includes(role))) {
         // Special buyers can browse their city plus explicitly enabled neighboring cities.
         const [{ data: outgoing, error: outgoingError }, { data: incoming, error: incomingError }] = await Promise.all([
