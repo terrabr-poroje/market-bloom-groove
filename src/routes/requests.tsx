@@ -28,6 +28,7 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
   { value: "professional", label: "ویژه حرفه‌ای", description: "درخواست حرفه‌ای با امکان بررسی مقدار و شرایط متفاوت", saleTypes: ["professional", "pro"] },
 ];
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
+const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
 
 function Requests() {
   const { user } = useAuth();
@@ -56,6 +57,12 @@ function Requests() {
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [orderSaved, setOrderSaved] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#professional" && canUseProfessionalRole(approvedRoleCodes)) {
+      setPurchaseMode("professional");
+    }
+  }, [approvedRoleCodes.join("|")]);
 
   useEffect(() => {
     let active = true;
