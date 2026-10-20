@@ -173,7 +173,7 @@ function AdminPage() {
   async function saveCityManager(event: React.FormEvent) {
     event.preventDefault(); setManagerBusy(true); setManagerError(''); setManagerNotice('');
     const selected = managerCandidates.find(item => item.auth_user_id === managerUserId);
-    if (!selected || !managerCity || !managerName.trim() || !managerUsername.trim() || managerPassword.length < 10 || !/[\\p{L}]/u.test(managerPassword) || !/\\p{N}/u.test(managerPassword)) { setManagerError('حساب تأییدشده، نام، نام کاربری، شهر و رمز حداقل ۱۰ نویسه‌ای شامل حرف و عدد را کامل کنید.'); setManagerBusy(false); return; }
+    if (!selected || !managerCity || !managerName.trim() || !managerUsername.trim() || managerPassword.length < 10) { setManagerError('حساب تأییدشده، نام، نام کاربری، شهر و رمز حداقل ۱۰ نویسه‌ای شامل حرف و عدد را کامل کنید.'); setManagerBusy(false); return; }
     const { data, error } = await supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'assign', targetAuthUserId: managerUserId, city: managerCity, displayName: managerName.trim(), username: managerUsername.trim(), password: managerPassword } });
     if (error || data?.error) { setManagerError(data?.error ?? 'ثبت مدیر شهر انجام نشد.'); setManagerBusy(false); return; }
     setManagerNotice(data?.message ?? 'مدیر شهر ثبت شد.');
