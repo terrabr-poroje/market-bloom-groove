@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase schema queries use dynamic types while generated DB types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { UserRound, ShoppingBasket, PackagePlus, ArrowLeft, Sprout, ClipboardList, BookOpenText, LifeBuoy, ShieldCheck } from "lucide-react";
@@ -26,11 +27,24 @@ function MemberHome() {
       const roleHints = (roles ?? []).map((role: any) => String(typeof role === "string" ? role : role?.role_code ?? role?.role ?? "").toLowerCase());
       const isBuyerHint = roleHints.some((role: string) => ["buyer", "ordinary_buyer", "regular_buyer"].includes(role));
       const isProfessionalHint = roleHints.some((role: string) => ["supplier", "bar_seller", "seller", "special_buyer", "buyer_special", "professional_buyer"].includes(role));
-      const { data } = await (supabase as any)
+      const { data: memberRow, error: memberError } = await (supabase as any)
+        .from("members")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      if (memberError || !memberRow?.id) {
+        setIsOrdinaryBuyer(false);
+        setRoleCheckDone(true);
+        return;
+      }
+      const { data, error: roleError } = await (supabase as any)
         .from("member_roles")
         .select("role_code")
-        .eq("member_id", (await (supabase as any).from("members").select("id").eq("auth_user_id", user.id).maybeSingle()).data?.id);
+        .eq("member_id", memberRow.id)
+        .eq("approval_status", "approved");
       if (!active) return;
+      if (roleError) console.error("[Terrabar member home] Could not load approved roles:", roleError);
       const codes = (data ?? []).map((row: any) => String(row.role_code).toLowerCase());
       const hasBuyer = isBuyerHint || codes.some((role: string) => ["buyer", "ordinary_buyer", "regular_buyer"].includes(role));
       const hasNonOrdinary = isProfessionalHint || codes.some((role: string) => ["supplier", "bar_seller", "seller", "special_buyer", "buyer_special", "professional_buyer", "pro_buyer"].includes(role));
