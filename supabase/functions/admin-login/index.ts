@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
   if (body.action === "verify_reset") {
     const code = String(body.code ?? "").trim();
     const password = String(body.password ?? "");
-    if (!validAdmin || !/^\d{8}$/.test(code)) {
+    if (!validAdmin || !/^\d{10}$/.test(code)) {
       return json(req, { ok: false, error: "کد بازیابی نامعتبر یا منقضی شده است." }, 400);
     }
     if (!strongPassword(password)) {
