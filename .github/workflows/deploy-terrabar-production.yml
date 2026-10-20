@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/deploy-terrabar-production.yml"
 
 permissions:
   contents: read
@@ -19,10 +17,10 @@ jobs:
   build-verify-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the exact release candidate being published
+      - name: Checkout the exact commit pushed to main
         uses: actions/checkout@v4
         with:
-          ref: 93b167e08359cce29266c9f3103ec77ca3bedb0b
+          ref: ${{ github.sha }}
 
       - uses: oven-sh/setup-bun@v2
         with:
