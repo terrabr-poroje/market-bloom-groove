@@ -25,7 +25,7 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
   { value: "retail", label: "خرده", description: "خرید در سطح خرده طبق شرایط آگهی", saleTypes: ["regular", "retail"] },
   { value: "wholesale", label: "عمده", description: "خرید عمده بر اساس حداقل سفارش فروشنده", saleTypes: ["wholesale", "regular"] },
   { value: "special", label: "ویژه", description: "دسترسی ویژه طبق نقش و شهرهای مجاز", saleTypes: ["special"] },
-  { value: "professional", label: "ویژه حرفه‌ای", description: "درخواست حرفه‌ای با امکان بررسی مقدار و شرایط متفاوت", saleTypes: ["professional", "pro"] },
+  { value: "professional", label: "ویژه حرفه‌ای", description: "فقط برای تأمین‌کننده و بارفروش؛ خرید از همه استان‌ها", saleTypes: ["professional", "pro"] },
 ];
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
 const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
@@ -339,7 +339,7 @@ function Requests() {
           <div className="mb-5">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />درخواست خرید</div>
             <h1 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h1>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. برای خریدار عادی گزینه‌های خرده، عمده و ویژه در دسترس است؛ گزینه حرفه‌ای فقط برای نقش‌های حرفه‌ای مجاز نمایش داده می‌شود.</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. خریدار عادی فقط به خرده، عمده و ویژه در محدوده استانی مجاز دسترسی دارد. خرید ویژه حرفه‌ای بدون محدودیت استان فقط برای تأمین‌کننده و بارفروش فعال است.</p>
           </div>
 
           <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
