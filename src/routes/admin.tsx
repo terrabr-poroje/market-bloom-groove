@@ -212,7 +212,7 @@ function AdminPage() {
     if (status === 'success' && !window.confirm('آیا انتقال واقعی وجه به حساب بانکی فروشنده انجام شده و رسید یا شناسه انتقال را بررسی کرده‌اید؟ فقط در این صورت «موفق» را تأیید کنید.')) return;
     setFinanceBusy(true); setFinanceError(''); setFinanceNotice('');
     const { error } = await (supabase as any).rpc('terrabar_admin_update_payout_status', {
-      p_transaction_id: tx.id, p_status: status, p_reference_code: tx.reference_code
+      p_transaction_id: tx.id, p_status: status, p_reference_code: (payoutReferences[tx.id] ?? '').trim() || tx.reference_code
     });
     if (error) setFinanceError('به‌روزرسانی تسویه انجام نشد: ' + error.message);
     else { setFinanceNotice('وضعیت تسویه به‌روزرسانی شد.'); refresh(); }
@@ -342,7 +342,7 @@ function AdminPage() {
             {financeTransactions.filter(tx => tx.transaction_type === 'payout').length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">تسویه‌ای ثبت نشده است.</p>}
             {financeTransactions.filter(tx => tx.transaction_type === 'payout').map(tx => <article key={tx.id} className="rounded-lg border border-border bg-card p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><strong>{tx.members?.full_name ?? 'فروشنده'} · {faNumber(tx.amount)} تومان</strong><p className="mt-1 text-xs text-muted-foreground">{tx.description} · {tx.reference_code ? 'مرجع: ' + tx.reference_code : 'بدون شناسه بانکی'}</p><p className="mt-1 text-xs">وضعیت: {tx.payout_status === 'success' ? 'موفق' : tx.payout_status === 'failed' ? 'ناموفق' : tx.payout_status === 'in_progress' ? 'در حال انجام' : 'در انتظار'}</p></div>
+                <div><strong>{tx.members?.full_name ?? 'فروشنده'} · {faNumber(tx.amount)} تومان</strong><p className="mt-1 text-xs text-muted-foreground">{tx.description} · {tx.reference_code ? 'مرجع: ' + tx.reference_code : 'بدون شناسه بانکی'}</p><p className="mt-1 text-xs">وضعیت: {tx.payout_status === 'success' ? 'موفق' : tx.payout_status === 'failed' ? 'ناموفق' : tx.payout_status === 'in_progress' ? 'در حال انجام' : 'در انتظار'}</p><label className="mt-2 block text-xs">شناسه/رسید انتقال<input className="field-input mt-1" value={payoutReferences[tx.id] ?? tx.reference_code ?? ''} onChange={event => setPayoutReferences(current => ({ ...current, [tx.id]: event.target.value }))} placeholder="شماره پیگیری بانک" /></label></div>
                 {tx.payout_status !== 'success' && <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" disabled={financeBusy} onClick={() => void updateSellerPayout(tx, 'in_progress')}>در حال انجام</Button>
                   <Button size="sm" disabled={financeBusy} onClick={() => void updateSellerPayout(tx, 'success')}>تأیید انتقال موفق</Button>
