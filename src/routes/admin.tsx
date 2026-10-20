@@ -301,7 +301,6 @@ function AdminPage() {
         </div>
       )}
 
-      {tab === 'reviews' && isAdmin && (
       {tab === 'finance' && isAdmin && (
         <div className="mt-6 grid gap-6">
           <div>
@@ -355,7 +354,7 @@ function AdminPage() {
         </div>
       )}
 
-
+      {tab === 'reviews' && isAdmin && (
         <div className="mt-6 grid gap-4">
           <div><h2 className="text-lg font-bold">نظرات و پیگیری خریداران</h2><p className="mt-1 text-sm text-muted-foreground">نظرها فقط از سفارش‌های ثبت‌شده قابل ثبت‌اند. برای بررسی دقیق‌تر می‌توانید در همان گفت‌وگو به خریدار پیام بدهید.</p></div>
           {ratings.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز نظری ثبت نشده است.</p>}
