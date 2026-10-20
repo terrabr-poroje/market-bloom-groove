@@ -250,14 +250,16 @@ function AdminPage() {
     <section className="bg-market-surface py-12"><div className="site-container">
       <h1 className="text-2xl font-extrabold sm:text-3xl">پنل مدیریت ترابار</h1>
       {!isAdmin && <p className="mt-2 text-sm text-muted-foreground">دسترسی شما فقط به درخواست‌ها و بارهای شهرهای تخصیص‌یافته محدود است.</p>}
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-border pb-3">
+      <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-border pb-3">
+        <span className="w-full pt-1 text-xs font-bold text-muted-foreground">پیگیری عملیات و خدمات شهری</span>
         <Button variant={tab === 'requests' ? 'default' : 'ghost'} onClick={() => setTab('requests')}><Users />عضویت ({faNumber(requests.length)})</Button>
         <Button variant={tab === 'loads' ? 'default' : 'ghost'} onClick={() => setTab('loads')}><Package />بارهای در انتظار تأیید ({faNumber(pendingLoads.length)})</Button>
         <Button variant={tab === 'allloads' ? 'default' : 'ghost'} onClick={() => setTab('allloads')}><Package />همه اعلام بارها ({faNumber(allLoads.length)})</Button>
         <Button variant={tab === 'members' ? 'default' : 'ghost'} onClick={() => setTab('members')}><Users />اعضای شهرها ({faNumber(cityMembers.length)})</Button>
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
-        {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
+        {isAdmin && <span className="w-full pt-3 text-xs font-bold text-muted-foreground">مدیریت سراسری، دسترسی‌ها و گزارش‌های مدیر کل</span>}
+        {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر و دسترسی‌ها</Button>
         {isAdmin && <Button variant={tab === 'reviews' ? 'default' : 'ghost'} onClick={() => setTab('reviews')}>نظرات خریداران ({faNumber(ratings.length)})</Button>}
         {isAdmin && <Button variant={tab === 'visits' ? 'default' : 'ghost'} onClick={() => setTab('visits')}><Eye />آمار بازدیدها</Button>}
         {isAdmin && <Button variant={tab === 'finance' ? 'default' : 'ghost'} onClick={() => setTab('finance')}><Wallet />حساب‌ها و تسویه فروشندگان</Button>}
