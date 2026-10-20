@@ -24,39 +24,6 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const mainActions = [
-  {
-    title: "ثبت‌نام / ورود",
-    description: "حساب خود را بسازید یا با شماره موبایل وارد ترابار شوید.",
-    icon: LogIn,
-    to: "/auth",
-    action: "ورود یا ثبت‌نام",
-    tone: "bg-emerald-50 text-emerald-800",
-  },
-  {
-    title: "اعلام بار",
-    description: "محصول، رقم، کیفیت، مبدأ، وزن، موجودی و قیمت بار خود را معرفی کنید.",
-    icon: PackagePlus,
-    to: "/announce",
-    action: "ثبت و مدیریت بار",
-    tone: "bg-lime-50 text-lime-800",
-  },
-  {
-    title: "درخواست بار",
-    description: "بار موردنیاز را جست‌وجو کنید یا درخواست تأمین محصولات خود را ثبت کنید.",
-    icon: Search,
-    to: "/requests",
-    action: "جست‌وجوی بار",
-    tone: "bg-teal-50 text-teal-800",
-  },
-];
-
-
-const steps = [
-  { number: "۱", title: "عضویت و انتخاب شهر", text: "با نقش کاری و شهر فعالیت خود شروع کنید.", icon: Users },
-  { number: "۲", title: "معرفی یا جست‌وجوی بار", text: "اطلاعات محصول و شرایط خرید را بررسی کنید.", icon: Store },
-  { number: "۳", title: "هماهنگی و تحویل", text: "فرآیند سفارش را طبق دسترسی‌ها و مقررات ترابار پیگیری کنید.", icon: Truck },
-];
 
 function Index() {
   return (
@@ -128,35 +95,7 @@ function Index() {
       </section>
 
 
-      <section className="bg-background py-8 sm:py-10">
-        <div className="site-container">
-          <div className="mx-auto mb-6 max-w-3xl text-center">
-            <h2 className="text-2xl font-black text-foreground">از کجا شروع می‌کنید؟</h2>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">سه مسیر اصلی ترابار؛ هر کدام را برای ادامه انتخاب کنید.</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {mainActions.map(({ title, description, icon: Icon, to, tone }) => (
-              <article key={title} className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                <span className={`grid size-12 place-items-center rounded-xl ${tone}`}>
-                  <Icon className="size-6" aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-lg font-extrabold text-foreground">{title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-8 text-muted-foreground">{description}</p>
-                <Link to={to} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2">
-                  ادامه <ArrowLeft className="size-4" aria-hidden="true" />
-                </Link>
-              </article>
-            ))}
-          </div>
-          <div className="mt-5 rounded-2xl border border-emerald-800/15 bg-emerald-50/70 p-4 sm:p-5">
-            <p className="flex items-start gap-2 text-sm leading-7 text-emerald-950">
-              <ShieldCheck className="mt-1 size-5 shrink-0 text-emerald-700" aria-hidden="true" />
-              <span><strong>دسترسی منصفانه و شهری:</strong> خریدار عادی بارهای شهر خود را می‌بیند؛ خریدار ویژه به شهر خود و شهرهای هم‌جوار دسترسی دارد؛ خریدار حرفه‌ای بدون فیلتر شهر فعالیت می‌کند. دسترسی به امکانات حرفه‌ای خرید و اعلام بار طبق نقش و تأیید عضویت کنترل می‌شود.</span>
-            </p>
-          </div>
-        </div>
-      </section>
-\n      <section className="bg-background py-3 sm:py-4">
+      <section className="bg-background py-3 sm:py-4">
         <div className="site-container flex justify-center">
           <details className="group relative w-full max-w-md">
             <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:bg-accent [&::-webkit-details-marker]:hidden">
