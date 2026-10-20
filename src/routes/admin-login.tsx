@@ -23,7 +23,7 @@ function AdminLoginPage() {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
     const { data, error: loginError } = await supabase.functions.invoke("admin-login", {
-      body: { action: "login", username: username.normalize("NFKC").trim().replace(/\\s+/g, " "), password },
+      body: { action: "login", username: username.normalize("NFKC").trim().replace(/\s+/g, " "), password },
     });
     if (loginError || !data?.session?.access_token || !data?.session?.refresh_token) {
       setError(data?.error ?? "ورود انجام نشد؛ نام کاربری و رمز را بررسی کنید.");
@@ -53,7 +53,7 @@ function AdminLoginPage() {
   async function resetPassword() {
     setBusy(true); setError(""); setNotice("");
     const { data, error: resetError } = await supabase.functions.invoke("admin-login", {
-      body: { action: "reset", username: username.normalize("NFKC").trim().replace(/\\s+/g, " ") },
+      body: { action: "reset", username: username.normalize("NFKC").trim().replace(/\s+/g, " ") },
     });
     if (resetError) {
       setError("ارتباط با سرویس بازیابی رمز برقرار نشد. دوباره تلاش کنید؛ اگر ادامه داشت، گزارش خطای سرویس باید بررسی شود.");
