@@ -75,7 +75,7 @@ function Requests() {
       const ownCity = String(member.city).trim();
       setProfileCity(ownCity);
       const [{ data: roleRows }, { data: adminRows }] = await Promise.all([
-        (supabase as any).from("member_roles").select("role_code, approval_status, members!inner(auth_user_id)").eq("members.auth_user_id", user.id).eq("approval_status", "approved"),
+        (supabase as any).from("member_roles").select("role_code, approval_status, members!inner(auth_user_id)").eq("members.auth_user_id", user.id),
         (supabase as any).from("admin_users").select("id, admin_role, city").eq("auth_user_id", user.id).eq("is_active", true),
       ]);
       if (!active) return;
@@ -92,7 +92,7 @@ function Requests() {
         setAllowedCities([...new Set([...(assigned ?? []).map((r: any) => String(r.city_name)), ...((adminRows ?? []).map((r: any) => r.city).filter(Boolean) as string[])])]);
         setCityAccess("assigned");
       } else if (roles.some((role: string) => ["supplier", "bar_seller", "seller"].includes(role))) {
-        // Suppliers and bar sellers are professional buyers and can browse all cities.
+        // Registered suppliers and bar sellers may browse professional inventory across all cities; approval is required only for posting loads.
         setAllowedCities([]); setCityAccess("all");
       } else if (roles.some((role: string) => ["special_buyer", "buyer_special"].includes(role))) {
         // Special buyers can browse their city plus explicitly enabled neighboring cities.
