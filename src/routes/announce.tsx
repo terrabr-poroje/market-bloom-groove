@@ -69,9 +69,9 @@ function JalaliDateField({ label, value, min, onChange }: { label: string; value
     </button>
     {open && <div className="absolute z-50 mt-1 w-[min(20rem,90vw)] rounded-xl border border-border bg-background p-3 shadow-lg" dir="rtl">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth(), view.getDate() - 20, 12))} aria-label="ماه قبل">ماه قبل</button>
+        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 15, 12))} aria-label="ماه قبل">ماه قبل</button>
         <strong>{jalaliDisplayFormatter.format(monthStart).replace(/\s*\d+\s*$/, '')} {parts.year.toLocaleString('fa-IR')}</strong>
-        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth(), view.getDate() + 40, 12))} aria-label="ماه بعد">ماه بعد</button>
+        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 15, 12))} aria-label="ماه بعد">ماه بعد</button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">{dayNames.map((d, i) => <span key={i} className="py-1">{d}</span>)}</div>
       <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: firstWeekday }, (_, i) => <span key={`blank-${i}`} />)}{monthDays.map(date => {
@@ -108,7 +108,7 @@ function AnnouncePage() {
   const set = (key: keyof typeof form) => (value: string) => setForm(prev => ({ ...prev, [key]: value }));
   const toggleSaleSection = (key: SaleSectionKey, checked: boolean) => {
     setSaleSectionsEnabled(prev => checked ? [...new Set([...prev, key])] : prev.filter(item => item !== key));
-    if (checked && !salePrices[key] && form.price) setSalePrices(prev => ({ ...prev, [key]: form.price }));
+
   };
 
   useEffect(() => {
@@ -338,8 +338,6 @@ function AnnouncePage() {
 
     const packageWeight = Number(form.weight);
     const packageCount = Number(form.stock);
-    const minimumPackages = Number(form.minimum);
-    const pricePerKg = Number(form.price);
     const validSaleSections = saleSectionsEnabled.filter(key => {
       const p = Number(salePrices[key]);
       const min = Number(saleMinimums[key]);
@@ -354,8 +352,7 @@ function AnnouncePage() {
         photoFiles.length > 5 || photoFiles.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) ||
         !Number.isFinite(packageWeight) || packageWeight <= 0 ||
         !Number.isInteger(packageCount) || packageCount < 1 ||
-        !Number.isInteger(minimumPackages) || minimumPackages < 1 || minimumPackages > packageCount ||
-        !Number.isFinite(pricePerKg) || pricePerKg < 10000) {
+        !form.ready) {
       setError('اطلاعات بار معتبر نیست. تاریخ شروع باید از امروز به بعد، پایان هم‌روز یا بعد از شروع، ساعت پایان بعد از ساعت شروع و قیمت هر کیلو حداقل ۱۰٬۰۰۰ تومان باشد.');
       setBusy(false);
       return;
