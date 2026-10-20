@@ -315,7 +315,8 @@ function AdminPage() {
             const netCredits = txs.filter(tx => tx.transaction_type === 'receipt').reduce((sum, tx) => sum + Number(tx.amount), 0);
             const successfulPayouts = txs.filter(tx => tx.transaction_type === 'payout' && tx.payout_status === 'success').reduce((sum, tx) => sum + Number(tx.amount), 0);
             const reservedPayouts = txs.filter(tx => tx.transaction_type === 'payout' && ['pending', 'in_progress'].includes(tx.payout_status)).reduce((sum, tx) => sum + Number(tx.amount), 0);
-            const available = Math.max(0, netCredits - successfulPayouts - reservedPayouts);
+            const adjustmentCredits = txs.filter(tx => tx.transaction_type === 'adjustment').reduce((sum, tx) => sum + Number(tx.amount), 0);
+            const available = Math.max(0, netCredits + adjustmentCredits - successfulPayouts - reservedPayouts);
             return <article key={account.id} className="rounded-xl border border-border bg-card p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div><strong>{account.members?.full_name ?? 'عضو ترابار'}</strong><p className="mt-1 text-sm text-muted-foreground">{account.members?.phone ?? 'شماره ثبت نشده'} · {account.members?.city ?? 'شهر ثبت نشده'}</p></div>
@@ -350,6 +351,29 @@ function AdminPage() {
                 </div>}
               </div>
             </article>)}
+          </section>
+          <section className="grid gap-3">
+            <div>
+              <h3 className="text-lg font-bold">دفتر گردش حساب همه اعضا</h3>
+              <p className="mt-1 text-sm text-muted-foreground">این دفتر همان سوابقی را نشان می‌دهد که هر عضو در صفحه حساب مالی خود می‌بیند؛ کارمزد و تسویه به‌صورت کاهشی نمایش داده می‌شوند.</p>
+            </div>
+            {financeTransactions.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">تراکنشی در دفتر مالی ثبت نشده است.</p>}
+            {financeTransactions.map(tx => {
+              const label = tx.transaction_type === 'receipt' ? 'اعتبار خالص فروش' : tx.transaction_type === 'commission' ? 'کارمزد ترابار (۵٪)' : tx.transaction_type === 'payout' ? 'واریز به حساب بانکی عضو' : 'اصلاح حساب';
+              const isDebit = ['commission', 'payout'].includes(tx.transaction_type);
+              const payoutLabel = tx.transaction_type !== 'payout' ? 'ثبت‌شده' : tx.payout_status === 'success' ? 'موفق' : tx.payout_status === 'failed' ? 'ناموفق' : tx.payout_status === 'in_progress' ? 'در حال انجام' : 'در انتظار';
+              return <article key={tx.id} className="rounded-lg border border-border bg-card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <strong>{tx.members?.full_name ?? 'عضو ترابار'} · {label}</strong>
+                    <p className="mt-1 text-xs text-muted-foreground">{tx.members?.phone ?? 'شماره ثبت نشده'} · {new Date(tx.transaction_date).toLocaleString('fa-IR')} · وضعیت: {payoutLabel}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{tx.description}{tx.reference_code ? ' · شناسه پیگیری: ' + tx.reference_code : ''}</p>
+                    {tx.order_id && <p className="mt-1 text-xs text-muted-foreground">شناسه سفارش: {tx.order_id}</p>}
+                  </div>
+                  <strong className={isDebit ? 'text-destructive' : 'text-emerald-700'}>{isDebit ? '−' : '+'}{faNumber(tx.amount)} تومان</strong>
+                </div>
+              </article>;
+            })}
           </section>
         </div>
       )}
