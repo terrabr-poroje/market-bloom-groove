@@ -231,3 +231,9 @@ export function pageHead(title: string, description: string, canonicalPath?: str
     ...(canonicalPath ? { links: [{ rel: 'canonical', href: `https://terrabar.ir${canonicalPath}` }] } : {}),
   };
 }
+
+/** Accept Persian, Arabic-Indic, and Western digits; normalize pasted thousands separators before numeric parsing. */
+export const normalizeNumericInput = (value: string) => value
+  .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x06f0))
+  .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x0660))
+  .replace(/[٬,،\s]/g, '');
