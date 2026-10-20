@@ -1,0 +1,64 @@
+name: Verify isolated Terrabar rebuild branch
+
+on:
+  push:
+    branches:
+      - rebuild/terrabar-clean-rebuild
+    paths:
+      - "src/**"
+      - "public/**"
+      - "package.json"
+      - "bun.lock"
+      - "bun.lockb"
+      - "vite.config.*"
+      - "tsconfig.json"
+      - "src/test/**"
+      - ".github/workflows/verify-terrabar-rebuild.yml"
+      - "docs/rebuild/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terrabar-rebuild-verification
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Intentionally fake, local-only values. This workflow must never connect to production Supabase.
+      VITE_SUPABASE_URL: https://example.invalid
+      VITE_SUPABASE_PUBLISHABLE_KEY: rebuild-test-only-not-a-secret
+    steps:
+      - name: Checkout isolated rebuild branch
+        uses: actions/checkout@v4
+        with:
+          ref: rebuild/terrabar-clean-rebuild
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Unit tests
+        run: bun run test
+
+      - name: Verify no production deploy workflow can run on this branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -A3 '^on:' .github/workflows/deploy-terrabar-production.yml
+          grep -A3 '^on:' .github/workflows/deploy-terrabar-cloudflare.yml
+          echo "This verification workflow does not deploy to Cloudflare or modify Supabase."
