@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const allowedOrigins = new Set([
   "https://terrabar.ir",
   "https://www.terrabar.ir",
+  "https://terrabar-preview.onrender.com",
   "http://localhost:8080",
 ]);
 
@@ -30,6 +31,10 @@ function normalizeUsername(value: unknown): string {
   return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
+function strongPassword(value: string): boolean {
+  return value.length >= 10 && /\p{L}/u.test(value) && /\p{N}/u.test(value);
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin") ?? "";
   if (origin && !allowedOrigins.has(origin)) {
@@ -45,7 +50,7 @@ Deno.serve(async (req: Request) => {
     return json(req, { error: "تنظیمات امن ورود مدیر کامل نیست." }, 500);
   }
 
-  let body: { action?: string; username?: string; password?: string };
+  let body: { action?: string; username?: string; password?: string; code?: string };
   try {
     body = await req.json();
   } catch {
@@ -103,14 +108,50 @@ Deno.serve(async (req: Request) => {
       const waitMatch = resetError.message.match(/after (\d+) seconds/i);
       const userMessage = waitMatch
         ? `برای امنیت، درخواست بازیابی اخیراً ارسال شده است. لطفاً ${waitMatch[1]} ثانیه صبر کنید و سپس فقط یک بار تلاش کنید.`
-        : "ارسال ایمیل بازیابی ناموفق بود. لطفاً تنظیم SMTP و قالب Recovery در Supabase بررسی شود.";
+        : "ارسال ایمیل بازیابی ناموفق بود. تنظیم SMTP و قالب Recovery در Supabase بررسی شود.";
       return json(req, { ok: false, error: userMessage }, waitMatch ? 429 : 502);
     }
 
     return json(req, {
       ok: true,
-      message: "درخواست بازیابی ثبت شد. صندوق ورودی و پوشه هرزنامه ایمیل مدیر را بررسی کنید.",
+      message: "اگر نام کاربری متعلق به مدیر فعال باشد، کد بازیابی به ایمیل ثبت‌شده ارسال شده است.",
     });
+  }
+
+  if (body.action === "verify_reset") {
+    const code = String(body.code ?? "").trim();
+    const password = String(body.password ?? "");
+    if (!validAdmin || !/^\d{10}$/.test(code)) {
+      return json(req, { ok: false, error: "کد بازیابی نامعتبر یا منقضی شده است." }, 400);
+    }
+    if (!strongPassword(password)) {
+      return json(req, { ok: false, error: "رمز جدید باید حداقل ۱۰ نویسه و شامل حروف و عدد باشد." }, 400);
+    }
+
+    const { data: userData, error: userError } = await db.auth.admin.getUserById(admin!.auth_user_id);
+    const email = userData.user?.email;
+    if (userError || !email) {
+      console.error("[admin-login] admin recovery identity unavailable:", userError?.message ?? "no email");
+      return json(req, { ok: false, error: "ایمیل حساب مدیر قابل بررسی نیست." }, 503);
+    }
+
+    const { data: verified, error: verifyError } = await auth.auth.verifyOtp({
+      email,
+      token: code,
+      type: "recovery",
+    });
+    if (verifyError || verified.user?.id !== admin!.auth_user_id) {
+      console.warn("[admin-login] recovery OTP rejected");
+      return json(req, { ok: false, error: "کد بازیابی نامعتبر یا منقضی شده است. کد جدید بگیرید." }, 400);
+    }
+
+    const { error: updateError } = await db.auth.admin.updateUserById(admin!.auth_user_id, { password });
+    if (updateError) {
+      console.error("[admin-login] admin password update failed:", updateError.message);
+      return json(req, { ok: false, error: "ذخیره رمز جدید انجام نشد. دوباره تلاش کنید." }, 502);
+    }
+
+    return json(req, { ok: true, message: "رمز مدیر با موفقیت تغییر کرد." });
   }
 
   const password = String(body.password ?? "");
