@@ -51,7 +51,7 @@ function JalaliDateField({ label, value, min, onChange }: { label: string; value
   useEffect(() => { if (value) setView(new Date(`${value}T12:00:00`)); }, [value]);
   const parts = jalaliParts(view);
   const monthStart = (() => {
-    for (let offset = -20; offset <= 20; offset++) {
+    for (let offset = -35; offset <= 5; offset++) {
       const candidate = new Date(view.getFullYear(), view.getMonth(), view.getDate() + offset, 12);
       const p = jalaliParts(candidate);
       if (p.year === parts.year && p.month === parts.month && p.day === 1) return candidate;
@@ -71,7 +71,7 @@ function JalaliDateField({ label, value, min, onChange }: { label: string; value
     {open && <div className="absolute z-50 mt-1 w-[min(20rem,90vw)] rounded-xl border border-border bg-background p-3 shadow-lg" dir="rtl">
       <div className="mb-3 flex items-center justify-between gap-2">
         <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 15, 12))} aria-label="ماه قبل">ماه قبل</button>
-        <strong>{jalaliDisplayFormatter.format(monthStart).replace(/\s*\d+\s*$/, '')} {parts.year.toLocaleString('fa-IR')}</strong>
+        <strong>{jalaliMonthFormatter.format(monthStart)} {parts.year.toLocaleString('fa-IR')}</strong>
         <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 15, 12))} aria-label="ماه بعد">ماه بعد</button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">{dayNames.map((d, i) => <span key={i} className="py-1">{d}</span>)}</div>
