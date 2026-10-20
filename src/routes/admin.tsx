@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Dynamic queries target the audited production Supabase schema; generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Eye, Package, ShieldAlert, Users, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, Package, ShieldAlert, Users, XCircle, Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/lib/auth';
@@ -24,11 +24,13 @@ type PendingLoad = { id: string; name: string; engine: string | null; quality: s
 type SiteVisit = { id: string; user_id: string; route: string; visited_at: string; members: { full_name: string | null; phone: string | null; city: string | null } | null };
 type SiteVisitSummary = { total_visits: number; unique_visitors: number; visits_last_24_hours: number; visitors_last_24_hours: number };
 type AdminRating = { id: string; order_id: string; reviewer_member_id: string; target_type: string; score: number; review_text: string | null; created_at: string; messages: { id: string; sender_user_id: string; message: string; created_at: string }[] };
+type AdminBankAccount = { id: string; member_id: string; bank_name: string; account_holder_name: string; iban: string; verification_status: string; members: { full_name: string; phone: string | null; city: string | null } | null };
+type AdminFinanceTransaction = { id: string; member_id: string; order_id: string | null; transaction_type: string; amount: number; description: string; reference_code: string | null; transaction_date: string; payout_status: string; members: { full_name: string; phone: string | null } | null };
 
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
   const canManage = isAdmin || roles.includes('city_manager');
-  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers' | 'reviews' | 'visits'>('requests');
+  const [tab, setTab] = useState<'requests' | 'loads' | 'orders' | 'purchases' | 'managers' | 'reviews' | 'visits' | 'finance'>('requests');
   const [managerCandidates, setManagerCandidates] = useState<ManagerCandidate[]>([]);
   const [cityManagers, setCityManagers] = useState<CityManager[]>([]);
   const [activeCities, setActiveCities] = useState<string[]>([]);
@@ -48,6 +50,14 @@ function AdminPage() {
   const [ratings, setRatings] = useState<AdminRating[]>([]);
   const [ratingReplies, setRatingReplies] = useState<Record<string, string>>({});
   const [ratingReplyBusy, setRatingReplyBusy] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<AdminBankAccount[]>([]);
+  const [financeTransactions, setFinanceTransactions] = useState<AdminFinanceTransaction[]>([]);
+  const [payoutAmounts, setPayoutAmounts] = useState<Record<string, string>>({});
+  const [payoutReferences, setPayoutReferences] = useState<Record<string, string>>({});
+  const [financeBusy, setFinanceBusy] = useState(false);
+  const [financeNotice, setFinanceNotice] = useState('');
+  const [financeError, setFinanceError] = useState('');
+
 
   function refresh() {
     (supabase as any).from('member_roles')
@@ -94,6 +104,15 @@ function AdminPage() {
         .select('id, user_id, route, visited_at, members(full_name, phone, city)')
         .order('visited_at', { ascending: false }).limit(100)
         .then(({ data, error }: { data: SiteVisit[] | null; error: unknown }) => { if (!error) setRecentVisits(data ?? []); });
+      void (supabase as any).from('seller_bank_accounts')
+        .select('id, member_id, bank_name, account_holder_name, iban, verification_status, members!inner(full_name, phone, city)')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }: { data: AdminBankAccount[] | null; error: unknown }) => { if (!error) setBankAccounts(data ?? []); });
+      void (supabase as any).from('seller_financial_transactions')
+        .select('id, member_id, order_id, transaction_type, amount, description, reference_code, transaction_date, payout_status, members!inner(full_name, phone)')
+        .order('transaction_date', { ascending: false }).limit(300)
+        .then(({ data, error }: { data: AdminFinanceTransaction[] | null; error: unknown }) => { if (!error) setFinanceTransactions(data ?? []); });
+
       void supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } }).then(({ data, error }) => {
         if (error || !data) { setManagerError('فهرست مدیران شهر دریافت نشد.'); return; }
         setManagerCandidates((data.members ?? []) as ManagerCandidate[]);
@@ -162,6 +181,44 @@ function AdminPage() {
     if (error) { window.alert('تغییر وضعیت درخواست خرید انجام نشد؛ محدوده شهر و دسترسی مدیر را بررسی کنید.'); return; }
     refresh();
   }
+  async function verifyBankAccount(account: AdminBankAccount, status: 'verified' | 'rejected') {
+    setFinanceBusy(true); setFinanceError(''); setFinanceNotice('');
+    const { error } = await (supabase as any).from('seller_bank_accounts')
+      .update({ verification_status: status, updated_at: new Date().toISOString() }).eq('id', account.id);
+    if (error) setFinanceError('تغییر وضعیت حساب بانکی انجام نشد: ' + error.message);
+    else { setFinanceNotice(status === 'verified' ? 'حساب بانکی تأیید شد.' : 'حساب بانکی رد شد.'); refresh(); }
+    setFinanceBusy(false);
+  }
+
+  async function createSellerPayout(memberId: string) {
+    const amount = Number(payoutAmounts[memberId] ?? '');
+    if (!Number.isFinite(amount) || amount <= 0) { setFinanceError('مبلغ تسویه را به‌صورت عدد مثبت وارد کنید.'); return; }
+    setFinanceBusy(true); setFinanceError(''); setFinanceNotice('');
+    const { data, error } = await (supabase as any).rpc('terrabar_admin_create_payout', {
+      p_member_id: memberId, p_amount: amount,
+      p_reference_code: (payoutReferences[memberId] ?? '').trim() || null,
+      p_description: 'تسویه فروشنده ثبت‌شده توسط مدیر کل'
+    });
+    if (error) setFinanceError('ثبت تسویه انجام نشد: ' + error.message);
+    else {
+      setFinanceNotice('درخواست تسویه در وضعیت «در انتظار» ثبت شد. پس از انتقال واقعی وجه، وضعیت را موفق کنید.');
+      setPayoutAmounts(current => ({ ...current, [memberId]: '' }));
+      refresh();
+    }
+    setFinanceBusy(false);
+  }
+
+  async function updateSellerPayout(tx: AdminFinanceTransaction, status: 'in_progress' | 'success' | 'failed') {
+    if (status === 'success' && !window.confirm('آیا انتقال واقعی وجه به حساب بانکی فروشنده انجام شده و رسید یا شناسه انتقال را بررسی کرده‌اید؟ فقط در این صورت «موفق» را تأیید کنید.')) return;
+    setFinanceBusy(true); setFinanceError(''); setFinanceNotice('');
+    const { error } = await (supabase as any).rpc('terrabar_admin_update_payout_status', {
+      p_transaction_id: tx.id, p_status: status, p_reference_code: tx.reference_code
+    });
+    if (error) setFinanceError('به‌روزرسانی تسویه انجام نشد: ' + error.message);
+    else { setFinanceNotice('وضعیت تسویه به‌روزرسانی شد.'); refresh(); }
+    setFinanceBusy(false);
+  }
+
 
   if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بارگذاری…</section>;
   if (!user || !canManage) {
@@ -187,6 +244,7 @@ function AdminPage() {
         {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر</Button>}
         {isAdmin && <Button variant={tab === 'reviews' ? 'default' : 'ghost'} onClick={() => setTab('reviews')}>نظرات خریداران ({faNumber(ratings.length)})</Button>}
         {isAdmin && <Button variant={tab === 'visits' ? 'default' : 'ghost'} onClick={() => setTab('visits')}><Eye />آمار بازدیدها</Button>}
+        {isAdmin && <Button variant={tab === 'finance' ? 'default' : 'ghost'} onClick={() => setTab('finance')}><Wallet />حساب‌ها و تسویه فروشندگان</Button>}
       </div>
 
       {tab === 'requests' && (
@@ -244,6 +302,59 @@ function AdminPage() {
       )}
 
       {tab === 'reviews' && isAdmin && (
+      {tab === 'finance' && isAdmin && (
+        <div className="mt-6 grid gap-6">
+          <div>
+            <h2 className="text-lg font-bold">حساب بانکی و تسویه فروشندگان</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">اطلاعات حساب فقط برای مدیر کل قابل مشاهده است. حساب بانکی را پس از بررسی تأیید کنید. وضعیت «موفق» فقط پس از انتقال واقعی وجه ثبت شود.</p>
+          </div>
+          {financeError && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{financeError}</p>}
+          {financeNotice && <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">{financeNotice}</p>}
+          {bankAccounts.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز حساب بانکی فروشنده‌ای ثبت نشده است.</p>}
+          {bankAccounts.map(account => {
+            const txs = financeTransactions.filter(tx => tx.member_id === account.member_id);
+            const netCredits = txs.filter(tx => tx.transaction_type === 'receipt').reduce((sum, tx) => sum + Number(tx.amount), 0);
+            const successfulPayouts = txs.filter(tx => tx.transaction_type === 'payout' && tx.payout_status === 'success').reduce((sum, tx) => sum + Number(tx.amount), 0);
+            const available = Math.max(0, netCredits - successfulPayouts);
+            return <article key={account.id} className="rounded-xl border border-border bg-card p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><strong>{account.members?.full_name ?? 'عضو ترابار'}</strong><p className="mt-1 text-sm text-muted-foreground">{account.members?.phone ?? 'شماره ثبت نشده'} · {account.members?.city ?? 'شهر ثبت نشده'}</p></div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs">{account.verification_status === 'verified' ? 'حساب تأییدشده' : account.verification_status === 'rejected' ? 'حساب ردشده' : 'در انتظار بررسی'}</span>
+              </div>
+              <div className="mt-4 grid gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+                <p className="flex items-center gap-2"><Landmark className="size-4" />{account.bank_name} · صاحب حساب: {account.account_holder_name}</p>
+                <p dir="ltr" className="text-right font-mono">{account.iban}</p>
+                <p>اعتبار خالص فروش: {faNumber(netCredits)} تومان · تسویه موفق: {faNumber(successfulPayouts)} تومان · مانده قابل تسویه: {faNumber(available)} تومان</p>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {account.verification_status !== 'verified' && <Button size="sm" disabled={financeBusy} onClick={() => void verifyBankAccount(account, 'verified')}><CheckCircle2 />تأیید حساب بانکی</Button>}
+                {account.verification_status !== 'rejected' && <Button size="sm" variant="outline" disabled={financeBusy} onClick={() => void verifyBankAccount(account, 'rejected')}><XCircle />رد حساب بانکی</Button>}
+              </div>
+              {account.verification_status === 'verified' && <div className="mt-4 grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-[1fr_1fr_auto]">
+                <label className="field-label">مبلغ تسویه<input className="field-input mt-1" inputMode="decimal" value={payoutAmounts[account.member_id] ?? ''} onChange={event => setPayoutAmounts(current => ({ ...current, [account.member_id]: event.target.value }))} placeholder="مبلغ" /></label>
+                <label className="field-label">شناسه/مرجع بانکی<input className="field-input mt-1" value={payoutReferences[account.member_id] ?? ''} onChange={event => setPayoutReferences(current => ({ ...current, [account.member_id]: event.target.value }))} placeholder="پس از انتقال تکمیل شود" /></label>
+                <div className="self-end"><Button disabled={financeBusy || available <= 0} onClick={() => void createSellerPayout(account.member_id)}>ثبت تسویه در انتظار</Button></div>
+              </div>}
+            </article>;
+          })}
+          <section className="grid gap-3">
+            <h3 className="text-lg font-bold">درخواست‌ها و سوابق تسویه</h3>
+            {financeTransactions.filter(tx => tx.transaction_type === 'payout').length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">تسویه‌ای ثبت نشده است.</p>}
+            {financeTransactions.filter(tx => tx.transaction_type === 'payout').map(tx => <article key={tx.id} className="rounded-lg border border-border bg-card p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><strong>{tx.members?.full_name ?? 'فروشنده'} · {faNumber(tx.amount)} تومان</strong><p className="mt-1 text-xs text-muted-foreground">{tx.description} · {tx.reference_code ? 'مرجع: ' + tx.reference_code : 'بدون شناسه بانکی'}</p><p className="mt-1 text-xs">وضعیت: {tx.payout_status === 'success' ? 'موفق' : tx.payout_status === 'failed' ? 'ناموفق' : tx.payout_status === 'in_progress' ? 'در حال انجام' : 'در انتظار'}</p></div>
+                {tx.payout_status !== 'success' && <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" disabled={financeBusy} onClick={() => void updateSellerPayout(tx, 'in_progress')}>در حال انجام</Button>
+                  <Button size="sm" disabled={financeBusy} onClick={() => void updateSellerPayout(tx, 'success')}>تأیید انتقال موفق</Button>
+                  <Button size="sm" variant="outline" disabled={financeBusy} onClick={() => void updateSellerPayout(tx, 'failed')}>ناموفق</Button>
+                </div>}
+              </div>
+            </article>)}
+          </section>
+        </div>
+      )}
+
+
         <div className="mt-6 grid gap-4">
           <div><h2 className="text-lg font-bold">نظرات و پیگیری خریداران</h2><p className="mt-1 text-sm text-muted-foreground">نظرها فقط از سفارش‌های ثبت‌شده قابل ثبت‌اند. برای بررسی دقیق‌تر می‌توانید در همان گفت‌وگو به خریدار پیام بدهید.</p></div>
           {ratings.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز نظری ثبت نشده است.</p>}
