@@ -120,8 +120,8 @@ function AuthPage() {
         : undefined,
     };
     const { error: otpError } = authMethod === "phone"
-      ? await supabase.auth.signInWithOtp({ phone: normalizedPhone, options: authOptions })
-      : await supabase.auth.signInWithOtp({ email: normalizedEmail, options: authOptions });
+      ? await supabase.auth.signInWithOtp({ phone: normalizedPhone, options: authOptions as any })
+      : await supabase.auth.signInWithOtp({ email: normalizedEmail, options: authOptions as any });
     if (otpError) {
       const providerMessage = otpError.message ? ` (جزئیات: ${otpError.message})` : "";
       setError(authMethod === "phone"

@@ -48,7 +48,7 @@ export function CityPicker({ value, onChange, id, placeholder = "جست‌وجو
             if (event.key === "Escape") { setOpen(false); setQuery(""); inputRef.current?.blur(); }
             if (event.key === "Enter" && filtered.length === 1) {
               event.preventDefault();
-              selectCity(filtered[0]);
+              selectCity(filtered[0]!);
             }
           }}
           className="field-input !pr-4 !pl-10 text-base font-semibold leading-7 text-foreground placeholder:font-normal placeholder:text-muted-foreground"
