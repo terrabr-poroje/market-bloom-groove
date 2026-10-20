@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
   if (body.action === "emergency_reset") {
     const code = String(body.code ?? "").trim();
     const password = String(body.password ?? "");
-    if (!validAdmin || admin!.admin_role !== "main_admin" || !/^\\d{12}$/.test(code) || !strongPassword(password)) {
+    if (!validAdmin || admin!.admin_role !== "main_admin" || !/^\d{12}$/.test(code) || !/^\d{10}$/.test(password)) {
       return json(req, { ok: false, error: "کد اضطراری یا اطلاعات تغییر رمز معتبر نیست." }, 400);
     }
     const codeHash = await sha256Hex(code);
