@@ -249,37 +249,7 @@ function AuthPage() {
     }, 900);
   }
 
-  if (loading) return (
-    <section aria-label="در حال آماده‌سازی صفحه ورود" aria-busy="true" className="bg-market-surface py-10 sm:py-14">
-      <div className="site-container max-w-xl">
-        <div className="min-h-[900px] rounded-xl border border-border bg-card p-5 sm:p-8">
-          <div className="flex items-center gap-3">
-            <div className="size-12 shrink-0 rounded-xl bg-secondary" />
-            <div className="flex-1 space-y-2">
-              <div className="h-6 w-2/3 rounded bg-secondary" />
-              <div className="h-4 w-full rounded bg-secondary" />
-            </div>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-2 rounded-lg bg-secondary p-1">
-            <div className="h-10 rounded-md bg-card" />
-            <div className="h-10 rounded-md bg-card/60" />
-          </div>
-          <div className="mt-4 h-10 rounded-md bg-secondary" />
-          <div className="mt-3 h-4 w-1/2 rounded bg-secondary" />
-          <div className="mt-6 space-y-4">
-            <div className="h-16 rounded-md bg-secondary" />
-            <div className="h-16 rounded-md bg-secondary" />
-            <div className="h-16 rounded-md bg-secondary" />
-            <div className="h-16 rounded-md bg-secondary" />
-            <div className="h-16 rounded-md bg-secondary" />
-          </div>
-          <div className="mt-6 h-12 rounded-lg bg-secondary" />
-        </div>
-      </div>
-    </section>
-  );
-
-  if (user && !codeSent && !busy && !error) {
+  if (user && !loading && !codeSent && !busy && !error) {
     return (
       <section className="bg-market-surface py-16">
         <div className="site-container max-w-md text-center">
