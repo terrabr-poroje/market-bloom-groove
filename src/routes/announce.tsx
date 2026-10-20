@@ -33,9 +33,58 @@ const orderStatusLabels: Record<string, string> = { pending: 'در انتظار 
 const paymentStatusLabels: Record<string, string> = { unpaid: 'پرداخت‌نشده', pending: 'در انتظار تأیید پرداخت', paid: 'پرداخت تأییدشده', failed: 'پرداخت ناموفق', refunded: 'بازپرداخت‌شده' };
 const deliveryStatusLabels: Record<string, string> = { awaiting_payment: 'در انتظار پرداخت', awaiting_dispatch: 'آماده ارسال', shipped: 'بار ارسال شده', delivered: 'تحویل گرفته شده', disputed: 'در حال بررسی اختلاف' };
 
+
+const localIsoDate = (date = new Date()) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+const jalaliFormatter = new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' });
+const jalaliDisplayFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: 'long', day: 'numeric' });
+const jalaliParts = (date: Date) => Object.fromEntries(jalaliFormatter.formatToParts(date).filter(p => p.type !== 'literal').map(p => [p.type, Number(p.value)])) as { year: number; month: number; day: number };
+function JalaliDateField({ label, value, min, onChange }: { label: string; value: string; min?: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? new Date(`${value}T12:00:00`) : new Date();
+  const [view, setView] = useState(() => selected);
+  useEffect(() => { if (value) setView(new Date(`${value}T12:00:00`)); }, [value]);
+  const parts = jalaliParts(view);
+  const monthStart = (() => {
+    for (let offset = -20; offset <= 20; offset++) {
+      const candidate = new Date(view.getFullYear(), view.getMonth(), view.getDate() + offset, 12);
+      const p = jalaliParts(candidate);
+      if (p.year === parts.year && p.month === parts.month && p.day === 1) return candidate;
+    }
+    return new Date(view.getFullYear(), view.getMonth(), 1, 12);
+  })();
+  const monthDays = Array.from({ length: 31 }, (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate() + i, 12))
+    .filter(d => { const p = jalaliParts(d); return p.year === parts.year && p.month === parts.month; });
+  const firstWeekday = (monthStart.getDay() + 1) % 7;
+  const minIso = min || localIsoDate();
+  const toIso = (date: Date) => localIsoDate(date);
+  const dayNames = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+  return <div className="field-label relative">{label}
+    <button type="button" className="field-input w-full text-right" onClick={() => setOpen(v => !v)} aria-expanded={open}>
+      {value ? jalaliDisplayFormatter.format(selected) : 'انتخاب تاریخ شمسی'}
+    </button>
+    {open && <div className="absolute z-50 mt-1 w-[min(20rem,90vw)] rounded-xl border border-border bg-background p-3 shadow-lg" dir="rtl">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth(), view.getDate() - 20, 12))} aria-label="ماه قبل">ماه قبل</button>
+        <strong>{jalaliDisplayFormatter.format(monthStart).replace(/\s*\d+\s*$/, '')} {parts.year.toLocaleString('fa-IR')}</strong>
+        <button type="button" className="rounded border px-3 py-1" onClick={() => setView(new Date(view.getFullYear(), view.getMonth(), view.getDate() + 40, 12))} aria-label="ماه بعد">ماه بعد</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">{dayNames.map((d, i) => <span key={i} className="py-1">{d}</span>)}</div>
+      <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: firstWeekday }, (_, i) => <span key={`blank-${i}`} />)}{monthDays.map(date => {
+        const iso = toIso(date); const day = jalaliParts(date).day; const disabled = iso < minIso;
+        return <button key={iso} type="button" disabled={disabled} onClick={() => { onChange(iso); setOpen(false); }} className={`rounded-md py-2 text-sm ${iso === value ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'} ${disabled ? 'cursor-not-allowed opacity-30' : ''}`}>{day.toLocaleString('fa-IR')}</button>;
+      })}</div>
+    </div>}
+  </div>;
+}
+
 function AnnouncePage() {
   const { user, loading, canAnnounce } = useAuth();
-  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: 'کرج', province: 'البرز', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: new Date().toISOString().slice(0, 10), description: '' });
+  const [form, setForm] = useState({ product: '', variety: '', quality: 'استاندارد', city: 'کرج', province: 'البرز', packageType: 'کارتن', weight: '', stock: '', minimum: '', price: '', ready: localIsoDate(), adStart: localIsoDate(), adEnd: localIsoDate(), responseStart: '08:00', responseEnd: '18:00', description: '' });
   const [memberCity, setMemberCity] = useState('');
   const [storefrontMemberId, setStorefrontMemberId] = useState('');
   const [storeLinkCopied, setStoreLinkCopied] = useState(false);
@@ -156,7 +205,7 @@ function AnnouncePage() {
         !Number.isInteger(minimum) || minimum < 1 || minimum > count || !Number.isFinite(price) || price <= 0 ||
         !enabled.length || salesSections.some(section => editTiers[section.key].enabled && !allowedSections.includes(section.key)) || enabled.some(section => {
           const t = editTiers[section.key];
-          return !Number.isFinite(Number(t.price)) || Number(t.price) <= 0 || !Number.isInteger(Number(t.minimum)) || Number(t.minimum) < 1 || Number(t.minimum) > count;
+          return !Number.isFinite(Number(t.price)) || Number(t.price) < 10000 || !Number.isInteger(Number(t.minimum)) || Number(t.minimum) < 1 || Number(t.minimum) > count;
         })) {
       setManageError('ویرایش ذخیره نشد؛ همه اطلاعات ضروری، موجودی، حداقل سفارش و قیمت‌های بخش‌های فروش را بررسی کنید.');
       return;
@@ -292,22 +341,22 @@ function AnnouncePage() {
     const minimumPackages = Number(form.minimum);
     const pricePerKg = Number(form.price);
     const validSaleSections = saleSectionsEnabled.filter(key => {
-      const p = Number(salePrices[key] || form.price);
+      const p = Number(salePrices[key]);
       const min = Number(saleMinimums[key]);
-      return Number.isFinite(p) && p > 0 && Number.isInteger(min) && min >= 1 && min <= packageCount;
+      return Number.isFinite(p) && p >= 10000 && Number.isInteger(min) && min >= 1 && min <= packageCount;
     });
     if (!saleSectionsEnabled.length || validSaleSections.length !== saleSectionsEnabled.length) {
       setError('برای هر بخش فروش انتخاب‌شده، قیمت هر کیلو و حداقل تعداد بسته معتبر وارد کنید.');
       setBusy(false);
       return;
     }
-    if (!form.product.trim() || !form.variety.trim() || !form.province.trim() || !form.city.trim() ||
+    if (!form.product.trim() || !form.variety.trim() || !form.province.trim() || !form.city.trim() || !form.adStart || !form.adEnd || form.adStart < localIsoDate() || form.adEnd < form.adStart || !form.responseStart || !form.responseEnd || form.responseEnd <= form.responseStart ||
         photoFiles.length > 5 || photoFiles.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) ||
         !Number.isFinite(packageWeight) || packageWeight <= 0 ||
         !Number.isInteger(packageCount) || packageCount < 1 ||
         !Number.isInteger(minimumPackages) || minimumPackages < 1 || minimumPackages > packageCount ||
-        !Number.isFinite(pricePerKg) || pricePerKg <= 0) {
-      setError('اطلاعات بار معتبر نیست. وزن و قیمت باید مثبت باشند و حداقل سفارش از موجودی بیشتر نباشد.');
+        !Number.isFinite(pricePerKg) || pricePerKg < 10000) {
+      setError('اطلاعات بار معتبر نیست. تاریخ شروع باید از امروز به بعد، پایان هم‌روز یا بعد از شروع، ساعت پایان بعد از ساعت شروع و قیمت هر کیلو حداقل ۱۰٬۰۰۰ تومان باشد.');
       setBusy(false);
       return;
     }
@@ -348,6 +397,9 @@ function AnnouncePage() {
     }
     const offeredCity = actualMemberRole === 'supplier' ? form.city.trim() : String(member.city).trim();
     const originCity = form.province.trim();
+    const firstSaleSection = roleValidSaleSections[0];
+    const canonicalPrice = Number(salePrices[firstSaleSection]);
+    const canonicalMinimum = Number(saleMinimums[firstSaleSection]);
     const { data: insertedLoad, error: insertError } = await (supabase as any).from('loads').insert({
       name: [form.product.trim(), form.variety.trim()].filter(Boolean).join(' '),
       product_type: form.product.trim(),
@@ -360,11 +412,15 @@ function AnnouncePage() {
       package_type: form.packageType,
       package_weight: packageWeight,
       unit: 'kg',
-      min_quantity: minimumPackages * packageWeight,
-      min_order_quantity: minimumPackages,
-      price: pricePerKg,
+      min_quantity: canonicalMinimum * packageWeight,
+      min_order_quantity: canonicalMinimum,
+      price: canonicalPrice,
       price_unit: 'toman_per_kg',
       ready_date: form.ready,
+      ad_start_date: form.adStart,
+      ad_end_date: form.adEnd,
+      response_start_time: form.responseStart,
+      response_end_time: form.responseEnd,
       description: form.description.trim() || null,
       status: 'active',
       role: actualMemberRole === 'supplier' ? 'supplier' : 'seller',
@@ -380,7 +436,7 @@ function AnnouncePage() {
       const priceRows = roleValidSaleSections.map(key => ({
         load_id: insertedLoad.id,
         sale_type: key,
-        unit_price: Number(salePrices[key] || form.price),
+        unit_price: Number(salePrices[key]),
         minimum_packages: Number(saleMinimums[key]),
         min_quantity: Number(saleMinimums[key]) * packageWeight,
         max_quantity: null,
@@ -398,14 +454,15 @@ function AnnouncePage() {
           const path = `${user.id}/${insertedLoad.id}/${crypto.randomUUID()}-${safeName}`;
           const { error: uploadError } = await supabase.storage.from('terrabar-load-images').upload(path, file, { contentType: file.type, upsert: false });
           if (uploadError) {
-            setError('بار ثبت شد، اما بارگذاری عکس انجام نشد. سیاست دسترسی مخزن عکس باید بررسی شود.');
+            setError('بار ثبت شد، اما بارگذاری عکس ناموفق بود. دوباره تلاش کنید؛ آگهی تا تکمیل عکس‌ها را بررسی کنید.');
             setBusy(false); return;
           }
           imageRows.push({ load_id: insertedLoad.id, storage_path: path, display_order: index });
         }
         const { error: imageError } = await (supabase as any).from('load_images').insert(imageRows);
         if (imageError) {
-          setError('بار ثبت شد، اما پیوند عکس‌ها ذخیره نشد؛ به مدیر فنی اطلاع بدهید.');
+          setError('بار ثبت شد، اما پیوند عکس‌ها ذخیره نشد. آگهی را غیرفعال می‌کنیم تا ناقص منتشر نشود.');
+          await (supabase as any).from('loads').update({ status: 'inactive' }).eq('id', insertedLoad.id);
           setBusy(false); return;
         }
       }
@@ -540,6 +597,14 @@ function AnnouncePage() {
               <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" type="date" /></label>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <JalaliDateField label="شروع نمایش آگهی (شمسی)" value={form.adStart} min={localIsoDate()} onChange={value => setForm(prev => ({ ...prev, adStart: value, adEnd: prev.adEnd < value ? value : prev.adEnd }))} />
+              <JalaliDateField label="پایان نمایش آگهی (شمسی)" value={form.adEnd} min={form.adStart || localIsoDate()} onChange={value => set('adEnd')(value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="field-label">پاسخ‌گویی از ساعت<input required type="time" value={form.responseStart} onChange={e => set('responseStart')(e.target.value)} className="field-input" /></label>
+              <label className="field-label">پاسخ‌گویی تا ساعت<input required type="time" value={form.responseEnd} min={form.responseStart} onChange={e => set('responseEnd')(e.target.value)} className="field-input" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <label className="field-label">شهر مبدأ بار<CityPicker value={form.province} onChange={value => set("province")(value)} id="load-province" options={provinces} placeholder="جست‌وجوی استان…" /></label>
               {memberRole === 'supplier' ? <label className="field-label">شهر محل عرضه<CityPicker value={form.city} onChange={value => set("city")(value)} id="load-city" placeholder="جست‌وجوی شهر…" /></label> : <label className="field-label">شهر محل عرضه<input readOnly aria-readonly="true" value={memberCity || 'شهر عضویت ثبت نشده'} className="field-input bg-muted" /><span className="text-xs text-muted-foreground">برای بارفروش، شهر محل عرضه ثابت و مطابق شهر عضویت است.</span></label>}
             </div>
@@ -547,9 +612,7 @@ function AnnouncePage() {
               <label className="field-label">نوع بسته<select required value={form.packageType} onChange={e => set('packageType')(e.target.value)} className="field-input"><option>کارتن</option><option>سبد</option><option>کیسه</option><option>جعبه</option><option>بسته‌بندی فله</option><option>بسته‌بندی اختصاصی</option></select></label>
               <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="1" step="0.5" dir="ltr" value={form.weight} onChange={e => set('weight')(e.target.value)} className="field-input text-left" /></label>
               <label className="field-label">موجودی (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.stock} onChange={e => set('stock')(e.target.value)} className="field-input text-left" /></label>
-              <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" dir="ltr" value={form.minimum} onChange={e => set('minimum')(e.target.value)} className="field-input text-left" /></label>
             </div>
-            <label className="field-label">قیمت پایه هر کیلوگرم (تومان)<input required type="number" min="1" step="100" dir="ltr" value={form.price} onChange={e => { set('price')(e.target.value); setSalePrices(prev => Object.fromEntries(Object.entries(prev).map(([key, value]) => [key, value || e.target.value])) as Record<SaleSectionKey, string>); }} className="field-input text-left" placeholder="مثلاً ۴۸۰۰۰" /></label>
             <fieldset className="grid gap-3 rounded-lg border border-border p-4">
               <legend className="px-2 font-bold">بخش‌های فروش و قیمت اختصاصی هر بخش</legend>
               <p className="text-xs text-muted-foreground">{memberRole === 'supplier' ? 'تأمین‌کننده فقط در بخش ویژه حرفه‌ای اعلام بار می‌کند.' : 'بارفروش می‌تواند در بخش‌های خرده‌فروشی، عمده‌فروشی و فروش ویژه اعلام بار کند.'} قیمت و حداقل سفارش هر بخش جداگانه ثبت می‌شود.</p>
@@ -559,7 +622,7 @@ function AnnouncePage() {
                 return <div key={section.key} className="grid gap-3 rounded-md border border-border p-3">
                   <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={enabled} disabled={!memberRole || !roleAllowsSection} onChange={e => toggleSaleSection(section.key, e.target.checked)} />{section.label}</label>
                   {enabled && <div className="grid grid-cols-2 gap-3">
-                    <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="1" step="100" dir="ltr" value={salePrices[section.key] || form.price} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
+                    <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="10000" step="100" dir="ltr" value={salePrices[section.key]} onChange={e => setSalePrices(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" placeholder="حداقل ۱۰۰۰۰ تومان" /></label>
                     <label className="field-label">حداقل بسته در این بخش<input required type="number" min="1" max={form.stock || undefined} step="1" dir="ltr" value={saleMinimums[section.key]} onChange={e => setSaleMinimums(prev => ({ ...prev, [section.key]: e.target.value }))} className="field-input text-left" /></label>
                   </div>}
                 </div>;
