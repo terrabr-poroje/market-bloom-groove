@@ -19,7 +19,7 @@ test("home renders and its main actions navigate to the expected routes", async 
   await page.goto("/");
   await page.getByRole("link", { name: /درخواست بار/ }).click();
   await expect(page).toHaveURL(/\/requests$/);
-  await expect(page.getByRole("heading", { name: /درخواست خرید/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /برای جست‌وجوی بار وارد ترابار شوید|بارهای فعال/ })).toBeVisible();
 
   expect(pageErrors, "Uncaught browser JavaScript errors").toEqual([]);
 });
@@ -31,7 +31,7 @@ test("city picker filters and selects a city on the signup page", async ({ page 
   await page.goto("/auth");
   await expect(page.getByRole("heading", { name: /ثبت‌نام در ترابار/ })).toBeVisible();
 
-  const city = page.getByRole("combobox").last();
+  const city = page.getByPlaceholder("جست‌وجوی شهر یا استان…");
   await city.fill("تهران");
   await expect(page.getByRole("listbox")).toBeVisible();
   await page.getByRole("option", { name: "تهران", exact: true }).click();
