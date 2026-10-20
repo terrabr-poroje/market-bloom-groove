@@ -31,6 +31,12 @@ function normalizeUsername(value: unknown): string {
   return String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function strongPassword(value: string): boolean {
   return value.length >= 10 && /\p{L}/u.test(value) && /\p{N}/u.test(value);
 }
@@ -80,6 +86,32 @@ Deno.serve(async (req: Request) => {
     admin?.auth_user_id &&
     ["main_admin", "city_manager"].includes(String(admin.admin_role))
   );
+
+
+  if (body.action === "emergency_reset") {
+    const code = String(body.code ?? "").trim();
+    const password = String(body.password ?? "");
+    if (!validAdmin || admin!.admin_role !== "main_admin" || !/^\\d{12}$/.test(code) || !strongPassword(password)) {
+      return json(req, { ok: false, error: "کد اضطراری یا اطلاعات تغییر رمز معتبر نیست." }, 400);
+    }
+    const codeHash = await sha256Hex(code);
+    const now = new Date().toISOString();
+    const { data: recovery, error: recoveryError } = await db.from("admin_recovery_codes").select("id")
+      .eq("auth_user_id", admin!.auth_user_id).eq("code_hash", codeHash).is("used_at", null).gt("expires_at", now).maybeSingle();
+    if (recoveryError || !recovery) {
+      console.warn("[admin-login] emergency recovery code rejected");
+      return json(req, { ok: false, error: "کد اضطراری اشتباه، مصرف‌شده یا منقضی شده است." }, 400);
+    }
+    const { data: consumed, error: consumeError } = await db.from("admin_recovery_codes").update({ used_at: now })
+      .eq("id", recovery.id).is("used_at", null).gt("expires_at", now).select("id").maybeSingle();
+    if (consumeError || !consumed) return json(req, { ok: false, error: "این کد قبلاً استفاده شده یا منقضی شده است." }, 400);
+    const { error: updateError } = await db.auth.admin.updateUserById(admin!.auth_user_id, { password });
+    if (updateError) {
+      console.error("[admin-login] emergency password update failed:", updateError.message);
+      return json(req, { ok: false, error: "کد مصرف شد اما ذخیره رمز انجام نشد؛ باید کد اضطراری جدید صادر شود." }, 502);
+    }
+    return json(req, { ok: true, message: "رمز مدیر کل تغییر کرد. کد اضطراری دیگر قابل استفاده نیست." });
+  }
 
   if (body.action === "reset") {
     if (!validAdmin) {
