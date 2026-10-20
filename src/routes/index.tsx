@@ -5,7 +5,6 @@ import {
   MapPinned,
   Search,
   Sprout,
-  LogIn,
   Menu,
 } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
@@ -18,7 +17,6 @@ export const Route = createFileRoute("/")({
     ),
   component: Index,
 });
-
 
 function Index() {
   return (
@@ -53,12 +51,8 @@ function Index() {
                   <span className="inline-flex items-center gap-1.5"><MapPinned className="size-4" /> توجه به شهر و محدوده دسترسی</span>
                 </div>
               </div>
-
               <div className="relative mx-auto w-full max-w-sm">
-                <Link
-                  to="/auth"
-                  className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-lime-300 px-10 text-lg font-extrabold text-emerald-950 shadow-lg transition hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
+                <Link to="/auth" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-lime-300 px-10 text-lg font-extrabold text-emerald-950 shadow-lg transition hover:bg-lime-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                   مرحله بعد <ArrowLeft className="size-5" />
                 </Link>
                 <div className="absolute -bottom-4 -left-3 -z-10 size-24 rounded-2xl bg-lime-300/20 blur-xl" />
@@ -67,16 +61,15 @@ function Index() {
           </div>
         </div>
       </section>
-
-
       <section className="bg-background py-3 sm:py-4">
         <div className="site-container flex justify-center">
           <details className="group relative w-full max-w-md">
             <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:bg-accent [&::-webkit-details-marker]:hidden">
               <Menu className="size-4" />
-              راهنما و پشتیبانی
+              منو
             </summary>
             <div className="mt-2 grid gap-1 rounded-xl border border-border bg-card p-2 shadow-sm">
+              <Link to="/admin-login" className="rounded-lg px-3 py-3 text-sm font-semibold text-primary hover:bg-secondary">حساب مدیران</Link>
               <Link to="/guide" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">راهنمای استفاده از سایت</Link>
               <Link to="/contact" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">ارتباط با پشتیبانی</Link>
               <Link to="/rules" className="rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary">قوانین و حریم خصوصی</Link>

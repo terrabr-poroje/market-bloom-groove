@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase schema queries use dynamic types while generated DB types are stale. */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase schema queries use dynamic types while generated client types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { UserRound, ShoppingBasket, PackagePlus, ArrowLeft, Sprout, ClipboardList, BookOpenText, LifeBuoy, ShieldCheck } from "lucide-react";
+import { UserRound, ShoppingBasket, PackagePlus, ArrowLeft, Sprout, BookOpenText, LifeBuoy, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { pageHead } from "@/lib/marketplace";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/member-home")({
 });
 
 function MemberHome() {
-  const { user, loading, roles } = useAuth();
+  const { user, loading, roles, canAnnounce } = useAuth();
   const [isOrdinaryBuyer, setIsOrdinaryBuyer] = useState(false);
   const [roleCheckDone, setRoleCheckDone] = useState(false);
 
@@ -57,11 +57,13 @@ function MemberHome() {
 
   const buyerOptions = [
     { title: "حساب کاربری", description: "اطلاعات حساب و پیگیری‌های لازم", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
-    { title: "درخواست خرید", description: "خرید خرده، عمده، ویژه یا ثبت درخواست سفارش", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
+    { title: "خرید بار و درخواست سفارش", description: "جست‌وجوی بار، خرید خرده، عمده، ویژه یا ثبت درخواست تأمین", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
   ];
   const memberOptions = [
     ...buyerOptions,
-    { title: "اعلام بار", description: "معرفی بار و موجودی برای فروش؛ پس از تأیید عضویت", icon: PackagePlus, to: "/announce", style: "bg-teal-50 text-teal-800" },
+    ...(canAnnounce ? [
+      { title: "فروش و اعلام بار", description: "ثبت و مدیریت بارهای فروش و سفارش‌های دریافتی", icon: PackagePlus, to: "/announce", style: "bg-teal-50 text-teal-800" },
+    ] : []),
   ];
 
   if (loading || !roleCheckDone) return <main dir="rtl" className="site-container py-16 text-center text-sm text-muted-foreground">در حال آماده‌سازی صفحه حساب شما…</main>;
@@ -75,7 +77,7 @@ function MemberHome() {
           <div className="relative">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-emerald-50"><Sprout className="size-4" /> TERRABAR | ترابار</div>
             <h1 className="text-2xl font-black leading-relaxed sm:text-3xl">{isOrdinaryBuyer ? "صفحه اصلی خریدار عادی" : "صفحه اصلی اعضای ترابار"}</h1>
-            <p className="mt-2 text-sm leading-7 text-emerald-50/90">{isOrdinaryBuyer ? "برای مدیریت حساب یا ثبت درخواست خرید، یکی از گزینه‌های زیر را انتخاب کنید." : "برای ادامه، یکی از مسیرهای مجاز حساب خود را انتخاب کنید."}</p>
+            <p className="mt-2 text-sm leading-7 text-emerald-50/90">{isOrdinaryBuyer ? "برای مدیریت حساب یا ثبت درخواست خرید، یکی از گزینه‌های زیر را انتخاب کنید." : "امکانات خرید برای اعضا در دسترس است؛ امکانات فروش بر اساس تأیید عضویت فعال می‌شود."}</p>
           </div>
         </header>
         <div className="grid grid-cols-1 gap-3 sm:gap-4">
@@ -91,17 +93,17 @@ function MemberHome() {
         {isOrdinaryBuyer ? <section className="mt-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex items-center gap-2 font-extrabold"><BookOpenText className="size-5 text-primary" /> راهنمای خریدار عادی</div>
           <ul className="mt-3 grid gap-2 text-sm leading-7 text-muted-foreground">
-            <li>• برای خرید از گزینه «درخواست خرید» استفاده کنید؛ نوع خرید خرده، عمده یا ویژه را انتخاب کنید.</li>
+            <li>• برای خرید از گزینه «خرید بار و درخواست سفارش» استفاده کنید.</li>
             <li>• برای تأمین چند محصول، بخش «درخواست سفارش» را تکمیل کنید.</li>
             <li>• وضعیت درخواست‌ها و سفارش‌ها از بخش حساب کاربری و پیگیری‌ها قابل مشاهده است.</li>
-            <li>• خریدار عادی فقط بارهای مجاز شهر ثبت‌شده در حساب خود را می‌بیند.</li>
+            <li>• بارهای قابل مشاهده بر اساس شهر و سطح دسترسی خرید شما محدود می‌شوند.</li>
           </ul>
           <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
             <Link to="/guide" className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold"><BookOpenText className="size-4" /> راهنمای کامل</Link>
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold"><LifeBuoy className="size-4" /> پشتیبانی</Link>
             <Link to="/rules" className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold"><ShieldCheck className="size-4" /> قوانین و حریم خصوصی</Link>
           </div>
-        </section> : <section className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm leading-7 text-muted-foreground"><ShieldCheck className="mb-2 size-5 text-primary" /> امکانات هر حساب بر اساس نقش و تأییدهای ثبت‌شده فعال می‌شود.</section>}
+        </section> : <section className="mt-6 rounded-2xl border border-border bg-card p-5 text-sm leading-7 text-muted-foreground"><ShieldCheck className="mb-2 size-5 text-primary" /> {canAnnounce ? "حساب شما به امکانات خرید و فروش دسترسی دارد." : "امکانات خرید فعال است؛ اعلام بار و مدیریت ویترین پس از تأیید عضویت فروشندگی فعال می‌شود."}</section>}
       </div>
     </main>
   );
