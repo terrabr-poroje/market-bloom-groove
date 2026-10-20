@@ -315,7 +315,8 @@ function AdminPage() {
             const txs = financeTransactions.filter(tx => tx.member_id === account.member_id);
             const netCredits = txs.filter(tx => tx.transaction_type === 'receipt').reduce((sum, tx) => sum + Number(tx.amount), 0);
             const successfulPayouts = txs.filter(tx => tx.transaction_type === 'payout' && tx.payout_status === 'success').reduce((sum, tx) => sum + Number(tx.amount), 0);
-            const available = Math.max(0, netCredits - successfulPayouts);
+            const reservedPayouts = txs.filter(tx => tx.transaction_type === 'payout' && ['pending', 'in_progress'].includes(tx.payout_status)).reduce((sum, tx) => sum + Number(tx.amount), 0);
+            const available = Math.max(0, netCredits - successfulPayouts - reservedPayouts);
             return <article key={account.id} className="rounded-xl border border-border bg-card p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div><strong>{account.members?.full_name ?? 'عضو ترابار'}</strong><p className="mt-1 text-sm text-muted-foreground">{account.members?.phone ?? 'شماره ثبت نشده'} · {account.members?.city ?? 'شهر ثبت نشده'}</p></div>
