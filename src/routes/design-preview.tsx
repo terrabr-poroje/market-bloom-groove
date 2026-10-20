@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Info, LogIn, Menu, PackagePlus, Search, Sprout, X } from "lucide-react";
+import { Info, Menu, Sprout, X } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 import appleImage from "@/assets/apples.jpg";
 import tomatoImage from "@/assets/tomatoes.jpg";
