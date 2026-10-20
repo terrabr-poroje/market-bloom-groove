@@ -60,11 +60,14 @@ function SellerAccountingPage() {
 
   const delivered = orders.filter(o => String(o.delivery_status ?? "").toLowerCase() === "delivered" && !["cancelled", "canceled", "refunded"].includes(String(o.status ?? "").toLowerCase()));
   const salesTotal = delivered.reduce((s, o) => s + Number(o.total_price ?? 0), 0);
+  const commissionTotal = transactions.filter(t => t.transaction_type === "commission").reduce((s, t) => s + Number(t.amount ?? 0), 0);
+  const netSalesTotal = Math.max(0, salesTotal - (commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100));
   const receiptsTotal = transactions.filter(t => t.transaction_type === "receipt").reduce((s, t) => s + Number(t.amount ?? 0), 0);
-  const due = Math.max(0, salesTotal - receiptsTotal);
+  const payoutsTotal = transactions.filter(t => t.transaction_type === "payout" && t.payout_status === "success").reduce((s, t) => s + Number(t.amount ?? 0), 0);
+  const due = Math.max(0, netSalesTotal - receiptsTotal);
   const entries = useMemo(() => [
     ...orders.map(o => ({ id: String(o.id), date: String(o.created_at), title: "فروش / سفارش", detail: "وضعیت تحویل: " + (o.delivery_status || o.status || "ثبت‌شده"), amount: Number(o.total_price ?? 0), status: "پرداخت: " + (o.payment_status ?? "نامشخص") })),
-    ...transactions.map(t => ({ id: String(t.id), date: String(t.transaction_date), title: t.transaction_type === "receipt" ? "دریافتی" : t.transaction_type === "payout" ? "پرداخت" : "اصلاح حساب", detail: String(t.description ?? "") + (t.reference_code ? " · شناسه: " + t.reference_code : ""), amount: Number(t.amount ?? 0), status: "ثبت‌شده" })),
+    ...transactions.map(t => ({ id: String(t.id), date: String(t.transaction_date), title: t.transaction_type === "receipt" ? "اعتبار فروش خالص" : t.transaction_type === "commission" ? "کارمزد ترابار (۵٪)" : t.transaction_type === "payout" ? "تسویه بانکی" : "اصلاح حساب", detail: String(t.description ?? "") + (t.reference_code ? " · شناسه: " + t.reference_code : ""), amount: Number(t.amount ?? 0), status: "ثبت‌شده" })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [orders, transactions]);
   const filtered = entries.filter(e => (!from || e.date.slice(0, 10) >= from) && (!to || e.date.slice(0, 10) <= to));
 
@@ -102,8 +105,8 @@ function SellerAccountingPage() {
       </form>
     </section>
     <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><ArrowRightLeft className="size-5" /> ۲. گردش حساب</h2>
-      <div className="mb-4 rounded-2xl bg-emerald-950 p-5 text-white"><p className="text-sm text-emerald-100">جمع حساب · فروش قطعی تحویل‌شده</p><p className="mt-2 text-3xl font-black">{money(salesTotal)}</p><p className="mt-2 text-xs leading-5 text-emerald-100">این جمع فروش‌های تحویل‌شده است و لزوماً موجودی قابل برداشت بانکی نیست.</p></div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">طلب / تسویه‌نشده</p><p className="mt-2 text-xl font-extrabold">{money(due)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">دریافتی ثبت‌شده</p><p className="mt-2 text-xl font-extrabold">{money(receiptsTotal)}</p></div></div>
+      <div className="mb-4 rounded-2xl bg-emerald-950 p-5 text-white"><p className="text-sm text-emerald-100">جمع حساب · فروش قطعی تحویل‌شده</p><p className="mt-2 text-3xl font-black">{money(salesTotal)}</p><p className="mt-2 text-xs leading-5 text-emerald-100">مجموع ناخالص سفارش‌های پرداخت‌شده و تحویل‌شده.</p></div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">کارمزد ترابار (۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">سهم خالص فروشنده (۹۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(netSalesTotal)}</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">اعتبار خالص تسویه‌نشده</p><p className="mt-2 text-xl font-extrabold">{money(due)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">دریافتی خالص ثبت‌شده</p><p className="mt-2 text-xl font-extrabold">{money(receiptsTotal)}</p><p className="mt-1 text-xs">تسویه‌های موفق بانکی: {money(payoutsTotal)}</p></div></div>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">رسیدها فقط از دفتر مالی خوانده می‌شوند؛ کاربر نمی‌تواند خودش دریافتی ثبت کند.</p>
     </section>
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><FileText className="size-5" /> صورت‌حساب</h2>
