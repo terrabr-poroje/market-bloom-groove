@@ -259,7 +259,7 @@ function AdminPage() {
         <Button variant={tab === 'orders' ? 'default' : 'ghost'} onClick={() => setTab('orders')}>سفارش‌ها ({faNumber(orders.length)})</Button>
         <Button variant={tab === 'purchases' ? 'default' : 'ghost'} onClick={() => setTab('purchases')}>درخواست‌های خرید ({faNumber(purchaseRequests.length)})</Button>
         {isAdmin && <span className="w-full pt-3 text-xs font-bold text-muted-foreground">مدیریت سراسری، دسترسی‌ها و گزارش‌های مدیر کل</span>}
-        {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر و دسترسی‌ها</Button>
+        {isAdmin && <Button variant={tab === 'managers' ? 'default' : 'ghost'} onClick={() => setTab('managers')}>مدیران شهر و دسترسی‌ها</Button>}
         {isAdmin && <Button variant={tab === 'reviews' ? 'default' : 'ghost'} onClick={() => setTab('reviews')}>نظرات خریداران ({faNumber(ratings.length)})</Button>}
         {isAdmin && <Button variant={tab === 'visits' ? 'default' : 'ghost'} onClick={() => setTab('visits')}><Eye />آمار بازدیدها</Button>}
         {isAdmin && <Button variant={tab === 'finance' ? 'default' : 'ghost'} onClick={() => setTab('finance')}><Wallet />حساب‌ها و تسویه فروشندگان</Button>}
