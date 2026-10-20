@@ -52,5 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           test -d .output
-          find .output -maxdepth 3 -type f | head -40
+          find .output -maxdepth 3 -type f -print > /tmp/terrabar-output-files.txt
+          head -40 /tmp/terrabar-output-files.txt
+          test -s /tmp/terrabar-output-files.txt
           echo "Baseline build output exists."
