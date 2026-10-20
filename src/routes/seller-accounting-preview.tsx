@@ -58,7 +58,7 @@ function SellerAccountingPage() {
     return () => { active = false; };
   }, [user, loading]);
 
-  const delivered = orders.filter(o => String(o.delivery_status ?? "").toLowerCase() === "delivered" && !["cancelled", "canceled", "refunded"].includes(String(o.status ?? "").toLowerCase()));
+  const delivered = orders.filter(o => String(o.payment_status ?? "").toLowerCase() === "paid" && String(o.delivery_status ?? "").toLowerCase() === "delivered" && !["cancelled", "canceled", "refunded"].includes(String(o.status ?? "").toLowerCase()));
   const salesTotal = delivered.reduce((s, o) => s + Number(o.total_price ?? 0), 0);
   const commissionTotal = transactions.filter(t => t.transaction_type === "commission").reduce((s, t) => s + Number(t.amount ?? 0), 0);
   const netSalesTotal = Math.max(0, salesTotal - (commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100));
