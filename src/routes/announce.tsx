@@ -452,7 +452,10 @@ function AnnouncePage() {
           const path = `${user.id}/${insertedLoad.id}/${crypto.randomUUID()}-${safeName}`;
           const { error: uploadError } = await supabase.storage.from('terrabar-load-images').upload(path, file, { contentType: file.type, upsert: false });
           if (uploadError) {
-            setError('بار ثبت شد، اما بارگذاری عکس ناموفق بود. دوباره تلاش کنید؛ آگهی تا تکمیل عکس‌ها را بررسی کنید.');
+            const uploadedPaths = imageRows.map(image => image.storage_path);
+            if (uploadedPaths.length) await supabase.storage.from('terrabar-load-images').remove(uploadedPaths);
+            await (supabase as any).from('loads').update({ status: 'inactive' }).eq('id', insertedLoad.id);
+            setError('بارگذاری عکس انجام نشد و آگهی برای جلوگیری از انتشار ناقص غیرفعال شد. علت: ' + uploadError.message);
             setBusy(false); return;
           }
           imageRows.push({ load_id: insertedLoad.id, storage_path: path, display_order: index });
@@ -562,7 +565,7 @@ function AnnouncePage() {
                       <label className="field-label">تعداد بسته‌ها<input required type="number" min="1" step="1" className="field-input" value={editValues.count} onChange={e => setEditValues(v => ({...v, count:e.target.value}))} /></label>
                       <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" className="field-input" value={editValues.minimum} onChange={e => setEditValues(v => ({...v, minimum:e.target.value}))} /></label>
                       <label className="field-label">قیمت پایه هر کیلو (تومان)<input required type="number" min="1" step="1" className="field-input" value={editValues.price} onChange={e => setEditValues(v => ({...v, price:e.target.value}))} /></label>
-                      <label className="field-label">زمان آماده بودن<input required type="date" className="field-input" value={editValues.ready} onChange={e => setEditValues(v => ({...v, ready:e.target.value}))} /></label>
+                      <JalaliDateField label="زمان آماده بودن (شمسی)" value={editValues.ready} onChange={value => setEditValues(v => ({ ...v, ready: value }))} />
                     </div>
                     <fieldset className="grid gap-3 rounded-lg border border-border p-3"><legend className="px-2 font-semibold">قیمت و حداقل سفارش هر بخش فروش</legend>
                       {salesSections.map(section => { const roleAllowsSection = allowedSaleSections(memberRole).includes(section.key); return <div key={section.key} className="grid gap-2 rounded border border-border p-3">
@@ -592,7 +595,7 @@ function AnnouncePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="field-label">درجه کیفیت<select className="field-input" value={form.quality} onChange={e => set('quality')(e.target.value)}>{qualities.map(item => <option key={item}>{item}</option>)}</select></label>
-              <label className="field-label">زمان آماده بودن<input required value={form.ready} onChange={e => set('ready')(e.target.value)} className="field-input" type="date" /></label>
+              <JalaliDateField label="زمان آماده بودن (شمسی)" value={form.ready} onChange={value => set('ready')(value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <JalaliDateField label="شروع نمایش آگهی (شمسی)" value={form.adStart} min={localIsoDate()} onChange={value => setForm(prev => ({ ...prev, adStart: value, adEnd: prev.adEnd < value ? value : prev.adEnd }))} />
