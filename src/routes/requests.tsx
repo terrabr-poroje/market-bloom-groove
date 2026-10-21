@@ -255,7 +255,7 @@ function Requests() {
 
   function priceFor(load: Load, saleType: string, quantity: number) {
     const option = load.saleOptions?.find(item => item.saleType === saleType);
-    const match = option?.priceBreaks?.find(item => quantity >= item.minQuantity && (item.maxQuantity == null || quantity <= item.maxQuantity));
+    const match = option?.priceBreaks?.find(item => quantity * load.weight >= item.minQuantity && (item.maxQuantity == null || quantity * load.weight <= item.maxQuantity));
     return Number(match?.price ?? option?.price ?? load.price);
   }
   function addToCart(load: Load, quantity: number, saleType: string) {
