@@ -11,8 +11,20 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-type CartItem = { load: Load; quantity: number; saleType: string };
+type CartItem = { load: Load; quantity: number; saleType: string; expiresAt?: number };
 const CART_KEY = "terrabar-cart-items";
+const CART_TTL_MS = 6 * 60 * 60 * 1000;
+function readValidCart(): CartItem[] {
+  try {
+    const raw = window.localStorage.getItem(CART_KEY) ?? window.sessionStorage.getItem(CART_KEY) ?? "[]";
+    const now = Date.now();
+    const parsed = JSON.parse(raw) as CartItem[];
+    const items = Array.isArray(parsed) ? parsed.map(item => ({ ...item, expiresAt: Number(item.expiresAt) || now + CART_TTL_MS })).filter(item => item.expiresAt! > now) : [];
+    window.localStorage.setItem(CART_KEY, JSON.stringify(items));
+    window.sessionStorage.removeItem(CART_KEY);
+    return items;
+  } catch { return []; }
+}
 
 function priceFor(item: CartItem) {
   const option = item.load.saleOptions?.find(option => option.saleType === item.saleType);
@@ -31,14 +43,15 @@ function CartPage() {
 
   useEffect(() => {
     const read = () => {
-      try { setItems(JSON.parse(window.sessionStorage.getItem(CART_KEY) || "[]")); }
-      catch { setItems([]); }
+      setItems(readValidCart());
       setLoaded(true);
     };
     read();
+    const expiryTimer = window.setInterval(() => { const valid = readValidCart(); setItems(current => JSON.stringify(current) === JSON.stringify(valid) ? current : valid); window.dispatchEvent(new Event("terrabar-cart-updated")); }, 30_000);
     window.addEventListener("terrabar-cart-updated", read);
     window.addEventListener("storage", read);
     return () => {
+      window.clearInterval(expiryTimer);
       window.removeEventListener("terrabar-cart-updated", read);
       window.removeEventListener("storage", read);
     };
@@ -47,7 +60,7 @@ function CartPage() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      window.sessionStorage.setItem(CART_KEY, JSON.stringify(items));
+      window.localStorage.setItem(CART_KEY, JSON.stringify(items)); window.sessionStorage.removeItem(CART_KEY);
       window.dispatchEvent(new Event("terrabar-cart-updated"));
     } catch {}
   }, [items, loaded]);
@@ -67,7 +80,9 @@ function CartPage() {
   async function submitOrder() {
     setError("");
     setNotice("");
-    if (!items.length) { setError("سبد خرید خالی است."); return; }
+    const validItems = readValidCart();
+    if (!validItems.length) { setItems([]); setError("سبد خرید خالی است یا مهلت شش‌ساعته کالاها تمام شده است."); return; }
+    if (validItems.length !== items.length) setItems(validItems);
     setBusy(true);
     const { data: authData } = await supabase.auth.getUser();
     if (!authData.user) {
@@ -87,8 +102,8 @@ function CartPage() {
       setBusy(false);
       return;
     }
-    const orderTotal = total;
-    const rows = items.map(item => ({
+    const orderTotal = validItems.reduce((sum, item) => sum + item.quantity * item.load.weight * priceFor(item), 0);
+    const rows = validItems.map(item => ({
       load_id: item.load.id,
       customer_name: member.full_name,
       customer_phone: member.phone,
@@ -111,7 +126,7 @@ function CartPage() {
     if (insertError) {
       setError("ثبت سفارش انجام نشد. سفارشی ثبت نشده است؛ دسترسی‌های سفارش در سوپابیس باید بررسی شود.");
     } else {
-      setSubmitted({ count: items.length, total: orderTotal });
+      setSubmitted({ count: validItems.length, total: orderTotal });
       setItems([]);
       setNotice("سفارش‌ها ثبت شدند و در انتظار تأیید فروشنده‌اند.");
     }
@@ -121,7 +136,7 @@ function CartPage() {
   return <div className="site-container max-w-4xl py-6 sm:py-10">
     <Link to="/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowRight className="size-4" />بازگشت به ادامه خرید</Link>
     <div className="mt-5 flex items-center justify-between gap-3 border-b border-border pb-4">
-      <div><h1 className="text-2xl font-black">سبد خرید</h1><p className="mt-1 text-sm text-muted-foreground">تعداد، وزن و مبلغ کالاها را بررسی کنید و از همین‌جا سفارش را ثبت کنید.</p></div>
+      <div><h1 className="text-2xl font-black">سبد خرید</h1><p className="mt-1 text-sm text-muted-foreground">هر کالا تا ۶ ساعت پس از افزودن در سبد می‌ماند؛ اگر تا پایان مهلت سفارش/پرداخت انجام نشود، خودکار از سبد حذف می‌شود.</p></div>
       <ShoppingCart className="size-7 text-primary" />
     </div>
     {submitted && <div role="status" className="mt-5 rounded-xl border border-primary/30 bg-accent/40 p-4"><CheckCircle2 className="inline ml-2 size-5 text-primary" /><strong>سفارش ثبت شد</strong><p className="mt-2 text-sm">{faNumber(submitted.count)} قلم کالا · {faNumber(submitted.total)} تومان</p><p className="mt-2 text-sm leading-6 text-muted-foreground">سفارش در انتظار تأیید فروشنده است. درگاه پرداخت واقعی هنوز به ترابار متصل نشده؛ پرداخت آنلاین از این صفحه پس از راه‌اندازی درگاه فعال خواهد شد.</p></div>}
