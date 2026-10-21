@@ -141,7 +141,7 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
         (supabase as any).from("admin_users").select("id, admin_role, city").eq("auth_user_id", user.id).eq("is_active", true),
       ]);
       if (!active) return;
-      const roles = (roleRows ?? []).map((r: any) => String(r.role_code).toLowerCase());
+      const roles = (roleRows ?? []).filter((r: any) => String(r.approval_status ?? "").toLowerCase() === "approved").map((r: any) => String(r.role_code).toLowerCase());
       setApprovedRoleCodes(roles);
       const adminRoles = (adminRows ?? []).map((r: any) => String(r.admin_role).toLowerCase());
       if (!roles.some((role: string) => ["supplier", "bar_seller", "seller"].includes(role))) setPurchaseMode("retail");
@@ -447,7 +447,7 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
             <h1 className="mt-4 text-2xl font-extrabold">برای جست‌وجوی بار وارد ترابار شوید</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">برای مشاهده بارهای فعال متناسب با شهر و سطح دسترسی، ابتدا ثبت‌نام کنید یا وارد حساب خود شوید. این کار کمک می‌کند بازدیدها و استفاده از بازار به‌صورت دقیق و امن ثبت شود.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Link to="/auth" onClick={() => sessionStorage.setItem("terrabar:after-auth", "/requests")} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground">ثبت‌نام / ورود</Link>
+              <Link to="/auth" onClick={() => sessionStorage.setItem("terrabar:after-auth", professionalOnly ? "/professional-purchase" : "/requests")} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground">ثبت‌نام / ورود</Link>
               <Link to="/" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 py-3 text-sm font-semibold">بازگشت به صفحه اصلی</Link>
             </div>
             <p className="mt-4 text-xs leading-6 text-muted-foreground">اطلاعات حساب فقط برای مدیریت عضویت و خدمات ترابار استفاده می‌شود؛ نشانی اینترنتی (IP) یا اثرانگشت دستگاه ذخیره نمی‌شود.</p>
