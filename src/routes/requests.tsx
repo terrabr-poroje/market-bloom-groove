@@ -529,14 +529,7 @@ function Requests() {
           </div>
         </div>
       </section>
-      <nav aria-label="ناوبری بازار خرید" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-lg backdrop-blur">
-        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-1 p-2">
-          <Link to="/requests" aria-current="page" className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg bg-accent text-xs font-bold text-primary"><Store className="size-5" />بازار</Link>
-          <Link to="/cart" className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold hover:bg-secondary"><ShoppingCart className="size-5" />سبد خرید{cartItems.length ? ` (${faNumber(cartItems.length)})` : ""}</Link>
-          <a href="#tracking" onClick={e=>{e.preventDefault();document.getElementById("tracking")?.scrollIntoView({behavior:"smooth",block:"start"});}} className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold hover:bg-secondary"><PackageCheck className="size-5" />پیگیری سفارش</a>
-        </div>
-      </nav>
-      <div className="h-20" aria-hidden="true" />
+      <div className="h-6" aria-hidden="true" />
     </>
   );
 }
