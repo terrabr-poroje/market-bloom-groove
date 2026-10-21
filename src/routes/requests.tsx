@@ -282,7 +282,7 @@ function Requests() {
       const normalizeValue = (value: unknown) => String(value ?? "").trim().toLowerCase()
         .replace(/[يى]/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, "");
       const normalizedOptions = options.map(option => ({ ...option, saleType: normalizeValue(option.saleType) }));
-      const isProfessionalInventory = normalizeValue(load.sellerType) === "supplier" || normalizedOptions.some(option => ["professional", "pro"].includes(option.saleType));
+      const isProfessionalInventory = normalizedOptions.some(option => ["professional", "pro"].includes(option.saleType));
       const professionalCityAccess = purchaseMode === "professional" && canBuySupplierProfessional && isProfessionalInventory;
       const normalizedLoadCity = normalizeValue(load.city);
       const normalizedAllowedCities = allowedCities.map(normalizeValue);
