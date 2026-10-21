@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { pageHead } from "@/lib/marketplace";
 
 export const Route = createFileRoute("/seller-accounting-preview")({
-  head: () => pageHead("اطلاعات حساب و گردش حساب | ترابار", "اطلاعات بانکی، جمع حساب و صورت‌حساب واقعی فروشنده ترابار."),
+  head: () => pageHead("امور مالی و گردش حساب | ترابار", "مشاهده گردش مالی، اطلاعات بانکی و صورت‌حساب عضو ترابار."),
   component: SellerAccountingPage,
 });
 
@@ -44,7 +44,7 @@ function SellerAccountingPage() {
       const id = String(member.id);
       const [b, o, t] = await Promise.all([
         (supabase as any).from("seller_bank_accounts").select("id,bank_name,account_holder_name,iban,verification_status").eq("member_id", id).maybeSingle(),
-        (supabase as any).from("orders").select("id,total_price,created_at,status,payment_status,delivery_status").eq("seller_member_id", id).order("created_at", { ascending: false }),
+        (supabase as any).from("orders").select("id,seller_member_id,buyer_member_id,total_price,created_at,status,payment_status,delivery_status").or(`seller_member_id.eq.${id},buyer_member_id.eq.${id}`).order("created_at", { ascending: false }),
         (supabase as any).from("seller_financial_transactions").select("id,order_id,transaction_type,amount,description,reference_code,transaction_date,payout_status,processed_at").eq("member_id", id).order("transaction_date", { ascending: false }),
       ]);
       if (!active) return;
@@ -58,7 +58,7 @@ function SellerAccountingPage() {
     return () => { active = false; };
   }, [user, loading]);
 
-  const delivered = orders.filter(o => String(o.payment_status ?? "").toLowerCase() === "paid" && String(o.delivery_status ?? "").toLowerCase() === "delivered" && !["cancelled", "canceled", "refunded"].includes(String(o.status ?? "").toLowerCase()));
+  const delivered = orders.filter(o => o.seller_member_id === memberId && String(o.payment_status ?? "").toLowerCase() === "paid" && String(o.delivery_status ?? "").toLowerCase() === "delivered" && !["cancelled", "canceled", "refunded"].includes(String(o.status ?? "").toLowerCase()));
   const salesTotal = delivered.reduce((s, o) => s + Number(o.total_price ?? 0), 0);
   const commissionTotal = transactions.filter(t => t.transaction_type === "commission").reduce((s, t) => s + Number(t.amount ?? 0), 0);
   const netSalesTotal = Math.max(0, salesTotal - (commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100));
@@ -69,7 +69,7 @@ function SellerAccountingPage() {
   const availableBalance = Math.max(0, receiptsTotal + adjustmentCredits - payoutsTotal - reservedPayouts);
   const due = availableBalance;
   const entries = useMemo(() => [
-    ...orders.map(o => ({ id: String(o.id), date: String(o.created_at), title: "فروش / سفارش", detail: "وضعیت تحویل: " + (o.delivery_status || o.status || "ثبت‌شده"), amount: Number(o.total_price ?? 0), status: "پرداخت: " + (o.payment_status ?? "نامشخص") })),
+    ...orders.map(o => ({ id: String(o.id), date: String(o.created_at), title: o.seller_member_id === memberId ? "فروش / سفارش دریافتی" : "خرید / صورتحساب پرداختنی", detail: "وضعیت تحویل: " + (o.delivery_status || o.status || "ثبت‌شده"), amount: (o.buyer_member_id === memberId && o.seller_member_id !== memberId ? -1 : 1) * Number(o.total_price ?? 0), status: "پرداخت: " + (o.payment_status ?? "نامشخص") })),
     ...transactions.map(t => ({ id: String(t.id), date: String(t.transaction_date), title: t.transaction_type === "receipt" ? "اعتبار فروش خالص" : t.transaction_type === "commission" ? "کارمزد ترابار (۵٪)" : t.transaction_type === "payout" ? "واریز به حساب بانکی / برداشت از مانده" : "اصلاح حساب", detail: String(t.description ?? "") + (t.reference_code ? " · شناسه پیگیری: " + t.reference_code : ""), amount: ["commission", "payout"].includes(String(t.transaction_type)) ? -Number(t.amount ?? 0) : Number(t.amount ?? 0), status: t.transaction_type === "payout" ? (t.payout_status === "success" ? "واریز موفق" : t.payout_status === "failed" ? "ناموفق" : t.payout_status === "in_progress" ? "در حال انجام" : "در انتظار واریز") + (t.processed_at ? " · " + fmtDate(t.processed_at) : "") : "ثبت‌شده" })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [orders, transactions]);
   const filtered = entries.filter(e => (!from || e.date.slice(0, 10) >= from) && (!to || e.date.slice(0, 10) <= to));
@@ -93,8 +93,8 @@ function SellerAccountingPage() {
   if (!user) return <main dir="rtl" className="mx-auto max-w-3xl p-6"><Link to="/auth" className="inline-flex items-center gap-2 text-primary"><ArrowLeft className="size-4" /> ورود به ترابار</Link><p className="mt-4 rounded-xl border bg-card p-5">برای مشاهده صورت‌حساب ابتدا وارد شوید.</p></main>;
 
   return <main dir="rtl" className="min-h-[70vh] bg-market-surface px-4 py-8 sm:py-12"><div className="mx-auto w-full max-w-3xl">
-    <Link to="/seller-account-preview" className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-primary"><ArrowLeft className="size-4" /> بازگشت به حساب بارفروش</Link>
-    <header className="mb-6 rounded-3xl bg-emerald-950 px-5 py-7 text-white shadow-lg sm:px-8"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold"><Wallet className="size-4" /> TERRABAR | ترابار</span><h1 className="mt-3 text-2xl font-black">اطلاعات حساب و گردش حساب</h1><p className="mt-2 text-sm leading-7 text-emerald-50/90">حساب بانکی جدا از صورت‌حساب فروش‌ها نگهداری می‌شود.</p></header>
+    <Link to="/account" className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-primary"><ArrowLeft className="size-4" /> بازگشت به حساب کاربری</Link>
+    <header className="mb-6 rounded-3xl bg-emerald-950 px-5 py-7 text-white shadow-lg sm:px-8"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold"><Wallet className="size-4" /> TERRABAR | ترابار</span><h1 className="mt-3 text-2xl font-black">امور مالی و گردش حساب اعضا</h1><p className="mt-2 text-sm leading-7 text-emerald-50/90">صورت‌حساب خرید و فروش، تراکنش‌ها، مانده و اطلاعات حساب بانکی عضو در یک صفحه.</p></header>
     {error && <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
     {notice && <p role="status" className="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</p>}
     <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
@@ -112,7 +112,7 @@ function SellerAccountingPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">کارمزد ترابار (۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">سهم خالص فروشنده (۹۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(netSalesTotal)}</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">مانده قابل تسویه پس از کسر تسویه‌های در انتظار</p><p className="mt-2 text-xl font-extrabold">{money(due)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">دریافتی خالص ثبت‌شده</p><p className="mt-2 text-xl font-extrabold">{money(receiptsTotal)}</p><p className="mt-1 text-xs">تسویه‌های موفق بانکی: {money(payoutsTotal)}</p></div></div>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">رسیدها فقط از دفتر مالی خوانده می‌شوند؛ کاربر نمی‌تواند خودش دریافتی ثبت کند.</p>
     </section>
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><FileText className="size-5" /> صورت‌حساب</h2>
+    <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold"><Landmark className="size-5" /> اتصال به درگاه پرداخت و دریافت صورت‌حساب</h2><p className="text-sm leading-7 text-muted-foreground">اتصال واقعی به درگاه هنوز برای این پروژه پیکربندی نشده است؛ برای فعال‌سازی باید درگاه مورد تأیید ترابار و کلیدهای امن آن در سمت سرور تنظیم و تأیید بازگشت پرداخت پیاده‌سازی شود. این صفحه فعلاً هیچ پرداختی انجام نمی‌دهد و وضعیت پرداخت را از روی کلیک کاربر تغییر نمی‌دهد.</p><button type="button" disabled className="mt-3 w-full cursor-not-allowed rounded-xl border border-border bg-muted px-4 py-3 text-sm font-bold text-muted-foreground">اتصال به درگاه — پس از پیکربندی فعال می‌شود</button></section><section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><FileText className="size-5" /> صورت‌حساب</h2>
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="space-y-2 text-sm">از تاریخ<input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label><label className="space-y-2 text-sm">تا تاریخ<input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="date" value={to} onChange={e => setTo(e.target.value)} /></label></div>
       <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="size-4" /> {filtered.length.toLocaleString("fa-IR")} مورد</p>
       {filtered.length === 0 ? <p className="rounded-xl bg-muted/50 p-5 text-center text-sm leading-6 text-muted-foreground">هنوز سفارشی یا تراکنشی برای این حساب ثبت نشده است.</p> : <div className="space-y-3">{filtered.map(e => <article key={e.id + e.title} className="rounded-xl border border-border p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold">{e.title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{fmtDate(e.date)} · {e.detail}</p><p className="mt-1 text-xs text-muted-foreground">{e.status}</p></div><p className={`shrink-0 font-extrabold tabular-nums ${e.amount < 0 ? "text-destructive" : "text-emerald-700"}`}>{e.amount < 0 ? "−" : "+"}{money(Math.abs(e.amount))}</p></div></article>)}</div>}
