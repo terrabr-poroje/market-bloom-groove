@@ -45,6 +45,11 @@ function Requests() {
   const [loadingLoads, setLoadingLoads] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>("retail");
+  const [selectedSaleTypes, setSelectedSaleTypes] = useState<string[]>(["retail", "wholesale", "special"]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedQualities, setSelectedQualities] = useState<string[]>([]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
   const [quality, setQuality] = useState("");
@@ -268,6 +273,7 @@ function Requests() {
   const canUseProfessional = approvedRoleCodes.some(role => ["supplier", "bar_seller", "seller"].includes(role));
   const canBuySupplierProfessional = approvedRoleCodes.some(role => ["supplier", "bar_seller", "seller"].includes(role));
   const selectedMode = purchaseModes.find(item => item.value === purchaseMode) ?? purchaseModes[0];
+  const availableProducts = [...new Set(displayLoads.map(load => load.product).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa"));
   const filtered = displayLoads
     .filter(load => {
       const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
@@ -281,13 +287,22 @@ function Requests() {
       const normalizedLoadCity = normalizeValue(load.city);
       const normalizedAllowedCities = allowedCities.map(normalizeValue);
       const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : normalizedAllowedCities.includes(normalizedLoadCity) || professionalCityAccess;
-      const professionalAudienceAllowed = purchaseMode !== "professional" || !isProfessionalInventory || canBuySupplierProfessional;
-      const allowedSaleTypes = (selectedMode?.saleTypes ?? []).map(normalizeValue);
+      const normalizedSelectedTypes = selectedSaleTypes.map(normalizeValue);
+      const optionAllowed = normalizedOptions.some(option => {
+        if (["professional", "pro"].includes(option.saleType)) return false;
+        if (option.saleType === "retail") return normalizedSelectedTypes.includes("retail");
+        if (option.saleType === "wholesale") return normalizedSelectedTypes.includes("wholesale");
+        if (option.saleType === "special") return normalizedSelectedTypes.includes("special");
+        if (option.saleType === "regular") return normalizedSelectedTypes.includes("retail") || normalizedSelectedTypes.includes("wholesale");
+        return normalizedSelectedTypes.includes(option.saleType);
+      });
       return cityAllowed
-        && professionalAudienceAllowed
-        && normalizedOptions.some(option => allowedSaleTypes.includes(option.saleType))
-        && (!filters.category || load.category === filters.category)
-        && (!filters.quality || load.quality === filters.quality)
+        && !isProfessionalInventory
+        && optionAllowed
+        && (!selectedProducts.length || selectedProducts.includes(load.product))
+        && (!selectedQualities.length || selectedQualities.includes(load.quality))
+        && (!minPrice || load.price >= Number(normalizeNumericInput(minPrice)))
+        && (!maxPrice || load.price <= Number(normalizeNumericInput(maxPrice)))
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
     })
     .sort((a, b) => sort === "price" ? a.price - b.price : sort === "stock" ? b.stock - a.stock : (Date.parse(b.createdAt || "") || Number(b.id) || 0) - (Date.parse(a.createdAt || "") || Number(a.id) || 0));
@@ -338,6 +353,7 @@ function Requests() {
   }
   function reset() {
     setCity(""); setCategory(""); setQuality(""); setQuery("");
+    setSelectedSaleTypes(["retail", "wholesale", "special"]); setSelectedProducts([]); setSelectedQualities([]); setMinPrice(""); setMaxPrice("");
     setFilters({ city: "", category: "", quality: "", query: "" });
   }
   function updateItem(index: number, key: keyof DirectOrderItem, value: string) {
@@ -418,27 +434,20 @@ function Requests() {
       <section aria-label="جست‌وجوی بازار" className="relative border-b border-border bg-background">
         <div className="site-container py-6">
           <div className="mb-5">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />درخواست خرید</div>
-            <h1 className="text-2xl font-extrabold sm:text-3xl">بارهای فعال <span className="text-primary">ترابار</span></h1>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">نوع خرید را انتخاب کنید، سپس بارهای مجاز را بر اساس شهر، محصول و کیفیت پیدا کنید. خریدار عادی فقط به خرده، عمده و ویژه در محدوده استانی مجاز دسترسی دارد. خرید ویژه حرفه‌ای بدون محدودیت استان فقط برای تأمین‌کننده و بارفروش فعال است.</p>
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium text-primary"><span className="size-2 rounded-full bg-primary" />بازار خرید</div>
+            <h1 className="text-2xl font-extrabold sm:text-3xl">بازار خرید <span className="text-primary">ترابار</span></h1>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground sm:text-sm">بارهای مجاز شهر حساب شما؛ آگهی‌های ویژه حرفه‌ای در بخش مستقل کاربران بارفروش و تأمین‌کننده منتشر می‌شوند.</p>
           </div>
 
-          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {purchaseModes.filter(mode => mode.value !== "professional" || canUseProfessional).map(mode => (
-              <button key={mode.value} type="button" onClick={() => setPurchaseMode(mode.value)} aria-pressed={purchaseMode === mode.value}
-                className={`rounded-lg border p-3 text-right transition-colors ${purchaseMode === mode.value ? "border-primary bg-accent" : "border-border bg-card hover:border-primary/50"}`}>
-                <strong className="block text-sm">{mode.label}</strong>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">{mode.description}</span>
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={search} className="search-grid grid gap-3 lg:grid-cols-[1.25fr_1fr_1fr_1fr_auto]">
-            <label className="search-field"><Search className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">چه باری نیاز دارید؟</span><input aria-label="جست‌وجوی محصول" placeholder="نام محصول یا رقم…" value={query} onChange={e => setQuery(e.target.value)} className="w-full min-w-0 bg-transparent py-1 text-sm outline-none" /></div></label>
-            <div className="search-field" aria-label="شهر حساب کاربری"><MapPin className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">شهر ثبت‌شده حساب شما</span><span className="block truncate py-1 text-sm font-semibold">{!cityAccessReady ? "در حال بررسی شهر و سطح دسترسی…" : profileCity || "ورود و تکمیل شهر حساب لازم است"}</span><span className="block text-[10px] text-muted-foreground">{cityAccess === "nearby" ? "شهر خودتان و شهرهای همسایه مجاز" : cityAccess === "all" ? "دسترسی به همه شهرها طبق سطح حساب" : cityAccess === "assigned" ? "فقط شهرهای واگذارشده به مدیر" : cityAccess === "own" ? "فقط بارهای شهر ثبت‌شده شما" : "برای مشاهده بارهای مجاز وارد حساب شوید"}</span></div></div>
-            <label className="search-field"><Leaf className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">دسته‌بندی محصول</span><select aria-label="دسته‌بندی محصول" value={category} onChange={e => setCategory(e.target.value)} className="search-select"><option value="">همه محصولات</option><option>میوه</option><option>صیفی‌جات</option><option>سبزیجات</option></select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
-            <label className="search-field"><SlidersHorizontal className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">درجه کیفیت</span><select aria-label="درجه کیفیت" value={quality} onChange={e => setQuality(e.target.value)} className="search-select"><option value="">همه درجه‌ها</option>{qualities.map(item => <option key={item}>{item}</option>)}</select></div><ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /></label>
-            <Button type="submit" className="h-[62px] px-7"><Search />جست‌وجوی بار</Button>
+          <form onSubmit={search} className="grid gap-3">
+            <label className="search-field"><Search className="size-5 shrink-0 text-primary" /><div className="min-w-0 flex-1"><span className="block text-[11px] text-muted-foreground">جست‌وجوی بار</span><input aria-label="جست‌وجوی محصول" placeholder="نام محصول یا رقم…" value={query} onChange={e => setQuery(e.target.value)} className="w-full min-w-0 bg-transparent py-1 text-sm outline-none" /></div></label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <details className="relative"><summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold"><span>مقدار خرید{selectedSaleTypes.length && selectedSaleTypes.length < 3 ? ` (${selectedSaleTypes.length})` : ""}</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-card p-3 shadow-xl"><p className="mb-2 text-xs text-muted-foreground">یک یا چند گزینه را انتخاب کنید</p>{[{v:"retail",l:"خرده"},{v:"wholesale",l:"عمده"},{v:"special",l:"ویژه"}].map(opt=><label key={opt.v} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-secondary"><input type="checkbox" checked={selectedSaleTypes.includes(opt.v)} onChange={e=>setSelectedSaleTypes(prev=>e.target.checked?[...prev,opt.v]:prev.filter(v=>v!==opt.v))} />{opt.l}</label>)}<button type="button" className="mt-2 text-xs font-semibold text-primary" onClick={()=>setSelectedSaleTypes(["retail","wholesale","special"])}>انتخاب همه</button></div></details>
+              <details className="relative"><summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold"><span>محصول{selectedProducts.length ? ` (${selectedProducts.length})` : ""}</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute right-0 z-30 mt-2 max-h-64 w-60 overflow-auto rounded-xl border border-border bg-card p-3 shadow-xl"><p className="mb-2 text-xs text-muted-foreground">امکان انتخاب چند محصول</p>{availableProducts.map(product=><label key={product} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-secondary"><input type="checkbox" checked={selectedProducts.includes(product)} onChange={e=>setSelectedProducts(prev=>e.target.checked?[...prev,product]:prev.filter(v=>v!==product))} />{product}</label>)}{!availableProducts.length&&<span className="text-xs text-muted-foreground">محصول فعالی موجود نیست</span>}<button type="button" className="mt-2 text-xs font-semibold text-primary" onClick={()=>setSelectedProducts([])}>پاک‌کردن انتخاب محصول</button></div></details>
+              <details className="relative"><summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold"><span>کیفیت{selectedQualities.length ? ` (${selectedQualities.length})` : ""}</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-card p-3 shadow-xl">{qualities.map(q=><label key={q} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-secondary"><input type="checkbox" checked={selectedQualities.includes(q)} onChange={e=>setSelectedQualities(prev=>e.target.checked?[...prev,q]:prev.filter(v=>v!==q))} />{q}</label>)}<button type="button" className="mt-2 text-xs font-semibold text-primary" onClick={()=>setSelectedQualities([])}>همه کیفیت‌ها</button></div></details>
+              <details className="relative"><summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold"><span>قیمت</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute left-0 z-30 mt-2 w-60 rounded-xl border border-border bg-card p-3 shadow-xl"><p className="mb-2 text-xs text-muted-foreground">بازه قیمت هر کیلو (تومان)</p><label className="mb-2 block text-xs">از<input inputMode="numeric" value={minPrice} onChange={e=>setMinPrice(normalizeNumericInput(e.target.value))} className="field-input mt-1" placeholder="حداقل قیمت" /></label><label className="block text-xs">تا<input inputMode="numeric" value={maxPrice} onChange={e=>setMaxPrice(normalizeNumericInput(e.target.value))} className="field-input mt-1" placeholder="حداکثر قیمت" /></label><div className="mt-3 flex gap-2"><button type="button" className="text-xs font-semibold text-primary" onClick={()=>setSort("price")}>ارزان به گران</button><button type="button" className="text-xs font-semibold text-primary" onClick={()=>setSort("newest")}>جدیدترین</button></div></div></details>
+            </div>
+            <div className="flex items-center justify-between gap-3"><span className="text-xs text-muted-foreground">شهر ثابت از حساب شما: {!cityAccessReady ? "در حال بررسی…" : profileCity || "تکمیل نشده"}</span><Button type="submit" className="h-10 px-5"><Search className="ml-1 size-4" />اعمال فیلترها</Button></div>
           </form>
           <div className="mt-4 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"><span className="ml-1">پرجست‌وجو:</span>{["پرتقال", "سیب", "گوجه‌فرنگی", "پیاز"].map(product => <Button key={product} variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setQuery(product); setCity(""); setCategory(""); setQuality(""); setFilters({ city: "", category: "", quality: "", query: product }); }}>{product}</Button>)}</div>
         </div>
@@ -518,6 +527,14 @@ function Requests() {
           </div>
         </div>
       </section>
+      <nav aria-label="ناوبری بازار خرید" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-lg backdrop-blur">
+        <div className="mx-auto grid max-w-3xl grid-cols-3 gap-1 p-2">
+          <Link to="/requests" aria-current="page" className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg bg-accent text-xs font-bold text-primary"><Store className="size-5" />بازار</Link>
+          <Link to="/cart" className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold hover:bg-secondary"><ShoppingCart className="size-5" />سبد خرید{cartItems.length ? ` (${faNumber(cartItems.length)})` : ""}</Link>
+          <a href="#tracking" onClick={e=>{e.preventDefault();document.getElementById("tracking")?.scrollIntoView({behavior:"smooth",block:"start"});}} className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold hover:bg-secondary"><PackageCheck className="size-5" />پیگیری سفارش</a>
+        </div>
+      </nav>
+      <div className="h-20" aria-hidden="true" />
     </>
   );
 }
