@@ -57,14 +57,38 @@ function Requests() {
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [orderSaved, setOrderSaved] = useState(false);
-  const [cartItems, setCartItems] = useState<{ load: Load; quantity: number; saleType: string }[]>(() => { try { return typeof window !== "undefined" ? JSON.parse(window.sessionStorage.getItem("terrabar-cart-items") || "[]") : []; } catch { return []; } });
+  const CART_KEY = "terrabar-cart-items";
+  const CART_TTL_MS = 6 * 60 * 60 * 1000;
+  type CartLine = { load: Load; quantity: number; saleType: string; expiresAt?: number };
+  const readValidCart = (): CartLine[] => {
+    try {
+      const raw = window.localStorage.getItem(CART_KEY) ?? window.sessionStorage.getItem(CART_KEY) ?? "[]";
+      const now = Date.now();
+      const parsed = JSON.parse(raw) as CartLine[];
+      const valid = Array.isArray(parsed) ? parsed.map(item => ({ ...item, expiresAt: Number(item.expiresAt) || now + CART_TTL_MS })).filter(item => item.expiresAt! > now) : [];
+      window.localStorage.setItem(CART_KEY, JSON.stringify(valid));
+      window.sessionStorage.removeItem(CART_KEY);
+      return valid;
+    } catch { return []; }
+  };
+  const [cartItems, setCartItems] = useState<CartLine[]>(() => typeof window !== "undefined" ? readValidCart() : []);
   const [submittedCart, setSubmittedCart] = useState<{ load: Load; quantity: number; saleType: string }[]>([]);
   const [cartError, setCartError] = useState("");
   const [cartNotice, setCartNotice] = useState("");
   const [cartBusy, setCartBusy] = useState(false);
   const [cartInvoiceVisible, setCartInvoiceVisible] = useState(false);
   
-  useEffect(() => { try { window.sessionStorage.setItem("terrabar-cart-items", JSON.stringify(cartItems)); window.dispatchEvent(new Event("terrabar-cart-updated")); } catch {} }, [cartItems]);
+  useEffect(() => { try { window.localStorage.setItem(CART_KEY, JSON.stringify(cartItems)); window.sessionStorage.removeItem(CART_KEY); window.dispatchEvent(new Event("terrabar-cart-updated")); } catch {} }, [cartItems]);
+  useEffect(() => {
+    const expireCartItems = () => {
+      const valid = readValidCart();
+      setCartItems(current => JSON.stringify(current) === JSON.stringify(valid) ? current : valid);
+      window.dispatchEvent(new Event("terrabar-cart-updated"));
+    };
+    const timer = window.setInterval(expireCartItems, 30_000);
+    window.addEventListener("focus", expireCartItems);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", expireCartItems); };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#professional" && canUseProfessionalRole(approvedRoleCodes)) {
@@ -281,8 +305,8 @@ function Requests() {
     setCartError(""); setCartNotice(`«${load.product}» به سبد خرید اضافه شد.`); setCartInvoiceVisible(false);
     setCartItems(items => {
       const found = items.find(item => String(item.load.id) === String(load.id) && item.saleType === saleType);
-      if (!found) return [...items, { load, quantity, saleType }];
-      return items.map(item => item === found ? { ...item, quantity: Math.min(load.stock, item.quantity + quantity) } : item);
+      if (!found) return [...items, { load, quantity, saleType, expiresAt: Date.now() + CART_TTL_MS }];
+      return items.map(item => item === found ? { ...item, quantity: Math.min(load.stock, item.quantity + quantity), expiresAt: Date.now() + CART_TTL_MS } : item);
     });
   }
   function updateCartQuantity(index: number, value: string) {
