@@ -414,7 +414,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
     const normalizedNeededBy = neededBy.trim() ? jalaliToIsoDate(neededBy) : null;\n    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); return; }\n    setNeededByError("");\n    const rows = orderItems.map(item => ({
       buyer_member_id: member.id,
       product_type: item.product.trim(),
-      quantity: Number(item.quantity),
+      quantity: Number(normalizeNumericInput(item.quantity)),
       quantity_unit: item.unit,
       destination_city: member.city || null,
       quality_requirements: [item.variety.trim(), item.quality].filter(Boolean).join(" — "),
