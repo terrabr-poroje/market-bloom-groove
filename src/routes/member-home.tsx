@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   UserRound, ShoppingBasket, PackagePlus, ArrowLeft, Sprout,
-  BookOpenText, LifeBuoy, ShieldCheck, Store, Clock3, ClipboardList,
+  BookOpenText, LifeBuoy, ShieldCheck, Store, Clock3, ClipboardList, WalletCards, PackageCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -118,8 +118,10 @@ function MemberHome() {
   const isProfessional = hasSupplierRole || hasSellerRole;
 
   const buyerOptions = [
-    { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و پیگیری‌های لازم", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
-    { title: "درخواست خرید", description: "خرید خرده، عمده، ویژه یا ثبت درخواست سفارش", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
+    { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
+    { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
+    { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
+    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
   ];
 
   const professionalOptions = [
@@ -185,6 +187,12 @@ function MemberHome() {
             </Link>;
           })}
         </div>
+
+        {sellingApproved && <Link to="/requests#professional" className="group mt-4 flex min-h-24 items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4 text-right shadow-sm transition hover:border-primary/60 hover:shadow-md">
+          <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><ShoppingBasket className="size-7" aria-hidden="true" /></span>
+          <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground">خرید ویژه حرفه‌ای</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">خرید از بارهای ویژه حرفه‌ای در همه استان‌ها؛ مخصوص تأمین‌کنندگان و بارفروشان تأییدشده</span></span>
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground"><ArrowLeft className="size-5" aria-hidden="true" /></span>
+        </Link>}
 
         {isProfessional && <>
           <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات فروش حرفه‌ای</h2>
