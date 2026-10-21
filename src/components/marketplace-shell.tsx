@@ -2,7 +2,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowRight, Headphones, MapPin, Menu, X, ShieldCheck, LogIn, ShoppingCart,
+  ArrowRight, Headphones, MapPin, Menu, X, ShieldCheck, LogIn, ShoppingCart, PackageCheck,
   UserRound, ShoppingBasket, PackagePlus, Store, ClipboardList, BookOpenText, LogOut,
 } from "lucide-react";
 import { Brand } from "./marketplace-brand";
@@ -180,6 +180,17 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
       )}
 
       <main>{children}</main>
+
+      {["/requests", "/cart", "/account"].includes(pathname) && (
+        <nav aria-label="ناوبری خرید ترابار" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur">
+          <div className="site-container grid h-14 grid-cols-3">
+            <Link to="/requests" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/requests" ? "text-primary" : "text-foreground"}`}><Store className="size-4" /><span>بازار</span></Link>
+            <Link to="/cart" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/cart" ? "text-primary" : "text-foreground"}`}><ShoppingCart className="size-4" /><span>سبد خرید{cartCount > 0 ? ` (${cartCount})` : ""}</span></Link>
+            <Link to="/account" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/account" ? "text-primary" : "text-foreground"}`}><PackageCheck className="size-4" /><span>پیگیری سفارش</span></Link>
+          </div>
+        </nav>
+      )}
+      {["/requests", "/cart", "/account"].includes(pathname) && <div className="h-16 pb-[env(safe-area-inset-bottom)]" aria-hidden="true" />}
 
       <footer className="border-t border-border bg-background">
         <div className="site-container flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
