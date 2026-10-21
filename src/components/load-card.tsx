@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { faNumber, normalizeNumericInput, type Load } from '@/lib/marketplace';
 import { RatingSummary } from '@/components/rating-summary';
 
-export function LoadCard({ load, onAddToCart, purchaseMode = 'retail' }: { load: Load; onAddToCart?: (load: Load, quantity: number, saleType: string) => void; purchaseMode?: string }) {
+export function LoadCard({ load, onAddToCart, purchaseMode = 'retail', cartSelected = false }: { load: Load; onAddToCart?: (load: Load, quantity: number, saleType: string) => void; purchaseMode?: string; cartSelected?: boolean }) {
   const [dialog, setDialog] = useState<'order' | 'seller' | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
@@ -120,7 +120,8 @@ export function LoadCard({ load, onAddToCart, purchaseMode = 'retail' }: { load:
     setBusy(false);
   }
   const qualityStyle = { 'ویژه': 'bg-accent text-primary', 'استاندارد': 'bg-info-soft text-info', 'اقتصادی': 'bg-warning-soft text-warning', 'توافقی': 'bg-muted text-muted-foreground' }[load.quality];
-  return <article className="load-card overflow-hidden rounded-lg border border-border bg-card text-sm">
+  return <article aria-label={cartSelected ? `${load.product} انتخاب شده و در سبد خرید است` : `${load.product}`} className={`load-card overflow-hidden rounded-lg border bg-card text-sm transition-colors ${cartSelected ? "border-primary ring-2 ring-primary/25" : "border-border"}`}>
+    {cartSelected && <div className="flex items-center gap-1.5 bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"><Check className="size-3.5" />انتخاب شده · در فاکتور سبد خرید</div>}
     <div className="relative aspect-[2/1] overflow-hidden"><img src={photoUrls[0] || load.image} alt={`${load.product} ${load.variety}`} loading="lazy" width={1024} height={768} className={`h-full w-full object-cover transition-transform duration-500 motion-safe:hover:scale-105 ${load.id === 1 ? 'object-[85%_65%]' : ''}`} /><span className={`absolute right-3 top-3 inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold ${qualityStyle}`}>{load.quality === 'ویژه' && <Check className="size-3" />}{load.quality}</span><span className="absolute bottom-3 left-3 rounded bg-card/95 px-2 py-1 text-[10px] text-muted-foreground">{load.isSample ? 'بار نمونه' : 'بار ثبت‌شده'}</span></div>
     <div className="p-2 sm:p-2.5">
       <div className="flex items-start justify-between gap-2">
@@ -135,7 +136,7 @@ export function LoadCard({ load, onAddToCart, purchaseMode = 'retail' }: { load:
         {saleOptions.length > 1 && <details className="mt-1 text-[10px]"><summary className="cursor-pointer text-muted-foreground">انتخاب نوع فروش</summary><select aria-label="نوع فروش" className="field-input mt-1 h-8 text-xs" value={selectedSaleType} onChange={e=>{const key=e.target.value;const option=saleOptions.find(item=>item.saleType===key);setSelectedSaleType(key);setCount(String(option?.minimum??load.minimum));}}>{saleOptions.map(option=><option key={option.saleType} value={option.saleType}>{option.label}</option>)}</select></details>}
         <div className="mt-1 flex items-center justify-between border-t border-border pt-1.5 text-[10px]"><span className="text-muted-foreground">مبلغ کل</span><strong className="text-sm text-primary">{faNumber(quantity>=1&&quantity<=load.stock?quantity*load.weight*effectivePrice:0)} تومان</strong></div>
         {crossTier && <p className="mt-0.5 text-[10px] text-primary">{effectiveSale?.saleType === 'wholesale' ? 'قیمت عمده' : 'قیمت خرده'} برای این تعداد</p>}
-        <Button type="button" disabled={!Number.isInteger(quantity)||quantity<effectiveMinimum||quantity>load.stock} className="mt-1.5 h-8 w-full gap-1 text-xs" onClick={()=>onAddToCart(load,quantity,effectiveSale?.saleType || selectedSaleType)}>افزودن به سبد خرید <Package className="size-3.5" /></Button>
+        <Button type="button" disabled={!Number.isInteger(quantity)||quantity<effectiveMinimum||quantity>load.stock} variant={cartSelected ? "secondary" : "default"} className="mt-1.5 h-8 w-full gap-1 text-xs" onClick={()=>onAddToCart(load,quantity,effectiveSale?.saleType || selectedSaleType)}>{cartSelected ? "افزودن بیشتر به سبد" : "افزودن به سبد خرید"} {cartSelected ? <Check className="size-3.5" /> : <Package className="size-3.5" />}</Button>
       </div>}
       <Button className="mt-1.5 h-8 w-full gap-1 px-2 text-xs" onClick={openOrder}>جزئیات محصول و ثبت سفارش<ArrowLeft className="mr-auto size-3.5" /></Button>
       <Button variant="ghost" className="h-7 w-full text-[10px] text-muted-foreground" onClick={() => setDialog('seller')}><Store className="size-3" />ویترین فروشنده</Button>
