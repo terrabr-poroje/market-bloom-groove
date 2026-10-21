@@ -54,7 +54,7 @@ const isoToJalaliDate = (value: string) => {
 
 const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
 
-export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) {
+export function Requests({ ordersOnly = false, professionalOnly = false }: { ordersOnly?: boolean; professionalOnly?: boolean } = {}) {
   const { user } = useAuth();
   const [profileCity, setProfileCity] = useState("");
   const [approvedRoleCodes, setApprovedRoleCodes] = useState<string[]>([]);
@@ -68,7 +68,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
   const [liveLoads, setLiveLoads] = useState<Load[]>([]);
   const [loadingLoads, setLoadingLoads] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>("retail");
+  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>(professionalOnly ? "professional" : "retail");
   const [selectedSaleTypes, setSelectedSaleTypes] = useState<string[]>(["retail", "wholesale", "special"]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedQualities, setSelectedQualities] = useState<string[]>([]);
@@ -121,7 +121,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#professional" && canUseProfessionalRole(approvedRoleCodes)) {
+    if (!professionalOnly && typeof window !== "undefined" && window.location.hash === "#professional" && canUseProfessionalRole(approvedRoleCodes)) {
       setPurchaseMode("professional");
     }
   }, [approvedRoleCodes.join("|")]);
@@ -311,9 +311,9 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
       const professionalCityAccess = purchaseMode === "professional" && canBuySupplierProfessional && isProfessionalInventory;
       const normalizedLoadCity = normalizeValue(load.city);
       const normalizedAllowedCities = allowedCities.map(normalizeValue);
-      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : normalizedAllowedCities.includes(normalizedLoadCity) || professionalCityAccess;
+      const cityAllowed = professionalOnly ? canBuySupplierProfessional && isProfessionalInventory : cityAccess === "all" ? true : cityAccess === "unavailable" ? false : normalizedAllowedCities.includes(normalizedLoadCity) || professionalCityAccess;
       const normalizedSelectedTypes = selectedSaleTypes.map(normalizeValue);
-      const optionAllowed = normalizedOptions.some(option => {
+      const optionAllowed = professionalOnly ? isProfessionalInventory : normalizedOptions.some(option => {
         if (["professional", "pro"].includes(option.saleType)) return false;
         if (option.saleType === "retail") return normalizedSelectedTypes.includes("retail");
         if (option.saleType === "wholesale") return normalizedSelectedTypes.includes("wholesale");
@@ -322,7 +322,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
         return normalizedSelectedTypes.includes(option.saleType);
       });
       return cityAllowed
-        && !isProfessionalInventory
+        && (professionalOnly ? isProfessionalInventory : !isProfessionalInventory)
         && optionAllowed
         && (!selectedProducts.length || selectedProducts.includes(load.product))
         && (!selectedQualities.length || selectedQualities.includes(load.quality))
@@ -457,10 +457,14 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
     );
   }
 
+  if (professionalOnly && !canUseProfessional) {
+    return <section dir="rtl" className="bg-market-surface py-16"><div className="site-container max-w-xl rounded-2xl border border-border bg-card p-6 text-center"><h1 className="text-xl font-extrabold">خرید ویژه حرفه‌ای</h1><p className="mt-3 text-sm leading-7 text-muted-foreground">این بخش فقط برای تأمین‌کنندگان و بارفروشان دارای عضویت تأییدشده فعال است. بارهای ویژه حرفه‌ای در بازارهای دیگر نمایش داده نمی‌شوند.</p><Link to="/member-home" className="mt-5 inline-flex rounded-lg border border-border px-4 py-2 text-sm font-semibold">بازگشت به صفحه اصلی کاربر</Link></div></section>;
+  }
+
   return (
     <>
 {!ordersOnly && <>
-      <section aria-label="جست‌وجوی بازار" className="relative border-b border-border bg-market-surface">
+      <section aria-label={professionalOnly ? "بارهای ویژه حرفه‌ای" : "جست‌وجوی بازار"} className="relative border-b border-border bg-market-surface">
         <div className="site-container py-4 sm:py-5">
           <div className="mb-3 rounded-2xl bg-emerald-950 px-4 py-4 text-white shadow-sm sm:px-6">
             <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-emerald-200"><span className="size-2 rounded-full bg-lime-300" />بازار خرید</div>
