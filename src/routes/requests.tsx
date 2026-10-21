@@ -57,6 +57,11 @@ function Requests() {
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [orderSaved, setOrderSaved] = useState(false);
+  const [cartItems, setCartItems] = useState<{ load: Load; quantity: number; saleType: string }[]>([]);
+  const [cartError, setCartError] = useState("");
+  const [cartNotice, setCartNotice] = useState("");
+  const [cartBusy, setCartBusy] = useState(false);
+  const [cartInvoiceVisible, setCartInvoiceVisible] = useState(false);
   
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#professional" && canUseProfessionalRole(approvedRoleCodes)) {
@@ -149,7 +154,7 @@ function Requests() {
         setLoadError("دریافت بارهای واقعی انجام نشد. اتصال دیتابیس یا مجوز مشاهده را بررسی کنید.");
       } else {
         const loadIds = (data ?? []).map((row: any) => row.id);
-        const { data: tiers } = loadIds.length ? await (supabase as any).from("load_price_tiers").select("load_id, sale_type, unit_price, minimum_packages").in("load_id", loadIds) : { data: [] };
+        const { data: tiers } = loadIds.length ? await (supabase as any).from("load_price_tiers").select("load_id, sale_type, unit_price, minimum_packages, min_quantity, max_quantity").in("load_id", loadIds) : { data: [] };
         if (!active) return;
         setLiveLoads((data ?? []).map((row: any) => {
           const packageCount = Math.max(0, Number(row.count ?? 0));
@@ -166,10 +171,11 @@ function Requests() {
           const category = /گوجه|پیاز|خیار|سیب‌زمینی|بادمجان|فلفل/.test(product) ? "صیفی‌جات" : /سبزی|جعفری|گشنیز|شوید|کاهو/.test(product) ? "سبزیجات" : "میوه";
           const rowTiers = (tiers ?? []).filter((tier: any) => String(tier.load_id) === String(row.id));
           const legacyType = String(row.sale_type || "regular");
-          const saleOptions = rowTiers.length ? rowTiers.map((tier: any) => {
-            const key = String(tier.sale_type);
+          const saleOptions = rowTiers.length ? [...new Set(rowTiers.map((tier: any) => String(tier.sale_type)))].map((key: string) => {
             const labels: Record<string, string> = { retail: "خرده‌فروشی", wholesale: "عمده‌فروشی", special: "فروش ویژه", professional: "ویژه حرفه‌ای", regular: "فروش عادی", pro: "ویژه حرفه‌ای" };
-            return { saleType: key, label: labels[key] || key, price: Number(tier.unit_price), minimum: Math.max(1, Number(tier.minimum_packages ?? 1)) };
+            const breaks = rowTiers.filter((tier: any) => String(tier.sale_type) === key).map((tier: any) => ({ minQuantity: Math.max(1, Number(tier.min_quantity ?? tier.minimum_packages ?? 1)), maxQuantity: tier.max_quantity == null ? null : Number(tier.max_quantity), price: Number(tier.unit_price) })).sort((a: any, b: any) => a.minQuantity - b.minQuantity);
+            const first = breaks[0];
+            return { saleType: key, label: labels[key] || key, price: Number(first?.price ?? row.price) || 0, minimum: Math.max(1, Number(rowTiers.filter((tier: any) => String(tier.sale_type) === key).reduce((min: number, tier: any) => Math.min(min, Number(tier.minimum_packages ?? 1)), Number.POSITIVE_INFINITY) || row.min_order_quantity || 1)), priceBreaks: breaks };
           }) : [{ saleType: legacyType, label: "قیمت پایه", price: Number(row.price) || 0, minimum: Math.max(1, Number(row.min_order_quantity ?? 1)) }];
           return {
             id: row.id, memberId: String(row.member_id || ""), saleType: legacyType, saleOptions, packageType: String(row.package_type || "کارتن"), createdAt: String(row.created_at || ""), product,
@@ -246,6 +252,43 @@ function Requests() {
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
     })
     .sort((a, b) => sort === "price" ? a.price - b.price : sort === "stock" ? b.stock - a.stock : (Date.parse(b.createdAt || "") || Number(b.id) || 0) - (Date.parse(a.createdAt || "") || Number(a.id) || 0));
+
+  function priceFor(load: Load, saleType: string, quantity: number) {
+    const option = load.saleOptions?.find(item => item.saleType === saleType);
+    const match = option?.priceBreaks?.find(item => quantity >= item.minQuantity && (item.maxQuantity == null || quantity <= item.maxQuantity));
+    return Number(match?.price ?? option?.price ?? load.price);
+  }
+  function addToCart(load: Load, quantity: number, saleType: string) {
+    if (load.isSample) { setCartError("بار نمونه قابل ثبت در سفارش واقعی نیست."); return; }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > load.stock) { setCartError("تعداد باید عدد صحیح و در محدوده موجودی باشد."); return; }
+    const option = load.saleOptions?.find(item => item.saleType === saleType);
+    if (!option || quantity < option.minimum) { setCartError(`حداقل سفارش این بخش ${faNumber(option?.minimum ?? load.minimum)} بسته است.`); return; }
+    setCartError(""); setCartNotice(""); setCartInvoiceVisible(false);
+    setCartItems(items => {
+      const found = items.find(item => String(item.load.id) === String(load.id) && item.saleType === saleType);
+      if (!found) return [...items, { load, quantity, saleType }];
+      return items.map(item => item === found ? { ...item, quantity: Math.min(load.stock, item.quantity + quantity) } : item);
+    });
+  }
+  function updateCartQuantity(index: number, value: string) {
+    const parsed = Number(normalizeNumericInput(value));
+    if (!Number.isInteger(parsed) || parsed <= 0) return;
+    setCartItems(items => items.map((item, i) => i === index ? { ...item, quantity: Math.min(item.load.stock, Math.max(item.load.saleOptions?.find(o => o.saleType === item.saleType)?.minimum ?? item.load.minimum, parsed)) } : item));
+    setCartInvoiceVisible(false);
+  }
+  const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity * item.load.weight * priceFor(item.load, item.saleType, item.quantity), 0);
+  async function submitCart() {
+    setCartBusy(true); setCartError(""); setCartNotice("");
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) { setCartError("برای ثبت سفارش وارد حساب شوید."); setCartBusy(false); return; }
+    const { data: member, error: memberError } = await (supabase as any).from("members").select("id,full_name,phone,email,city").eq("auth_user_id", authData.user.id).maybeSingle();
+    if (memberError || !member) { setCartError("پروفایل عضو پیدا نشد؛ ابتدا ثبت‌نام را کامل کنید."); setCartBusy(false); return; }
+    const rows = cartItems.map(item => ({ load_id: item.load.id, customer_name: member.full_name, customer_phone: member.phone, customer_email: member.email, customer_city: member.city, quantity: item.quantity, unit: "package", price: priceFor(item.load, item.saleType, item.quantity), total_price: item.quantity * item.load.weight * priceFor(item.load, item.saleType, item.quantity), sale_type: item.saleType, delivery_type: "pickup", delivery_address: null, status: "pending", payment_status: "unpaid", notes: "ثبت از سبد خرید ترابار؛ در انتظار تأیید فروشنده", buyer_member_id: member.id, seller_member_id: item.load.memberId }));
+    const { error } = await (supabase as any).from("orders").insert(rows);
+    if (error) setCartError("ثبت سفارش‌های سبد انجام نشد. سفارش واقعی ثبت نشده است؛ دسترسی‌های سفارش در سوپابیس بررسی شود.");
+    else { setCartNotice("سفارش‌ها ثبت شدند و در انتظار تأیید فروشنده‌اند. پرداخت تا تأیید شرایط انجام نمی‌شود؛ درگاه پرداخت هنوز به این پروژه متصل نیست."); setCartItems([]); setCartInvoiceVisible(true); }
+    setCartBusy(false);
+  }
 
   function search(event: FormEvent) {
     event.preventDefault();
@@ -367,7 +410,8 @@ function Requests() {
             <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground"><SlidersHorizontal className="size-3.5" /><select aria-label="مرتب‌سازی بارها" className="max-w-36 bg-transparent text-foreground outline-none" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">تازه‌ترین بارها</option><option value="price">کمترین قیمت</option><option value="stock">بیشترین موجودی</option></select></label>
           </div>
           {loadError && <p role="alert" className="mt-4 text-sm text-destructive">{loadError}</p>}
-          {filtered.length ? <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">{filtered.map(load => <LoadCard key={`${load.isSample ? "sample" : "live"}-${load.id}`} load={load} />)}</div> : <div className="py-16 text-center"><Search className="mx-auto mb-4 size-10 text-muted-foreground" /><h3 className="text-lg font-bold">باری با این مشخصات پیدا نشد</h3><p className="mt-3 text-sm text-muted-foreground">در این نوع خرید، در حال حاضر بار فعالی با این مشخصات پیدا نشد.</p><Button variant="outline" className="mt-5" onClick={reset}>حذف فیلترها</Button></div>}
+          {(cartItems.length > 0 || cartNotice || cartError) && <section id="terrabar-cart" className="mt-5 rounded-xl border border-primary/30 bg-card p-4 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-extrabold">سبد خرید و پیش‌فاکتور</h2><span className="rounded-full bg-accent px-3 py-1 text-xs font-bold">{faNumber(cartItems.length)} قلم کالا</span></div>{cartItems.length > 0 && <div className="mt-4 space-y-3">{cartItems.map((item, index) => <div key={`${item.load.id}-${item.saleType}`} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_100px_auto] sm:items-center"><div><p className="font-bold">{item.load.product} {item.load.variety}</p><p className="mt-1 text-xs text-muted-foreground">{item.load.city} · {item.load.saleOptions?.find(o => o.saleType === item.saleType)?.label ?? item.saleType} · {faNumber(item.load.weight)} کیلو در هر بسته</p><p className="mt-1 text-sm font-semibold text-primary">{faNumber(priceFor(item.load,item.saleType,item.quantity))} تومان/کیلو · جمع {faNumber(item.quantity*item.load.weight*priceFor(item.load,item.saleType,item.quantity))} تومان</p></div><label className="text-xs">تعداد بسته<input className="field-input mt-1" inputMode="numeric" value={String(item.quantity)} onChange={e=>updateCartQuantity(index,e.target.value)} /></label><Button type="button" variant="outline" onClick={()=>{setCartItems(items=>items.filter((_,i)=>i!==index));setCartInvoiceVisible(false);}}>حذف</Button></div>)}<div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">جمع پیش‌فاکتور (بدون هزینه حمل)</p><p className="text-xl font-black text-primary">{faNumber(cartTotal)} تومان</p></div><div className="flex gap-2"><Button type="button" variant="outline" onClick={()=>{setCartItems([]);setCartError("");setCartNotice("سبد خرید لغو و خالی شد.");setCartInvoiceVisible(false);}}>لغو سبد</Button><Button type="button" disabled={cartBusy} onClick={()=>void submitCart()}>{cartBusy?"در حال ثبت…":"ثبت سفارش و صدور پیش‌فاکتور"}</Button></div></div></div>}{cartError && <p role="alert" className="mt-3 text-sm text-destructive">{cartError}</p>}{cartNotice && <p role="status" className="mt-3 rounded-lg bg-muted p-3 text-sm leading-6">{cartNotice} <Link to="/seller-accounting-preview" className="font-bold text-primary underline">مشاهده امور مالی و گردش حساب</Link></p>}{cartInvoiceVisible && <p className="mt-2 text-xs text-muted-foreground">پیش‌فاکتور ثبت شد؛ برای پرداخت واقعی باید درگاه مورد تأیید پیکربندی شود و فروشنده سفارش را تأیید کند.</p>}</section>}
+          {filtered.length ? <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">{filtered.map(load => <LoadCard key={`${load.isSample ? "sample" : "live"}-${load.id}`} load={load} onAddToCart={addToCart} />)}</div> : <div className="py-16 text-center"><Search className="mx-auto mb-4 size-10 text-muted-foreground" /><h3 className="text-lg font-bold">باری با این مشخصات پیدا نشد</h3><p className="mt-3 text-sm text-muted-foreground">در این نوع خرید، در حال حاضر بار فعالی با این مشخصات پیدا نشد.</p><Button variant="outline" className="mt-5" onClick={reset}>حذف فیلترها</Button></div>}
           <div className="mt-7 flex items-center justify-center gap-2 text-xs text-muted-foreground"><PackageCheck className="size-4 text-primary" />{liveLoads.length ? "بارهای ثبت‌شده از دیتابیس نمایش داده می‌شوند؛ کارت‌های نمونه در محیط توسعه مشخص‌اند." : "تا زمان ثبت بار واقعی، کارت‌های نمایشی نمونه هستند."}</div>
         </div>
       </section>
