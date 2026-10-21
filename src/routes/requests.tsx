@@ -30,7 +30,7 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
 const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
 
-function Requests() {
+function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) {
   const { user } = useAuth();
   const [profileCity, setProfileCity] = useState("");
   const [approvedRoleCodes, setApprovedRoleCodes] = useState<string[]>([]);
@@ -431,6 +431,7 @@ function Requests() {
 
   return (
     <>
+{!ordersOnly && <>
       <section aria-label="جست‌وجوی بازار" className="relative border-b border-border bg-market-surface">
         <div className="site-container py-4 sm:py-5">
           <div className="mb-3 rounded-2xl bg-emerald-950 px-4 py-4 text-white shadow-sm sm:px-6">
@@ -446,8 +447,6 @@ function Requests() {
               <details className="relative min-w-0"><summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-0.5 rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-semibold sm:px-2 sm:text-xs"><span>محصول{selectedProducts.length ? ` (${selectedProducts.length})` : ""}</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute right-0 z-30 mt-2 max-h-64 w-60 overflow-auto rounded-xl border border-border bg-card p-3 shadow-xl"><p className="mb-2 text-xs text-muted-foreground">امکان انتخاب چند محصول</p>{availableProducts.map(product=><label key={product} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-secondary"><input type="checkbox" checked={selectedProducts.includes(product)} onChange={e=>setSelectedProducts(prev=>e.target.checked?[...prev,product]:prev.filter(v=>v!==product))} />{product}</label>)}{!availableProducts.length&&<span className="text-xs text-muted-foreground">محصول فعالی موجود نیست</span>}<button type="button" className="mt-2 text-xs font-semibold text-primary" onClick={()=>setSelectedProducts([])}>پاک‌کردن انتخاب محصول</button></div></details>
               <details className="relative"><summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-0.5 rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-semibold sm:text-xs"><span>کیفیت{selectedQualities.length ? ` (${selectedQualities.length})` : ""}</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-border bg-card p-3 shadow-xl">{qualities.map(q=><label key={q} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-secondary"><input type="checkbox" checked={selectedQualities.includes(q)} onChange={e=>setSelectedQualities(prev=>e.target.checked?[...prev,q]:prev.filter(v=>v!==q))} />{q}</label>)}<button type="button" className="mt-2 text-xs font-semibold text-primary" onClick={()=>setSelectedQualities([])}>همه کیفیت‌ها</button></div></details>
               <details className="relative"><summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-0.5 rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-semibold sm:text-xs"><span>قیمت</span><ChevronDown className="size-4 shrink-0" /></summary><div className="absolute left-0 z-30 mt-2 w-60 rounded-xl border border-border bg-card p-3 shadow-xl"><p className="mb-2 text-xs text-muted-foreground">بازه قیمت هر کیلو (تومان)</p><label className="mb-2 block text-xs">از<input inputMode="numeric" value={minPrice} onChange={e=>setMinPrice(normalizeNumericInput(e.target.value))} className="field-input mt-1" placeholder="حداقل قیمت" /></label><label className="block text-xs">تا<input inputMode="numeric" value={maxPrice} onChange={e=>setMaxPrice(normalizeNumericInput(e.target.value))} className="field-input mt-1" placeholder="حداکثر قیمت" /></label><div className="mt-3 flex gap-2"><button type="button" className="text-xs font-semibold text-primary" onClick={()=>setSort("price")}>ارزان به گران</button><button type="button" className="text-xs font-semibold text-primary" onClick={()=>setSort("newest")}>جدیدترین</button></div></div></details>
-              <a href="#direct-order" className="col-span-2 flex min-h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-primary/30 bg-accent px-1 text-center text-[9px] font-bold leading-tight text-primary sm:gap-1 sm:text-[11px]"><Send className="size-3 shrink-0 sm:size-3.5" /><span>درخواست سفارش</span></a>
-              <a href="#tracking" className="col-span-2 flex min-h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-border bg-background px-1 text-center text-[9px] font-bold leading-tight sm:gap-1 sm:text-[11px]"><PackageCheck className="size-3 shrink-0 sm:size-3.5" /><span>پیگیری سفارش</span></a>
             </div>
             <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-muted-foreground">شهر: {!cityAccessReady ? "در حال بررسی…" : profileCity || "تکمیل نشده"}</span><Button type="submit" className="h-8 px-3 text-[11px]"><Search className="ml-1 size-3.5" />اعمال</Button></div>
           </form>
@@ -470,6 +469,16 @@ function Requests() {
       </section>
 
 
+      </>}
+
+      {ordersOnly && <>
+      <section aria-label="درخواست سفارش و پیگیری" className="border-b border-border bg-market-surface py-5">
+        <div className="site-container max-w-4xl">
+          <h1 className="text-xl font-black">درخواست سفارش و پیگیری</h1>
+          <p className="mt-1 text-sm text-muted-foreground">از همین صفحه درخواست چندمحصولی ثبت کنید و وضعیت خریدها و درخواست‌های تأمین را دنبال کنید.</p>
+          <Link to="/requests" className="mt-3 inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold">بازگشت به بازار</Link>
+        </div>
+      </section>
       <section id="direct-order" className="scroll-mt-5 border-t border-border bg-card py-6 sm:py-8">
         <div className="site-container max-w-4xl">
           <div className="mb-4 flex items-center gap-3">
@@ -508,10 +517,14 @@ function Requests() {
           </>}
         </div>
       </section>
-
+      </>}
 
     </>
   );
+}
+
+export function OrdersPage() {
+  return <Requests ordersOnly />;
 }
 
 function activeFilters(filters: { city: string; category: string; quality: string; query: string }) {
