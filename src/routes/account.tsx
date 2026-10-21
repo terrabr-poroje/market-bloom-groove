@@ -25,7 +25,7 @@ const orderLabels: Record<string, string> = { pending: "در انتظار پاس
 const paymentLabels: Record<string, string> = { unpaid: "پرداخت‌نشده", pending: "در انتظار تأیید", paid: "پرداخت‌شده", failed: "ناموفق", refunded: "بازپرداخت‌شده" };
 
 function AccountPage() {
-  const { user, loading, roles } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [member, setMember] = useState<Member | null>(null);
   const [memberRoles, setMemberRoles] = useState<MemberRole[]>([]);
@@ -96,7 +96,7 @@ function AccountPage() {
     <section className="bg-market-surface py-8 sm:py-12">
       <div className="site-container grid gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-sm font-semibold text-primary">TERRABAR</p><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">حساب کاربری من</h1><p className="mt-2 text-sm text-muted-foreground">پروفایل، عضویت‌ها، بارهای من و سوابق سفارش در یک صفحه.</p></div><Button asChild variant="outline"><Link to="/requests" hash="tracking"><ClipboardList className="ml-2 size-4" />پیگیری درخواست‌ها و سفارش‌ها</Link></Button>
+          <div><p className="text-sm font-semibold text-primary">TERRABAR</p><h1 className="mt-1 text-2xl font-extrabold sm:text-3xl">حساب کاربری من</h1><p className="mt-2 text-sm text-muted-foreground">پروفایل، عضویت‌ها، بارهای من و سوابق مالی در بخش‌های جداگانه.</p></div>
           <Button variant="outline" onClick={handleSignOut}>خروج از حساب</Button>
         </div>
         {error && <p role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
@@ -113,7 +113,7 @@ function AccountPage() {
           <div className="rounded-xl border border-border bg-card p-5 md:col-span-2">
             <div className="flex items-center gap-2"><ShieldCheck className="size-5 text-primary" /><h2 className="font-bold">عضویت‌ها و دسترسی‌ها</h2></div>
             {memberRoles.length ? <ul className="mt-4 grid gap-3 sm:grid-cols-2">{memberRoles.map(r => <li key={r.id} className="rounded-lg border border-border p-4"><div className="flex items-center justify-between gap-2"><span className="font-semibold">{roleLabels[r.role_code] || r.role_code}</span><span className="rounded-full bg-secondary px-2.5 py-1 text-xs">{approvalLabels[r.approval_status] || r.approval_status}</span></div><p className="mt-2 text-xs text-muted-foreground">{r.approval_status === "approved" ? "امکانات این نقش طبق سطح دسترسی و شهر مجاز فعال است." : r.approval_status === "pending" ? "پس از بررسی مدیر، وضعیت و امکانات به‌روزرسانی می‌شود." : "برای پیگیری یا ارسال مجدد درخواست به بخش عضویت بروید."}</p></li>)}</ul> : <p className="mt-4 text-sm text-muted-foreground">هنوز نقش یا درخواست عضویتی برای این حساب ثبت نشده است.</p>}
-            <div className="mt-4 flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/membership">پیگیری / درخواست عضویت</Link></Button><Button asChild variant="outline"><Link to="/requests">جست‌وجو و درخواست بار</Link></Button>{memberRoles.some(r => r.approval_status === "approved" && ["supplier", "bar_seller", "seller"].includes(r.role_code.toLowerCase())) && <Button asChild><Link to="/requests#professional">خرید ویژه حرفه‌ای (همه استان‌ها)</Link></Button>}</div>
+            <div className="mt-4 flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/membership">پیگیری / درخواست عضویت</Link></Button></div>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -126,10 +126,10 @@ function AccountPage() {
           {!loads.length ? <p className="mt-4 text-sm text-muted-foreground">هنوز باری برای این حساب ثبت نشده است.</p> : <div className="mt-4 grid gap-3">{loads.map(l => <div key={l.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><div><p className="font-semibold">{l.name || [l.product_type, l.engine].filter(Boolean).join(" ") || "بار بدون عنوان"}</p><p className="mt-1 text-xs text-muted-foreground">{l.city || "شهر ثبت نشده"} · {l.count ?? "—"} بسته · {Number(l.price ?? 0).toLocaleString("fa-IR")} تومان/کیلو</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{loadLabels[l.status] || l.status}</span></div>)}</div>}
         </div>
         <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold">سوابق سفارش</h2><Button asChild variant="outline" size="sm"><Link to="/requests">رفتن به درخواست بار <ArrowLeft className="mr-1 size-4" /></Link></Button></div>
+          <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold">سوابق سفارش و امور مالی</h2><Button asChild variant="outline" size="sm"><Link to="/orders">پیگیری همه سفارش‌ها و درخواست‌ها <ArrowLeft className="mr-1 size-4" /></Link></Button></div>
           {!orders.length ? <p className="mt-4 text-sm text-muted-foreground">هنوز سفارشی برای این حساب ثبت نشده است.</p> : <div className="mt-4 grid gap-3">{orders.map(o => <div key={o.id} className="rounded-lg border border-border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">فاکتور شماره {new Intl.NumberFormat("fa-IR").format(o.invoice_number)}</span><span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderLabels[o.status] || o.status}</span></div><p className="mt-2 text-sm text-muted-foreground">{o.quantity ?? "—"} {o.unit || "واحد"} · مبلغ {Number(o.total_price ?? 0).toLocaleString("fa-IR")} تومان</p><p className="mt-1 text-xs text-muted-foreground">پرداخت: {paymentLabels[o.payment_status || "unpaid"] || o.payment_status || "نامشخص"} · تحویل: {orderLabels[o.delivery_status || ""] || o.delivery_status || "در انتظار ثبت وضعیت"}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("fa-IR")}</p>{member && o.buyer_member_id === member.id && (["delivered", "received", "completed"].includes(o.status) || o.delivery_status === "delivered") && <div className="mt-3 grid gap-2 sm:grid-cols-2">{o.load_id && <RatingForm key={`${o.id}-load`} orderId={o.id} reviewerMemberId={member.id} targetType="load" targetId={o.load_id} title="امتیاز به بار خریداری‌شده" />}{o.seller_member_id && o.seller_member_id !== member.id && <RatingForm key={`${o.id}-seller`} orderId={o.id} reviewerMemberId={member.id} targetType="member" targetId={o.seller_member_id} title="امتیاز به فروشنده" />}</div>}</div>)}</div>}
         </div>
-        <div className="flex flex-wrap gap-3"><Button asChild variant="outline"><Link to="/requests">درخواست بار</Link></Button><Button asChild variant="outline"><Link to="/membership">عضویت و تأییدها</Link></Button><Button asChild variant="outline"><Link to="/seller-accounting-preview">امور مالی و گردش حساب</Link></Button>{roles.some(r => r === "supplier" || r === "seller" || r === "bar_seller") && <Button asChild variant="outline"><Link to="/announce">مدیریت محصولات</Link></Button>}</div>
+
       </div>
     </section>
   );
