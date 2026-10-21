@@ -11,6 +11,7 @@ import { RatingSummary } from '@/components/rating-summary';
 export function LoadCard({ load, onAddToCart, purchaseMode = 'retail', cartSelected = false }: { load: Load; onAddToCart?: (load: Load, quantity: number, saleType: string) => void; purchaseMode?: string; cartSelected?: boolean }) {
   const [dialog, setDialog] = useState<'order' | 'seller' | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [justAdded, setJustAdded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -122,7 +123,7 @@ export function LoadCard({ load, onAddToCart, purchaseMode = 'retail', cartSelec
   const qualityStyle = { 'ویژه': 'bg-accent text-primary', 'استاندارد': 'bg-info-soft text-info', 'اقتصادی': 'bg-warning-soft text-warning', 'توافقی': 'bg-muted text-muted-foreground' }[load.quality];
   return <article aria-label={cartSelected ? `${load.product} انتخاب شده و در سبد خرید است` : `${load.product}`} className={`load-card overflow-hidden rounded-lg border bg-card text-sm transition-colors ${cartSelected ? "border-primary ring-2 ring-primary/25" : "border-border"}`}>
     {cartSelected && <div className="flex items-center gap-1.5 bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"><Check className="size-3.5" />انتخاب شده · در فاکتور سبد خرید</div>}
-    <div className="relative aspect-[3/2] overflow-hidden bg-muted"><img src={photoUrls[0] || load.image} alt={`${load.product} ${load.variety}`} loading="lazy" width={1024} height={576} className={`h-full w-full object-cover transition-transform duration-300 motion-safe:hover:scale-[1.03] ${load.id === 1 ? 'object-[85%_65%]' : ''}`} /><span className="absolute bottom-1.5 left-1.5 rounded bg-card/95 px-1.5 py-0.5 text-[9px] text-muted-foreground">{load.isSample ? 'بار نمونه' : 'بار ثبت‌شده'}</span></div>
+    <div className="relative aspect-[5/3] overflow-hidden bg-muted"><img src={photoUrls[0] || load.image} alt={`${load.product} ${load.variety}`} loading="lazy" width={1024} height={576} className={`h-full w-full object-cover transition-transform duration-300 motion-safe:hover:scale-[1.03] ${load.id === 1 ? 'object-[85%_65%]' : ''}`} /><span className="absolute bottom-1.5 left-1.5 rounded bg-card/95 px-1.5 py-0.5 text-[9px] text-muted-foreground">{load.isSample ? 'بار نمونه' : 'بار ثبت‌شده'}</span></div>
     <div className="space-y-1 p-1.5 sm:p-2">
       <div className="flex min-w-0 items-center justify-between gap-1">
         <h3 className="min-w-0 truncate text-xs font-extrabold sm:text-sm">{load.product}<span className="font-normal text-muted-foreground"> · {load.variety}</span></h3>
@@ -153,11 +154,12 @@ export function LoadCard({ load, onAddToCart, purchaseMode = 'retail', cartSelec
         </div>
         {saleOptions.length > 1 && <details className="mt-1 text-[9px]"><summary className="cursor-pointer text-muted-foreground">نوع فروش</summary><select aria-label="نوع فروش" className="field-input mt-1 h-7 text-[10px]" value={selectedSaleType} onChange={e=>{const key=e.target.value;const option=saleOptions.find(item=>item.saleType===key);setSelectedSaleType(key);setCount(String(option?.minimum??load.minimum));}}>{saleOptions.map(option=><option key={option.saleType} value={option.saleType}>{option.label}</option>)}</select></details>}
         {crossTier && <p className="mt-0.5 text-[9px] text-primary">{effectiveSale?.saleType === 'wholesale' ? 'قیمت عمده' : 'قیمت خرده'}</p>}
-        <Button type="button" disabled={!Number.isInteger(quantity)||quantity<effectiveMinimum||quantity>load.stock} variant={cartSelected ? "secondary" : "default"} className="mt-1 h-6 w-full gap-1 px-2 text-[9px]" onClick={()=>onAddToCart(load,quantity,effectiveSale?.saleType || selectedSaleType)}>{cartSelected ? "افزودن بیشتر به سبد" : "افزودن به سبد خرید"} {cartSelected ? <Check className="size-3" /> : <Package className="size-2.5" />}</Button>
+        <Button type="button" disabled={!Number.isInteger(quantity)||quantity<effectiveMinimum||quantity>load.stock} variant={cartSelected ? "secondary" : "default"} className="mt-1 h-7 w-full gap-1 px-2 text-[10px]" onClick={()=>{onAddToCart(load,quantity,effectiveSale?.saleType || selectedSaleType);setJustAdded(true);}}>{justAdded ? "به سبد خرید اضافه شد" : cartSelected ? "افزودن بیشتر به سبد" : "افزودن به سبد خرید"} {justAdded || cartSelected ? <Check className="size-3" /> : <Package className="size-3" />}</Button>
+        {justAdded && <p role="status" className="mt-1 text-center text-[10px] font-semibold text-primary">✓ {faNumber(quantity)} بسته به سبد اضافه شد؛ مبلغ: {faNumber(totals.total)} تومان</p>
       </div>}
       <div className="flex gap-1">
-        <Button className="h-7 min-w-0 flex-1 gap-1 px-1.5 text-[10px]" onClick={openOrder}>جزئیات و سفارش<ArrowLeft className="size-3" /></Button>
-        <Button variant="ghost" className="h-7 min-w-0 flex-1 gap-1 px-1.5 text-[9px] text-muted-foreground" onClick={() => setDialog('seller')}><Store className="size-3" />ویترین فروشنده</Button>
+        <Button className="h-8 min-w-0 flex-1 gap-1 px-1.5 text-[10px]" onClick={openOrder}>جزئیات و سفارش<ArrowLeft className="size-3" /></Button>
+        <Button variant="ghost" className="h-8 min-w-0 flex-1 gap-1 px-1.5 text-[10px] text-muted-foreground" onClick={() => setDialog('seller')}><Store className="size-3" />ویترین فروشنده</Button>
       </div>
     </div>
     <Dialog open={dialog !== null} onOpenChange={open => { if (!open) setDialog(null); }}><DialogContent dir="rtl" className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-lg text-right"><DialogTitle className="mt-3 text-right">{dialog === 'seller' ? load.seller : `${load.product} · ${load.variety}`}</DialogTitle><DialogDescription className="text-right">{dialog === 'seller' ? `${load.sellerType} — اطلاعات تماس مستقیم نمایش داده نمی‌شود` : load.isSample ? 'این کارت نمونه است؛ فقط محاسبه نمایشی انجام می‌شود.' : 'درخواست به فروشنده ارسال می‌شود؛ پرداخت پس از تأیید شرایط انجام خواهد شد.'}</DialogDescription>
