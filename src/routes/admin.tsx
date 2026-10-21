@@ -16,8 +16,8 @@ const roleLabels: Record<string, string> = { admin: 'مدیر', supplier: 'تأ�
 const qualityLabels: Record<string, string> = { premium: 'ویژه', standard: 'استاندارد', economy: 'اقتصادی', negotiated: 'توافقی' };
 
 type MemberRequest = { id: string; member_id: string; role_code: string; approval_status: string; created_at: string; request_note?: string | null; members: { full_name: string; phone: string; city: string } | null };
-type AdminOrder = { id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
-type AdminPurchaseRequest = { id: string; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
+type AdminOrder = { id: string; invoice_number: number; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; status: string; payment_status: string; delivery_status: string; created_at: string };
+type AdminPurchaseRequest = { id: string; request_number: number; product_type: string; quantity: number; quantity_unit: string; destination_city: string | null; quality_requirements: string | null; needed_by: string | null; notes: string | null; status: string; created_at: string };
 type ManagerCandidate = { auth_user_id: string; full_name: string; city: string; role: string };
 type CityMember = { id: string; full_name: string; phone: string | null; city: string; role: string; verification_status: string | null; joined_at: string; is_archived: boolean };
 type AllLoad = { id: string; name: string; engine: string | null; quality: string | null; city: string; price: number; count: number | null; quantity: number; unit: string; status: string; created_at: string; archived_at: string | null; members: { full_name: string | null; phone: string | null } | null };
@@ -86,12 +86,12 @@ function AdminPage() {
       .order('created_at', { ascending: false })
       .then(({ data }: { data: PendingLoad[] | null }) => setPendingLoads(data ?? []));
     (supabase as any).from('orders')
-      .select('id, customer_name, customer_city, quantity, unit, price, total_price, status, payment_status, delivery_status, created_at')
+      .select('id, invoice_number, customer_name, customer_city, quantity, unit, price, total_price, status, payment_status, delivery_status, created_at')
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }: { data: AdminOrder[] | null }) => setOrders(data ?? []));
     (supabase as any).from('purchase_requests')
-      .select('id, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at')
+      .select('id, request_number, product_type, quantity, quantity_unit, destination_city, quality_requirements, needed_by, notes, status, created_at')
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }: { data: AdminPurchaseRequest[] | null }) => setPurchaseRequests(data ?? []));
@@ -514,7 +514,7 @@ function AdminPage() {
           {orders.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">سفارشی برای نمایش وجود ندارد.</p>}
           {orders.map(order => (
             <div key={order.id} className="rounded-lg border border-border bg-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2"><strong>سفارش {order.id.slice(0, 8)}</strong><span className="rounded bg-secondary px-2 py-1 text-xs">{order.status}</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><strong>فاکتور شماره {faNumber(order.invoice_number)}</strong><span className="rounded bg-secondary px-2 py-1 text-xs">{order.status}</span></div>
               <p className="mt-2 text-sm">خریدار: {order.customer_name} · شهر: {order.customer_city}</p>
               <p className="mt-1 text-sm">تعداد: {faNumber(order.quantity)} {order.unit} · قیمت واحد: {faNumber(order.price)} · مبلغ کل: {faNumber(order.total_price)} تومان</p>
               <p className="mt-1 text-xs text-muted-foreground">پرداخت: {order.payment_status} · تحویل: {order.delivery_status} · {new Date(order.created_at).toLocaleDateString('fa-IR')}</p>
@@ -528,7 +528,7 @@ function AdminPage() {
           {purchaseRequests.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">درخواست خریدی برای نمایش وجود ندارد.</p>}
           {purchaseRequests.map(request => (
             <div key={request.id} className="rounded-lg border border-border bg-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2"><strong>{request.product_type} · {faNumber(request.quantity)} {request.quantity_unit}</strong><span className="rounded bg-secondary px-2 py-1 text-xs">{request.status}</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><strong>درخواست شماره {faNumber(request.request_number)} · {request.product_type} · {faNumber(request.quantity)} {request.quantity_unit}</strong><span className="rounded bg-secondary px-2 py-1 text-xs">{request.status}</span></div>
               <p className="mt-2 text-sm">شهر مقصد: {request.destination_city ?? 'ثبت نشده'} · کیفیت: {request.quality_requirements ?? 'توافقی'}{request.needed_by ? ` · تاریخ نیاز: ${request.needed_by}` : ''}</p>
               {request.notes && <p className="mt-1 text-sm text-muted-foreground">{request.notes}</p>}
               {['new', 'in_review', 'sourcing', 'offer_ready'].includes(request.status) && (
