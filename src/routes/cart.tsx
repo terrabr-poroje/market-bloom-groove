@@ -43,7 +43,8 @@ function CartPage() {
 
   useEffect(() => {
     const read = () => {
-      setItems(readValidCart());
+      const valid = readValidCart();
+      setItems(current => JSON.stringify(current) === JSON.stringify(valid) ? current : valid);
       setLoaded(true);
     };
     read();
