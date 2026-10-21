@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, ShoppingCart, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, ShoppingCart, SlidersHorizontal, Store, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadCard } from "@/components/load-card";
 import { cities, faNumber, loads as sampleLoads, normalizeNumericInput, pageHead, qualities, type Load, type Quality } from "@/lib/marketplace";
