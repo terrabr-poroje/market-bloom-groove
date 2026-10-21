@@ -65,7 +65,9 @@ function CartPage() {
     try {
       window.localStorage.setItem(CART_KEY, JSON.stringify(items)); window.sessionStorage.removeItem(CART_KEY);
       window.dispatchEvent(new Event("terrabar-cart-updated"));
-    } catch {}
+    } catch {
+      // Storage may be unavailable in private browsing; keep the cart UI usable.
+    }
   }, [items, loaded]);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + item.quantity * item.load.weight * priceFor(item), 0), [items]);
