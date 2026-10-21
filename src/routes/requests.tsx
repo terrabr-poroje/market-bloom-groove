@@ -412,7 +412,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
     }
 
     const normalizedNeededBy = neededBy.trim() ? jalaliToIsoDate(neededBy) : null;
-    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); return; }
+    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); setOrderBusy(false); return; }
     setNeededByError("");
     const rows = orderItems.map(item => ({
       buyer_member_id: member.id,
