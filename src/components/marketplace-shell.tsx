@@ -2,7 +2,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowRight, Headphones, MapPin, Menu, X, ShieldCheck, LogIn,
+  ArrowRight, Headphones, MapPin, Menu, X, ShieldCheck, LogIn, ShoppingCart,
   UserRound, ShoppingBasket, PackagePlus, Store, ClipboardList, BookOpenText, LogOut,
 } from "lucide-react";
 import { Brand } from "./marketplace-brand";
@@ -13,12 +13,26 @@ type MenuItem = { label: string; to: string; icon: typeof UserRound };
 
 export function MarketplaceShell({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const [roleCodes, setRoleCodes] = useState<string[]>([]);
   const [roleLookupDone, setRoleLookupDone] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { user, roles, loading, isAdmin } = useAuth();
   const closeMenu = () => setMenu(false);
+
+  useEffect(() => {
+    const updateCartCount = () => {
+      try {
+        const items = JSON.parse(window.sessionStorage.getItem("terrabar-cart-items") || "[]");
+        setCartCount(Array.isArray(items) ? items.reduce((sum: number, item: any) => sum + (Number(item.quantity) > 0 ? 1 : 0), 0) : 0);
+      } catch { setCartCount(0); }
+    };
+    updateCartCount();
+    window.addEventListener("terrabar-cart-updated", updateCartCount);
+    window.addEventListener("storage", updateCartCount);
+    return () => { window.removeEventListener("terrabar-cart-updated", updateCartCount); window.removeEventListener("storage", updateCartCount); };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -96,16 +110,22 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           <Link to={user ? "/member-home" : "/"} aria-label="ترابار، صفحه نخست" onClick={closeMenu} className="shrink-0">
             <Brand />
           </Link>
-          <button
-            type="button"
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={menu ? "بستن منو" : "باز کردن منو"}
-            aria-expanded={menu}
-            aria-controls="terrabar-main-menu"
-            onClick={() => setMenu(!menu)}
-          >
-            {menu ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to="/cart" onClick={closeMenu} aria-label={"سبد خرید" + (cartCount ? "، " + cartCount + " قلم کالا" : "")} className="relative inline-flex size-10 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <ShoppingCart className="size-5" />
+              {cartCount > 0 && <span aria-label={cartCount + " قلم کالا"} className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-700 px-1 text-[10px] font-bold text-white">{cartCount > 99 ? "99+" : cartCount}</span>}
+            </Link>
+            <button
+              type="button"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={menu ? "بستن منو" : "باز کردن منو"}
+              aria-expanded={menu}
+              aria-controls="terrabar-main-menu"
+              onClick={() => setMenu(!menu)}
+            >
+              {menu ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
         </div>
         {menu && (
           <nav id="terrabar-main-menu" aria-label={user ? "منوی اختصاصی عضو" : "منوی اصلی"} className="site-container grid gap-2 border-t border-border py-4 sm:max-w-md sm:mr-auto">
