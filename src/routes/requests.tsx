@@ -469,66 +469,6 @@ function Requests() {
         </div>
       </section>
 
-      <section id="direct-order" className="border-t border-border bg-background py-12 sm:py-16">
-        <div className="site-container max-w-4xl">
-          <div className="mb-6">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-primary"><Send className="size-4" />پیشنهادات و سفارش مستقیم</div>
-            <h2 className="text-2xl font-extrabold">درخواست تأمین چندمحصولی</h2>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">چند محصول را در یک مرحله معرفی کنید. درخواست بر اساس شهر حساب شما برای بررسی مدیریت ترابار ارسال می‌شود؛ مبدأ و مقصد اجباری نیست.</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-7">
-            {orderSaved ? <div className="py-8 text-center"><PackageCheck className="mx-auto mb-3 size-12 text-primary" /><h3 className="font-bold">درخواست سفارش ثبت شد</h3><p className="mt-2 text-sm text-muted-foreground">وضعیت درخواست را پس از تکمیل اتصال بخش پیگیری سفارش‌ها مشاهده می‌کنید.</p><Button className="mt-5" onClick={() => setOrderSaved(false)}>ثبت درخواست دیگر</Button></div> : (
-              <form onSubmit={submitDirectOrder} className="grid gap-5">
-                {orderItems.map((item, index) => (
-                  <fieldset key={index} className="grid gap-3 rounded-lg border border-border p-4">
-                    <div className="flex items-center justify-between"><legend className="font-bold">محصول {faNumber(index + 1)}</legend>{orderItems.length > 1 && <Button type="button" variant="ghost" size="sm" onClick={() => setOrderItems(items => items.filter((_, i) => i !== index))}><Trash2 className="size-4" />حذف</Button>}</div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="field-label">نام محصول<input required value={item.product} onChange={e => updateItem(index, "product", e.target.value)} className="field-input" placeholder="مثلاً سیب‌زمینی" /></label>
-                      <label className="field-label">رقم / مشخصات<input value={item.variety} onChange={e => updateItem(index, "variety", e.target.value)} className="field-input" placeholder="نوع یا مشخصات دلخواه" /></label>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <label className="field-label">مقدار<input required type="text" inputMode="decimal" dir="ltr" value={item.quantity} onChange={e => updateItem(index, "quantity", normalizeNumericInput(e.target.value))} className="field-input text-left" /></label>
-                      <label className="field-label">واحد<select className="field-input" value={item.unit} onChange={e => updateItem(index, "unit", e.target.value)}><option value="kg">کیلوگرم</option><option value="package">بسته</option><option value="ton">تن</option></select></label>
-                      <label className="field-label">کیفیت<select className="field-input" value={item.quality} onChange={e => updateItem(index, "quality", e.target.value)}>{qualities.map(q => <option key={q}>{q}</option>)}</select></label>
-                    </div>
-                  </fieldset>
-                ))}
-                <Button type="button" variant="outline" onClick={() => setOrderItems(items => [...items, emptyItem()])}><Plus className="size-4" />افزودن محصول دیگر</Button>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="field-label"><span className="flex items-center gap-2"><CalendarDays className="size-4" />تاریخ موردنیاز</span><input type="date" min={new Date().toISOString().slice(0, 10)} value={neededBy} onChange={e => setNeededBy(e.target.value)} className="field-input" /></label>
-                  <label className="field-label">توضیحات تکمیلی (اختیاری)<input value={orderNotes} onChange={e => setOrderNotes(e.target.value)} className="field-input" placeholder="نکات سفارش" /></label>
-                </div>
-                {orderError && <p role="alert" className="text-sm text-destructive">{orderError}</p>}
-                <Button type="submit" disabled={orderBusy}>{orderBusy ? "در حال ثبت درخواست…" : "ارسال درخواست برای بررسی مدیریت"}<Send className="mr-2 size-4" /></Button>
-                <p className="text-xs leading-6 text-muted-foreground">برای ارسال باید وارد حساب شوید. اطلاعات تماس طرفین در آگهی نمایش داده نمی‌شود.</p>
-              </form>
-            )}
-          </div>
-          <div id="tracking" className="mt-8 scroll-mt-6 border-t border-border pt-6">
-            <h2 className="text-xl font-extrabold">پیگیری درخواست‌های سفارش من</h2>
-            {!user ? <p className="mt-3 text-sm text-muted-foreground">برای دیدن وضعیت درخواست‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت وضعیت درخواست‌ها…</p> : myDirectRequests.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز درخواست سفارش مستقیمی ثبت نکرده‌اید.</p> : (
-              <ul className="mt-4 grid gap-3">
-                {myDirectRequests.map(request => <li key={request.id} className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>{request.product_type}</strong><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(request.quantity))} {request.quantity_unit} · {request.quality_requirements || "کیفیت توافقی"}{request.needed_by ? " · تاریخ موردنیاز: " + request.needed_by : ""}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{directStatusLabels[request.status] ?? request.status}</span></div>
-                  {request.notes && <p className="mt-2 text-xs text-muted-foreground">توضیحات: {request.notes}</p>}
-                </li>)}
-              </ul>
-            )}
-            {myRequestError && <p role="alert" className="mt-3 text-sm text-destructive">{myRequestError}</p>}
-            <h3 className="mt-7 text-lg font-bold">خریدهای من</h3>
-            {!user ? <p className="mt-3 text-sm text-muted-foreground">برای مشاهده سفارش‌ها <Link to="/auth" className="font-bold text-primary underline">وارد حساب شوید</Link>.</p> : loadingMyRequests ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت سفارش‌ها…</p> : myOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">هنوز سفارشی ثبت نکرده‌اید.</p> : (
-              <ul className="mt-4 grid gap-3">
-                {myOrders.map(order => <li key={order.id} className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3"><div><strong>سفارش {order.id.slice(0, 8)}</strong><p className="mt-1 text-xs text-muted-foreground">{faNumber(Number(order.quantity))} بسته · {order.total_price == null ? "مبلغ در انتظار بررسی" : faNumber(Number(order.total_price)) + " تومان"} · {order.delivery_type === "pickup" ? "تحویل حضوری" : "حمل"}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs">{orderStatusLabels[order.status] ?? order.status}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">پرداخت: {paymentStatusLabels[order.payment_status] ?? "نامشخص"} · تحویل: {deliveryStatusLabels[order.delivery_status] ?? "در انتظار به‌روزرسانی"}{order.paid_at ? " · زمان پرداخت: " + new Date(order.paid_at).toLocaleString("fa-IR") : ""}</p>
-                  {order.delivery_address && <p className="mt-2 text-xs text-muted-foreground">نشانی تحویل: {order.delivery_address}</p>}
-                  {order.notes && <p className="mt-2 text-xs text-muted-foreground">توضیحات: {order.notes}</p>}
-                </li>)}
-              </ul>
-            )}
-          </div>
-        </div>
-      </section>
       <nav aria-label="ناوبری بازار خرید" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur">
         <div className="site-container grid h-14 grid-cols-3">
           <a href="#market-loads" className="flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-primary"><Store className="size-4" /><span>بازار</span></a>
