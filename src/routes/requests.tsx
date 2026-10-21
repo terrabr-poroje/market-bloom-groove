@@ -411,7 +411,10 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
       return;
     }
 
-    const normalizedNeededBy = neededBy.trim() ? jalaliToIsoDate(neededBy) : null;\n    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); return; }\n    setNeededByError("");\n    const rows = orderItems.map(item => ({
+    const normalizedNeededBy = neededBy.trim() ? jalaliToIsoDate(neededBy) : null;
+    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); return; }
+    setNeededByError("");
+    const rows = orderItems.map(item => ({
       buyer_member_id: member.id,
       product_type: item.product.trim(),
       quantity: Number(normalizeNumericInput(item.quantity)),
