@@ -26,6 +26,7 @@ import { Route as LoginSellerRouteImport } from './routes/login-seller'
 import { Route as LoginSupplierRouteImport } from './routes/login-supplier'
 import { Route as MemberHomeRouteImport } from './routes/member-home'
 import { Route as MembershipRouteImport } from './routes/membership'
+import { Route as ProfessionalPurchaseRouteImport } from './routes/professional-purchase'
 import { Route as OrdersCompletedPreviewRouteImport } from './routes/orders-completed-preview'
 import { Route as OrdersCurrentPreviewRouteImport } from './routes/orders-current-preview'
 import { Route as RequestsRouteImport } from './routes/requests'
@@ -133,6 +134,11 @@ const OrdersCurrentPreviewRoute = OrdersCurrentPreviewRouteImport.update({
   path: '/orders-current-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfessionalPurchaseRoute = ProfessionalPurchaseRouteImport.update({
+  id: '/professional-purchase',
+  path: '/professional-purchase',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsRoute = RequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/login-supplier': typeof LoginSupplierRoute
   '/member-home': typeof MemberHomeRoute
   '/membership': typeof MembershipRoute
+  '/professional-purchase': typeof ProfessionalPurchaseRoute
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/login-supplier': typeof LoginSupplierRoute
   '/member-home': typeof MemberHomeRoute
   '/membership': typeof MembershipRoute
+  '/professional-purchase': typeof ProfessionalPurchaseRoute
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/login-supplier': typeof LoginSupplierRoute
   '/member-home': typeof MemberHomeRoute
   '/membership': typeof MembershipRoute
+  '/professional-purchase': typeof ProfessionalPurchaseRoute
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/login-supplier'
     | '/member-home'
     | '/membership'
+    | '/professional-purchase'
     | '/orders-completed-preview'
     | '/orders-current-preview'
     | '/requests'
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/login-supplier'
     | '/member-home'
     | '/membership'
+    | '/professional-purchase'
     | '/orders-completed-preview'
     | '/orders-current-preview'
     | '/requests'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/login-supplier'
     | '/member-home'
     | '/membership'
+    | '/professional-purchase'
     | '/orders-completed-preview'
     | '/orders-current-preview'
     | '/requests'
@@ -381,6 +393,7 @@ export interface RootRouteChildren {
   LoginSupplierRoute: typeof LoginSupplierRoute
   MemberHomeRoute: typeof MemberHomeRoute
   MembershipRoute: typeof MembershipRoute
+  ProfessionalPurchaseRoute: typeof ProfessionalPurchaseRoute
   OrdersCompletedPreviewRoute: typeof OrdersCompletedPreviewRoute
   OrdersCurrentPreviewRoute: typeof OrdersCurrentPreviewRoute
   RequestsRoute: typeof RequestsRoute
@@ -508,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberHomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/professional-purchase': {
+      id: '/professional-purchase'
+      path: '/professional-purchase'
+      fullPath: '/professional-purchase'
+      preLoaderRoute: typeof ProfessionalPurchaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/membership': {
       id: '/membership'
       path: '/membership'
@@ -613,6 +633,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginSupplierRoute: LoginSupplierRoute,
   MemberHomeRoute: MemberHomeRoute,
   MembershipRoute: MembershipRoute,
+  ProfessionalPurchaseRoute: ProfessionalPurchaseRoute,
   OrdersCompletedPreviewRoute: OrdersCompletedPreviewRoute,
   OrdersCurrentPreviewRoute: OrdersCurrentPreviewRoute,
   RequestsRoute: RequestsRoute,
