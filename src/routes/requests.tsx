@@ -33,7 +33,7 @@ const normalizeDigits = (value: string) => value
   .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x06f0))
   .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x0660));
 const jalaliToIsoDate = (value: string): string | null => {
-  const match = normalizeDigits(value.trim()).match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  const match = normalizeDigits(value.trim()).match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
   if (!match) return null;
   const jy = Number(match[1]), jm = Number(match[2]), jd = Number(match[3]);
   if (jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
@@ -108,7 +108,7 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
   const [cartBusy, setCartBusy] = useState(false);
   const [cartInvoiceVisible, setCartInvoiceVisible] = useState(false);
   
-  useEffect(() => { try { window.localStorage.setItem(CART_KEY, JSON.stringify(cartItems)); window.sessionStorage.removeItem(CART_KEY); window.dispatchEvent(new Event("terrabar-cart-updated")); } catch {} }, [cartItems]);
+  useEffect(() => { try { window.localStorage.setItem(CART_KEY, JSON.stringify(cartItems)); window.sessionStorage.removeItem(CART_KEY); window.dispatchEvent(new Event("terrabar-cart-updated")); } catch { /* Storage may be unavailable; keep the current in-memory cart. */ } }, [cartItems]);
   useEffect(() => {
     const expireCartItems = () => {
       const valid = readValidCart();
