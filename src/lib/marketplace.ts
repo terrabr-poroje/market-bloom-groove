@@ -208,7 +208,8 @@ export const provinceCities: Record<string, readonly string[]> = {
 
 export const qualities = ['ویژه', 'استاندارد', 'اقتصادی', 'توافقی'] as const;
 export type Quality = typeof qualities[number];
-export type SaleOption = { saleType: string; label: string; price: number; minimum: number };
+export type PriceBreak = { minQuantity: number; maxQuantity: number | null; price: number };
+export type SaleOption = { saleType: string; label: string; price: number; minimum: number; priceBreaks?: PriceBreak[] };
 export type Load = { id: string | number; memberId?: string; saleType?: string; saleOptions?: SaleOption[]; packageType?: string; createdAt?: string; isSample?: boolean; product: string; variety: string; category: string; quality: Quality; city: string; province: string; weight: number; stock: number; minimum: number; price: number; ready: string; validity: string; seller: string; sellerType: string; image: string };
 export const loads: Load[] = [
   { id: 1, isSample: true, product: 'پرتقال', variety: 'تامسون شمال', category: 'میوه', quality: 'ویژه', city: 'ساری', province: 'مازندران', weight: 10, stock: 240, minimum: 20, price: 48000, ready: 'آماده بارگیری', validity: '۲۴ ساعت', seller: 'باغ مرکبات شمال', sellerType: 'باغدار و تأمین‌کننده', image: marketImage },
