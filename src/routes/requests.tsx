@@ -241,13 +241,21 @@ function Requests() {
   const filtered = displayLoads
     .filter(load => {
       const options = load.saleOptions?.length ? load.saleOptions : [{ saleType: String(load.saleType || "regular"), label: "قیمت پایه", price: load.price, minimum: load.minimum }];
-      const isProfessionalInventory = String(load.sellerType || "").toLowerCase() === "supplier" || options.some(option => ["professional", "pro"].includes(option.saleType));
+      // Normalize legacy sale-type and city values so retail tiers aren't hidden by capitalization,
+      // Persian/Arabic letter variants, or stray whitespace in existing records.
+      const normalizeValue = (value: unknown) => String(value ?? "").trim().toLowerCase()
+        .replace(/[يى]/g, "ی").replace(/ك/g, "ک").replace(/\s+/g, "");
+      const normalizedOptions = options.map(option => ({ ...option, saleType: normalizeValue(option.saleType) }));
+      const isProfessionalInventory = normalizeValue(load.sellerType) === "supplier" || normalizedOptions.some(option => ["professional", "pro"].includes(option.saleType));
       const professionalCityAccess = purchaseMode === "professional" && canBuySupplierProfessional && isProfessionalInventory;
-      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : allowedCities.includes(load.city) || professionalCityAccess;
+      const normalizedLoadCity = normalizeValue(load.city);
+      const normalizedAllowedCities = allowedCities.map(normalizeValue);
+      const cityAllowed = cityAccess === "all" ? true : cityAccess === "unavailable" ? false : normalizedAllowedCities.includes(normalizedLoadCity) || professionalCityAccess;
       const professionalAudienceAllowed = purchaseMode !== "professional" || !isProfessionalInventory || canBuySupplierProfessional;
+      const allowedSaleTypes = (selectedMode?.saleTypes ?? []).map(normalizeValue);
       return cityAllowed
         && professionalAudienceAllowed
-        && options.some(option => selectedMode?.saleTypes.includes(option.saleType))
+        && normalizedOptions.some(option => allowedSaleTypes.includes(option.saleType))
         && (!filters.category || load.category === filters.category)
         && (!filters.quality || load.quality === filters.quality)
         && (!normalizedQuery || `${load.product}${load.variety}`.replace(/\s/g, "").includes(normalizedQuery));
