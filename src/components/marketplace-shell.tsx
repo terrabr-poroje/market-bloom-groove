@@ -24,8 +24,13 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const updateCartCount = () => {
       try {
-        const items = JSON.parse(window.sessionStorage.getItem("terrabar-cart-items") || "[]");
-        setCartCount(Array.isArray(items) ? items.reduce((sum: number, item: any) => sum + (Number(item.quantity) > 0 ? 1 : 0), 0) : 0);
+        const raw = window.localStorage.getItem("terrabar-cart-items") ?? window.sessionStorage.getItem("terrabar-cart-items") ?? "[]";
+        const now = Date.now();
+        const items = JSON.parse(raw);
+        const valid = Array.isArray(items) ? items.filter((item: any) => Number(item.quantity) > 0 && (!Number(item.expiresAt) || Number(item.expiresAt) > now)) : [];
+        setCartCount(valid.length);
+        if (valid.length !== (Array.isArray(items) ? items.length : 0)) window.localStorage.setItem("terrabar-cart-items", JSON.stringify(valid));
+        window.sessionStorage.removeItem("terrabar-cart-items");
       } catch { setCartCount(0); }
     };
     updateCartCount();
