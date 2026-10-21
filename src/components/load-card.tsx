@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { faNumber, normalizeNumericInput, type Load } from '@/lib/marketplace';
 import { RatingSummary } from '@/components/rating-summary';
 
-export function LoadCard({ load }: { load: Load }) {
+export function LoadCard({ load, onAddToCart }: { load: Load; onAddToCart?: (load: Load, quantity: number, saleType: string) => void }) {
   const [dialog, setDialog] = useState<'order' | 'seller' | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
@@ -30,7 +30,9 @@ export function LoadCard({ load }: { load: Load }) {
   const [selectedSaleType, setSelectedSaleType] = useState(load.saleOptions?.[0]?.saleType || load.saleType || 'regular');
   const saleOptions = load.saleOptions?.length ? load.saleOptions : [{ saleType: load.saleType || 'regular', label: 'قیمت پایه', price: load.price, minimum: load.minimum }];
   const selectedSale = saleOptions.find(option => option.saleType === selectedSaleType) || saleOptions[0];
-  const effectivePrice = selectedSale?.price ?? load.price;
+  const quantityForPrice = Number(count);
+  const priceBreak = selectedSale?.priceBreaks?.find(item => quantityForPrice >= item.minQuantity && (item.maxQuantity == null || quantityForPrice <= item.maxQuantity));
+  const effectivePrice = priceBreak?.price ?? selectedSale?.price ?? load.price;
   const effectiveMinimum = selectedSale?.minimum ?? load.minimum;
   const [count, setCount] = useState(String(load.saleOptions?.[0]?.minimum ?? load.minimum));
   const [submitted, setSubmitted] = useState(false);
@@ -116,7 +118,7 @@ export function LoadCard({ load }: { load: Load }) {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1"><span className="text-xs text-muted-foreground">قیمت هر کیلوگرم (از)</span><span className="text-base font-extrabold text-primary sm:text-lg">{faNumber(Math.min(...saleOptions.map(option => option.price)))} <span className="text-xs font-normal text-muted-foreground">تومان</span></span></div>
       {saleOptions.length > 1 && <p className="mt-2 text-xs text-muted-foreground">دارای {faNumber(saleOptions.length)} بخش فروش با قیمت و حداقل سفارش جداگانه</p>}
       <div className="mt-3 flex flex-col gap-2 text-[10px]"><span className="flex items-center gap-1 text-primary"><Truck className="size-3.5" />{load.ready}</span><span className="flex items-center gap-1 text-muted-foreground"><Clock3 className="size-3.5" />{load.isSample ? `اعتبار نمونه: ${load.validity}` : load.validity}</span></div>
-      <Button className="mt-4 h-10 w-full gap-1 px-2 text-xs" onClick={openOrder}>مشاهده جزئیات و ثبت سفارش<ArrowLeft className="mr-auto" /></Button><Button variant="ghost" className="mt-1 w-full text-xs text-muted-foreground" onClick={() => setDialog('seller')}><Store className="size-3.5" />ویترین فروشنده</Button>
+      {onAddToCart && !load.isSample && <div className="mt-3 grid gap-2 rounded-lg border border-border p-2"><label className="text-xs font-semibold">تعداد بسته برای سبد<input aria-label={`تعداد ${load.product} برای سبد`} inputMode="numeric" className="field-input mt-1 text-center" value={count} onChange={e=>setCount(normalizeNumericInput(e.target.value))} /></label>{saleOptions.length > 1 && <label className="text-xs font-semibold">بخش فروش<select className="field-input mt-1" value={selectedSaleType} onChange={e=>{const key=e.target.value;const option=saleOptions.find(item=>item.saleType===key);setSelectedSaleType(key);setCount(String(option?.minimum??load.minimum));}}>{saleOptions.map(option=><option key={option.saleType} value={option.saleType}>{option.label}</option>)}</select></label>}<p className="text-xs text-muted-foreground">مبلغ فعلی: {faNumber(quantity>=effectiveMinimum&&quantity<=load.stock?quantity*load.weight*effectivePrice:0)} تومان</p><Button type="button" disabled={!Number.isInteger(quantity)||quantity<effectiveMinimum||quantity>load.stock} className="h-9 w-full gap-1 text-xs" onClick={()=>onAddToCart(load,quantity,selectedSaleType)}>افزودن به سبد خرید <Package className="size-4" /></Button></div>}<Button className="mt-3 h-10 w-full gap-1 px-2 text-xs" onClick={openOrder}>مشاهده جزئیات و ثبت سفارش<ArrowLeft className="mr-auto" /></Button><Button variant="ghost" className="mt-1 w-full text-xs text-muted-foreground" onClick={() => setDialog('seller')}><Store className="size-3.5" />ویترین فروشنده</Button>
     </div>
     <Dialog open={dialog !== null} onOpenChange={open => { if (!open) setDialog(null); }}><DialogContent dir="rtl" className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto rounded-lg text-right"><DialogTitle className="mt-3 text-right">{dialog === 'seller' ? load.seller : `${load.product} · ${load.variety}`}</DialogTitle><DialogDescription className="text-right">{dialog === 'seller' ? `${load.sellerType} — اطلاعات تماس مستقیم نمایش داده نمی‌شود` : load.isSample ? 'این کارت نمونه است؛ فقط محاسبه نمایشی انجام می‌شود.' : 'درخواست به فروشنده ارسال می‌شود؛ پرداخت پس از تأیید شرایط انجام خواهد شد.'}</DialogDescription>
       {dialog === 'seller' && <div className="flex flex-wrap gap-4 rounded-md bg-secondary/60 p-3 text-sm"><span>امتیاز عضو: <RatingSummary targetType="member" targetId={load.isSample ? null : (load.memberId ?? null)} /></span><span>امتیاز این بار: <RatingSummary targetType="load" targetId={load.isSample ? null : load.id} /></span></div>}
