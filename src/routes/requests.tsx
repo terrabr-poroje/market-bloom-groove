@@ -30,7 +30,7 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
 const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
 
-function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) {
+export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) {
   const { user } = useAuth();
   const [profileCity, setProfileCity] = useState("");
   const [approvedRoleCodes, setApprovedRoleCodes] = useState<string[]>([]);
