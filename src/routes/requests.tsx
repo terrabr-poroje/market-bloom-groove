@@ -470,6 +470,46 @@ function Requests() {
       </section>
 
 
+      <section id="direct-order" className="scroll-mt-5 border-t border-border bg-card py-6 sm:py-8">
+        <div className="site-container max-w-4xl">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Send className="size-5" /></div>
+            <div><h2 className="text-lg font-extrabold">درخواست سفارش چندمحصولی</h2><p className="mt-1 text-xs text-muted-foreground">محصولات موردنیاز را وارد کنید تا درخواست برای بررسی ثبت شود.</p></div>
+          </div>
+          {orderSaved && <div role="status" className="mb-4 rounded-lg border border-primary/20 bg-accent/40 p-3 text-sm font-semibold text-primary">درخواست شما ثبت شد. از بخش «پیگیری سفارش» وضعیت آن را دنبال کنید.</div>}
+          {orderError && <p role="alert" className="mb-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{orderError}</p>}
+          <form onSubmit={submitDirectOrder} className="space-y-3 rounded-xl border border-border p-3 sm:p-4">
+            {orderItems.map((item, index) => <div key={index} className="grid grid-cols-2 gap-2 rounded-lg bg-market-surface p-3 sm:grid-cols-5">
+              <label className="text-xs font-semibold">نام محصول<input required value={item.product} onChange={e=>updateItem(index,"product",e.target.value)} className="field-input mt-1" placeholder="مثلاً سیب" /></label>
+              <label className="text-xs font-semibold">رقم / توضیح<input value={item.variety} onChange={e=>updateItem(index,"variety",e.target.value)} className="field-input mt-1" placeholder="اختیاری" /></label>
+              <label className="text-xs font-semibold">مقدار موردنیاز<input required inputMode="decimal" value={item.quantity} onChange={e=>updateItem(index,"quantity",normalizeNumericInput(e.target.value))} className="field-input mt-1" placeholder="مقدار" /></label>
+              <label className="text-xs font-semibold">واحد<select value={item.unit} onChange={e=>updateItem(index,"unit",e.target.value)} className="field-input mt-1"><option value="kg">کیلوگرم</option><option value="package">بسته</option><option value="ton">تن</option></select></label>
+              <div className="flex items-end"><Button type="button" variant="outline" className="h-10 w-full text-xs" disabled={orderItems.length===1} onClick={()=>setOrderItems(items=>items.filter((_,i)=>i!==index))}><Trash2 className="ml-1 size-3.5"/>حذف ردیف</Button></div>
+            </div>)}
+            <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" className="h-9 text-xs" onClick={()=>setOrderItems(items=>[...items,emptyItem()])}><Plus className="ml-1 size-4"/>افزودن محصول</Button><label className="min-w-40 flex-1 text-xs font-semibold">تاریخ موردنیاز<input type="date" value={neededBy} onChange={e=>setNeededBy(e.target.value)} className="field-input mt-1"/></label></div>
+            <label className="block text-xs font-semibold">توضیحات تکمیلی<textarea value={orderNotes} onChange={e=>setOrderNotes(e.target.value)} className="field-input mt-1 min-h-20" placeholder="کیفیت یا شرایط موردنظر (اختیاری)"/></label>
+            <Button type="submit" disabled={orderBusy} className="h-10 w-full sm:w-auto">{orderBusy ? "در حال ثبت…" : "ثبت درخواست سفارش"}</Button>
+          </form>
+        </div>
+      </section>
+
+      <section id="tracking" className="scroll-mt-5 border-t border-border bg-market-surface py-6 sm:py-8">
+        <div className="site-container max-w-4xl">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary"><PackageCheck className="size-5"/></div><div><h2 className="text-lg font-extrabold">پیگیری خرید و سفارش</h2><p className="mt-1 text-xs text-muted-foreground">وضعیت سفارش‌های ثبت‌شده و درخواست‌های تأمین را ببینید یا خرید را ادامه دهید.</p></div></div>
+            <div className="flex gap-2"><Link to="/cart" className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground"><ShoppingCart className="size-4"/>ادامه خرید / سبد</Link><a href="#market-loads" className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-semibold">بازگشت به بازار</a></div>
+          </div>
+          {myRequestError && <p role="alert" className="mb-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{myRequestError}</p>}
+          {loadingMyRequests ? <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">در حال دریافت سفارش‌ها…</p> : <>
+            <h3 className="mb-2 font-bold">خریدهای ثبت‌شده</h3>
+            {myOrders.length ? <div className="mb-5 space-y-2">{myOrders.map(order=><article key={order.id} className="rounded-xl border border-border bg-card p-3 sm:p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">سفارش #{String(order.id).slice(0,8)}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("fa-IR")} · {faNumber(order.quantity)} {order.unit==="package"?"بسته":order.unit}</p></div><span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-primary">{orderStatusLabels[order.status] || order.status || "در حال بررسی"}</span></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"><span>پرداخت: {paymentStatusLabels[order.payment_status] || order.payment_status || "نامشخص"}</span>{order.total_price != null && <span>مبلغ: {faNumber(order.total_price)} تومان</span>}{order.delivery_status && <span>تحویل: {deliveryStatusLabels[order.delivery_status] || order.delivery_status}</span>}</div><div className="mt-3 flex flex-wrap gap-2"><Link to="/cart" className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground">ادامه خرید</Link><a href="#market-loads" className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold">انتخاب محصول دیگر</a></div></article>)}</div> : <p className="mb-5 rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">هنوز خریدی ثبت نکرده‌اید. از بازار محصول انتخاب کنید و به سبد خرید بروید.</p>}
+            <h3 className="mb-2 font-bold">درخواست‌های تأمین چندمحصولی</h3>
+            {myDirectRequests.length ? <div className="space-y-2">{myDirectRequests.map(request=><article key={request.id} className="rounded-xl border border-border bg-card p-3 sm:p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{request.product_type} · {faNumber(request.quantity)} {request.quantity_unit==="kg"?"کیلوگرم":request.quantity_unit==="ton"?"تن":"بسته"}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(request.created_at).toLocaleDateString("fa-IR")}{request.quality_requirements ? ` · ${request.quality_requirements}` : ""}</p></div><span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-primary">{directStatusLabels[request.status] || request.status}</span></div>{request.notes && <p className="mt-2 text-xs text-muted-foreground">{request.notes}</p>}<div className="mt-3 flex gap-2"><a href="#direct-order" className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold">ثبت درخواست جدید</a><a href="#market-loads" className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground">ادامه خرید از بازار</a></div></article>)}</div> : <p className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">درخواستی برای تأمین ثبت نشده است.</p>}
+          </>}
+        </div>
+      </section>
+
+
     </>
   );
 }
