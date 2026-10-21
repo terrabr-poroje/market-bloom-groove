@@ -469,14 +469,7 @@ function Requests() {
         </div>
       </section>
 
-      <nav aria-label="ناوبری بازار خرید" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur">
-        <div className="site-container grid h-14 grid-cols-3">
-          <a href="#market-loads" className="flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-primary"><Store className="size-4" /><span>بازار</span></a>
-          <a href="/cart" className="flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-foreground"><ShoppingCart className="size-4" /><span>سبد خرید</span></a>
-          <a href="#tracking" className="flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-foreground"><PackageCheck className="size-4" /><span>پیگیری سفارش</span></a>
-        </div>
-      </nav>
-      <div className="h-16" aria-hidden="true" />
+
     </>
   );
 }
