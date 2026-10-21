@@ -31,7 +31,7 @@ export function LoadCard({ load, onAddToCart }: { load: Load; onAddToCart?: (loa
   const saleOptions = load.saleOptions?.length ? load.saleOptions : [{ saleType: load.saleType || 'regular', label: 'قیمت پایه', price: load.price, minimum: load.minimum }];
   const selectedSale = saleOptions.find(option => option.saleType === selectedSaleType) || saleOptions[0];
   const quantityForPrice = Number(count);
-  const priceBreak = selectedSale?.priceBreaks?.find(item => quantityForPrice >= item.minQuantity && (item.maxQuantity == null || quantityForPrice <= item.maxQuantity));
+  const priceBreak = selectedSale?.priceBreaks?.find(item => quantityForPrice * load.weight >= item.minQuantity && (item.maxQuantity == null || quantityForPrice * load.weight <= item.maxQuantity));
   const effectivePrice = priceBreak?.price ?? selectedSale?.price ?? load.price;
   const effectiveMinimum = selectedSale?.minimum ?? load.minimum;
   const [count, setCount] = useState(String(load.saleOptions?.[0]?.minimum ?? load.minimum));
