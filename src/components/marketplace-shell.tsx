@@ -186,11 +186,11 @@ export function MarketplaceShell({ children }: { children: ReactNode }) {
           <div className="site-container grid h-14 grid-cols-3">
             <Link to="/requests" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/requests" ? "text-primary" : "text-foreground"}`}><Store className="size-4" /><span>بازار</span></Link>
             <Link to="/cart" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/cart" ? "text-primary" : "text-foreground"}`}><ShoppingCart className="size-4" /><span>سبد خرید{cartCount > 0 ? ` (${cartCount})` : ""}</span></Link>
-            <Link to="/account" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/account" ? "text-primary" : "text-foreground"}`}><PackageCheck className="size-4" /><span>پیگیری سفارش</span></Link>
+            <Link to="/orders" className={`flex flex-col items-center justify-center gap-0.5 text-xs font-semibold ${pathname === "/orders" ? "text-primary" : "text-foreground"}`}><PackageCheck className="size-4" /><span>درخواست و پیگیری</span></Link>
           </div>
         </nav>
       )}
-      {["/requests", "/cart", "/account"].includes(pathname) && <div className="h-16 pb-[env(safe-area-inset-bottom)]" aria-hidden="true" />}
+      {["/requests", "/cart", "/orders", "/account"].includes(pathname) && <div className="h-16 pb-[env(safe-area-inset-bottom)]" aria-hidden="true" />}
 
       <footer className="border-t border-border bg-background">
         <div className="site-container flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
