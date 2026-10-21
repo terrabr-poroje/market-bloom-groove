@@ -28,6 +28,30 @@ const purchaseModes: { value: PurchaseMode; label: string; description: string; 
   { value: "professional", label: "ویژه حرفه‌ای", description: "فقط برای تأمین‌کننده و بارفروش؛ خرید از همه استان‌ها", saleTypes: ["professional", "pro"] },
 ];
 const emptyItem = (): DirectOrderItem => ({ product: "", variety: "", quantity: "", unit: "kg", quality: "توافقی" });
+
+const normalizeDigits = (value: string) => value
+  .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 0x06f0))
+  .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 0x0660));
+const jalaliToIsoDate = (value: string): string | null => {
+  const match = normalizeDigits(value.trim()).match(/^(\\d{4})[\\/-](\\d{1,2})[\\/-](\\d{1,2})$/);
+  if (!match) return null;
+  const jy = Number(match[1]), jm = Number(match[2]), jd = Number(match[3]);
+  if (jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
+  const fmt = new Intl.DateTimeFormat("en-US-u-ca-persian-nu-latn", { year: "numeric", month: "numeric", day: "numeric", timeZone: "UTC" });
+  const start = Date.UTC(jy + 621, 0, 1);
+  const end = Date.UTC(jy + 623, 0, 1);
+  for (let time = start; time < end; time += 86400000) {
+    const parts = Object.fromEntries(fmt.formatToParts(new Date(time)).filter(p => p.type !== "literal").map(p => [p.type, Number(p.value)]));
+    if (parts.year === jy && parts.month === jm && parts.day === jd) return new Date(time).toISOString().slice(0, 10);
+  }
+  return null;
+};
+const isoToJalaliDate = (value: string) => {
+  if (!value) return "";
+  const date = new Date(value + "T12:00:00Z");
+  return new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC" }).format(date).replace(/-/g, "/");
+};
+
 const canUseProfessionalRole = (roles: string[]) => roles.some(role => ["supplier", "bar_seller", "seller"].includes(role));
 
 export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) {
@@ -58,6 +82,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
   const [sort, setSort] = useState("newest");
   const [orderItems, setOrderItems] = useState<DirectOrderItem[]>([emptyItem()]);
   const [neededBy, setNeededBy] = useState("");
+  const [neededByError, setNeededByError] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
   const [orderBusy, setOrderBusy] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -365,7 +390,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
     setOrderBusy(true);
     setOrderError("");
     setOrderSaved(false);
-    const invalid = orderItems.some(item => !item.product.trim() || !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0);
+    const invalid = orderItems.some(item => !item.product.trim() || !Number.isFinite(Number(normalizeNumericInput(item.quantity))) || Number(normalizeNumericInput(item.quantity)) <= 0);
     if (invalid) {
       setOrderError("برای هر ردیف، نام محصول و مقدار مثبت وارد کنید.");
       setOrderBusy(false);
@@ -386,14 +411,14 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
       return;
     }
 
-    const rows = orderItems.map(item => ({
+    const normalizedNeededBy = neededBy.trim() ? jalaliToIsoDate(neededBy) : null;\n    if (neededBy.trim() && !normalizedNeededBy) { setNeededByError("تاریخ شمسی را به شکل ۱۴۰۵/۰۷/۲۹ وارد کنید."); return; }\n    setNeededByError("");\n    const rows = orderItems.map(item => ({
       buyer_member_id: member.id,
       product_type: item.product.trim(),
       quantity: Number(item.quantity),
       quantity_unit: item.unit,
       destination_city: member.city || null,
       quality_requirements: [item.variety.trim(), item.quality].filter(Boolean).join(" — "),
-      needed_by: neededBy || null,
+      needed_by: normalizedNeededBy,
       notes: orderNotes.trim() || null,
       status: "new",
       load_id: null,
@@ -495,7 +520,7 @@ export function Requests({ ordersOnly = false }: { ordersOnly?: boolean } = {}) 
               <label className="text-xs font-semibold">واحد<select value={item.unit} onChange={e=>updateItem(index,"unit",e.target.value)} className="field-input mt-1"><option value="kg">کیلوگرم</option><option value="package">بسته</option><option value="ton">تن</option></select></label>
               <div className="flex items-end"><Button type="button" variant="outline" className="h-10 w-full text-xs" disabled={orderItems.length===1} onClick={()=>setOrderItems(items=>items.filter((_,i)=>i!==index))}><Trash2 className="ml-1 size-3.5"/>حذف ردیف</Button></div>
             </div>)}
-            <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" className="h-9 text-xs" onClick={()=>setOrderItems(items=>[...items,emptyItem()])}><Plus className="ml-1 size-4"/>افزودن محصول</Button><label className="min-w-40 flex-1 text-xs font-semibold">تاریخ موردنیاز<input type="date" value={neededBy} onChange={e=>setNeededBy(e.target.value)} className="field-input mt-1"/></label></div>
+            <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" className="h-9 text-xs" onClick={()=>setOrderItems(items=>[...items,emptyItem()])}><Plus className="ml-1 size-4"/>افزودن محصول</Button><label className="min-w-40 flex-1 text-xs font-semibold">تاریخ موردنیاز (هجری شمسی، اختیاری)<input type="text" inputMode="numeric" dir="ltr" value={neededBy} onChange={e=>{setNeededBy(normalizeDigits(e.target.value));setNeededByError("");}} className="field-input mt-1 text-left" placeholder="۱۴۰۵/۰۷/۲۹" aria-describedby="needed-by-help" /><span id="needed-by-help" className="mt-1 block text-[11px] text-muted-foreground">عدد فارسی یا انگلیسی؛ نمونه: ۱۴۰۵/۰۷/۲۹ یا 1405/07/29</span>{neededByError && <span role="alert" className="mt-1 block text-[11px] text-destructive">{neededByError}</span>}</label></div>
             <label className="block text-xs font-semibold">توضیحات تکمیلی<textarea value={orderNotes} onChange={e=>setOrderNotes(e.target.value)} className="field-input mt-1 min-h-20" placeholder="کیفیت یا شرایط موردنظر (اختیاری)"/></label>
             <Button type="submit" disabled={orderBusy} className="h-10 w-full sm:w-auto">{orderBusy ? "در حال ثبت…" : "ثبت درخواست سفارش"}</Button>
           </form>
