@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronDown, Leaf, MapPin, PackageCheck, Plus, Search, Send, ShoppingCart, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadCard } from "@/components/load-card";
 import { cities, faNumber, loads as sampleLoads, normalizeNumericInput, pageHead, qualities, type Load, type Quality } from "@/lib/marketplace";
@@ -276,7 +276,7 @@ function Requests() {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > load.stock) { setCartError("تعداد باید عدد صحیح و در محدوده موجودی باشد."); return; }
     const option = load.saleOptions?.find(item => item.saleType === saleType);
     if (!option || quantity < option.minimum) { setCartError(`حداقل سفارش این بخش ${faNumber(option?.minimum ?? load.minimum)} بسته است.`); return; }
-    setCartError(""); setCartNotice(""); setCartInvoiceVisible(false);
+    setCartError(""); setCartNotice(`«${load.product}» به سبد خرید اضافه شد.`); setCartInvoiceVisible(false);
     setCartItems(items => {
       const found = items.find(item => String(item.load.id) === String(load.id) && item.saleType === saleType);
       if (!found) return [...items, { load, quantity, saleType }];
