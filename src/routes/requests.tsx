@@ -174,9 +174,13 @@ function Requests() {
           const legacyType = String(row.sale_type || "regular");
           const saleOptions = rowTiers.length ? [...new Set(rowTiers.map((tier: any) => String(tier.sale_type)))].map((key: string) => {
             const labels: Record<string, string> = { retail: "خرده‌فروشی", wholesale: "عمده‌فروشی", special: "فروش ویژه", professional: "ویژه حرفه‌ای", regular: "فروش عادی", pro: "ویژه حرفه‌ای" };
-            const breaks = rowTiers.filter((tier: any) => String(tier.sale_type) === key).map((tier: any) => ({ minQuantity: Math.max(1, Number(tier.min_quantity ?? tier.minimum_packages ?? 1)), maxQuantity: tier.max_quantity == null ? null : Number(tier.max_quantity), price: Number(tier.unit_price) })).sort((a: any, b: any) => a.minQuantity - b.minQuantity);
+            const typedTiers = rowTiers.filter((tier: any) => String(tier.sale_type) === key);
+            const breaks = typedTiers.map((tier: any) => ({ minQuantity: Math.max(1, Number(tier.min_quantity ?? tier.minimum_packages ?? 1)), maxQuantity: tier.max_quantity == null ? null : Number(tier.max_quantity), price: Number(tier.unit_price) })).sort((a: any, b: any) => a.minQuantity - b.minQuantity);
             const first = breaks[0];
-            return { saleType: key, label: labels[key] || key, price: Number(first?.price ?? row.price) || 0, minimum: Math.max(1, Number(rowTiers.filter((tier: any) => String(tier.sale_type) === key).reduce((min: number, tier: any) => Math.min(min, Number(tier.minimum_packages ?? 1)), Number.POSITIVE_INFINITY) || row.min_order_quantity || 1)), priceBreaks: breaks };
+            const packageMinimums = typedTiers.map((tier: any) => Number(tier.minimum_packages)).filter((value: number) => Number.isFinite(value) && value > 0);
+            const kgMinimums = typedTiers.map((tier: any) => Number(tier.min_quantity)).filter((value: number) => Number.isFinite(value) && value > 0);
+            const minimum = packageMinimums.length ? Math.min(...packageMinimums) : kgMinimums.length ? Math.ceil(Math.min(...kgMinimums) / weight) : Number(row.min_order_quantity ?? 1);
+            return { saleType: key, label: labels[key] || key, price: Number(first?.price ?? row.price) || 0, minimum: Math.max(1, minimum), priceBreaks: breaks };
           }) : [{ saleType: legacyType, label: "قیمت پایه", price: Number(row.price) || 0, minimum: Math.max(1, Number(row.min_order_quantity ?? 1)) }];
           return {
             id: row.id, memberId: String(row.member_id || ""), saleType: legacyType, saleOptions, packageType: String(row.package_type || "کارتن"), createdAt: String(row.created_at || ""), product,
