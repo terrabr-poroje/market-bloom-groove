@@ -80,11 +80,17 @@ jobs:
           }
           config.name = 'terrabar-market';
           config.routes = [
-            { pattern: 'terrabar.ir', custom_domain: true },
-            { pattern: 'www.terrabar.ir', custom_domain: true }
+            { pattern: 'terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' },
+            { pattern: 'www.terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' }
           ];
           fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
-          console.log('Verified generated Worker config for terrabar-market.');
+          const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
+          for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
+            if (!(verified.routes || []).some(route => route.pattern === hostname + '/*' && route.zone_id === '5abde3806e64424f9179eb509cabe824' && !route.custom_domain)) {
+              throw new Error('Refusing deployment: approved Worker route missing for ' + hostname);
+            }
+          }
+          console.log('Verified existing Terrabar Worker routes; DNS records are preserved.');
           NODE
 
       - name: Deploy existing Terrabar Worker
@@ -103,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           for base in https://terrabar.ir https://www.terrabar.ir; do
-            for route in / /auth /member-home /account /account-preview /seller-account-preview /supplier-account-preview /login-buyer /login-seller /login-supplier /seller-accounting-preview /seller-orders-preview /seller-purchase-preview /orders-current-preview /orders-completed-preview /membership /announce /requests /admin-login /reset-password; do
+            for route in / /auth /member-home /account /account-preview /seller-account-preview /supplier-account-preview /login-buyer /login-seller /login-supplier /seller-accounting-preview /seller-orders-preview /seller-purchase-preview /orders-current-preview /orders-completed-preview /membership /announce /requests /cart /professional-purchase /admin-login /reset-password; do
               status="000"
               for attempt in 1 2 3 4 5 6; do
                 status="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "$base$route" || true)"
