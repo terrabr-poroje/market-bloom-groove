@@ -28,6 +28,7 @@ type SiteVisitSummary = { total_visits: number; unique_visitors: number; visits_
 type AdminRating = { id: string; order_id: string; reviewer_member_id: string; target_type: string; score: number; review_text: string | null; created_at: string; messages: { id: string; sender_user_id: string; message: string; created_at: string }[] };
 type AdminBankAccount = { id: string; member_id: string; bank_name: string; account_holder_name: string; iban: string; verification_status: string; members: { full_name: string; phone: string | null; city: string | null } | null };
 type AdminFinanceTransaction = { id: string; member_id: string; order_id: string | null; transaction_type: string; amount: number; description: string; reference_code: string | null; transaction_date: string; payout_status: string; members: { full_name: string; phone: string | null } | null };
+type PlatformFinanceEntry = { id: string; entry_type: string; entry_status: string; amount: number; currency: string; order_id: string | null; member_id: string | null; provider: string | null; external_reference: string | null; description: string; created_at: string };
 
 function AdminPage() {
   const { user, loading, isAdmin, roles } = useAuth();
@@ -57,6 +58,7 @@ function AdminPage() {
   const [ratingReplyBusy, setRatingReplyBusy] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<AdminBankAccount[]>([]);
   const [financeTransactions, setFinanceTransactions] = useState<AdminFinanceTransaction[]>([]);
+  const [platformLedger, setPlatformLedger] = useState<PlatformFinanceEntry[]>([]);
   const [payoutAmounts, setPayoutAmounts] = useState<Record<string, string>>({});
   const [payoutReferences, setPayoutReferences] = useState<Record<string, string>>({});
   const [financeBusy, setFinanceBusy] = useState(false);
@@ -125,6 +127,10 @@ function AdminPage() {
         .select('id, member_id, order_id, transaction_type, amount, description, reference_code, transaction_date, payout_status, members!inner(full_name, phone)')
         .order('transaction_date', { ascending: false }).limit(300)
         .then(({ data, error }: { data: AdminFinanceTransaction[] | null; error: unknown }) => { if (!error) setFinanceTransactions(data ?? []); });
+      void (supabase as any).from('platform_financial_ledger')
+        .select('id, entry_type, entry_status, amount, currency, order_id, member_id, provider, external_reference, description, created_at')
+        .order('created_at', { ascending: false }).limit(500)
+        .then(({ data, error }: { data: PlatformFinanceEntry[] | null; error: unknown }) => { if (!error) setPlatformLedger(data ?? []); else setFinanceError('دفتر مالی سراسری دریافت نشد؛ دسترسی مدیر کل و سیاست‌های امنیتی را بررسی کنید.'); });
 
       void supabase.functions.invoke('admin-manage-city-manager', { body: { action: 'list' } }).then(({ data, error }) => {
         if (error || !data) { setManagerError('فهرست مدیران شهر دریافت نشد.'); return; }
@@ -352,6 +358,42 @@ function AdminPage() {
           </div>
           {financeError && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{financeError}</p>}
           {financeNotice && <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">{financeNotice}</p>}
+          {(() => {
+            const confirmed = platformLedger.filter(entry => entry.entry_status === 'confirmed');
+            const sum = (kind: string) => confirmed.filter(entry => entry.entry_type === kind).reduce((total, entry) => total + Number(entry.amount), 0);
+            const totalSales = sum('sale_gross');
+            const commissions = sum('platform_commission');
+            const gatewayFees = sum('gateway_fee');
+            const refunds = sum('refund');
+            const netProfit = commissions - gatewayFees - refunds;
+            return <section className="grid gap-4">
+              <div>
+                <h3 className="text-lg font-bold">گزارش مالی سراسری ترابار</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">این ارقام فقط از ردیف‌های دفتر مالی با وضعیت «تأییدشده» محاسبه می‌شوند؛ سفارش‌های پرداخت‌نشده و تسویه‌های در انتظار درآمد قطعی نیستند. تا اتصال درگاه، داده‌ها باید با تأیید مستند مدیر کل وارد شوند.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {[
+                  ['فروش ثبت‌شده قطعی', totalSales],
+                  ['کارمزد ترابار', commissions],
+                  ['کارمزد درگاه', gatewayFees],
+                  ['برگشت وجه', refunds],
+                  ['مانده خالص محاسباتی', netProfit],
+                ].map(([label, value]) => <div key={String(label)} className="rounded-xl border border-border bg-card p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-lg font-bold">{faNumber(Number(value))} تومان</p></div>)}
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h4 className="font-bold">دفتر تطبیق درگاه و بانک</h4>
+                <p className="mt-1 text-sm text-muted-foreground">برای جلوگیری از دوباره‌شماری، هر رویداد باید شناسه یکتا، سفارش مرتبط و مرجع ارائه‌دهنده داشته باشد. این دفتر هنوز به درگاه متصل نیست و خالی‌بودنش به معنی نبود فروش در سامانه نیست.</p>
+                {platformLedger.length === 0 ? <p className="mt-4 text-sm">هنوز رویدادی در دفتر مالی سراسری ثبت نشده است.</p> : <div className="mt-3 grid gap-2">
+                  {platformLedger.slice(0, 30).map(entry => <div key={entry.id} className="grid gap-1 border-t border-border py-3 text-sm sm:grid-cols-[1fr_auto]">
+                    <div><p className="font-medium">{({sale_gross:'فروش قطعی', platform_commission:'کارمزد ترابار', gateway_fee:'کارمزد درگاه', refund:'برگشت وجه', seller_payout:'پرداخت به فروشنده', gateway_receipt:'دریافت درگاه', adjustment:'اصلاح مالی'} as Record<string,string>)[entry.entry_type] ?? entry.entry_type} · {entry.entry_status === 'confirmed' ? 'تأییدشده' : entry.entry_status === 'pending' ? 'در انتظار' : entry.entry_status === 'failed' ? 'ناموفق' : 'برگشت‌خورده'}</p>
+                    <p className="text-xs text-muted-foreground">{entry.description || 'بدون توضیح'} · {entry.provider || 'بدون درگاه'} · مرجع: {entry.external_reference || '—'}</p>
+                    {entry.order_id && <p className="text-xs text-muted-foreground">شناسه سفارش: {entry.order_id}</p>}</div>
+                    <p className="font-semibold">{faNumber(Number(entry.amount))} {entry.currency === 'IRR' ? 'ریال' : 'تومان'}</p>
+                  </div>)}
+                </div>}
+              </div>
+            </section>;
+          })()}
           {bankAccounts.length === 0 && <p className="rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">هنوز حساب بانکی فروشنده‌ای ثبت نشده است.</p>}
           {bankAccounts.map(account => {
             const txs = financeTransactions.filter(tx => tx.member_id === account.member_id);
