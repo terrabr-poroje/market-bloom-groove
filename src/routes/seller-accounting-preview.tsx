@@ -44,7 +44,7 @@ function SellerAccountingPage() {
       const id = String(member.id);
       const [b, o, t] = await Promise.all([
         (supabase as any).from("seller_bank_accounts").select("id,bank_name,account_holder_name,iban,verification_status").eq("member_id", id).maybeSingle(),
-        (supabase as any).from("orders").select("id,seller_member_id,buyer_member_id,total_price,created_at,status,payment_status,delivery_status").or(`seller_member_id.eq.${id},buyer_member_id.eq.${id}`).order("created_at", { ascending: false }),
+        (supabase as any).from("orders").select("id,invoice_number,seller_member_id,buyer_member_id,total_price,created_at,status,payment_status,delivery_status").or(`seller_member_id.eq.${id},buyer_member_id.eq.${id}`).order("created_at", { ascending: false }),
         (supabase as any).from("seller_financial_transactions").select("id,order_id,transaction_type,amount,description,reference_code,transaction_date,payout_status,processed_at").eq("member_id", id).order("transaction_date", { ascending: false }),
       ]);
       if (!active) return;
@@ -69,7 +69,7 @@ function SellerAccountingPage() {
   const availableBalance = Math.max(0, receiptsTotal + adjustmentCredits - payoutsTotal - reservedPayouts);
   const due = availableBalance;
   const entries = useMemo(() => [
-    ...orders.map(o => ({ id: String(o.id), date: String(o.created_at), title: o.seller_member_id === memberId ? "فروش / سفارش دریافتی" : "خرید / صورتحساب پرداختنی", detail: "وضعیت تحویل: " + (o.delivery_status || o.status || "ثبت‌شده"), amount: (o.buyer_member_id === memberId && o.seller_member_id !== memberId ? -1 : 1) * Number(o.total_price ?? 0), status: "پرداخت: " + (o.payment_status ?? "نامشخص") })),
+    ...orders.map(o => ({ id: String(o.id), date: String(o.created_at), title: "فاکتور شماره " + new Intl.NumberFormat("fa-IR").format(o.invoice_number) + (o.seller_member_id === memberId ? " · فروش" : " · خرید"), detail: "وضعیت تحویل: " + (o.delivery_status || o.status || "ثبت‌شده"), amount: (o.buyer_member_id === memberId && o.seller_member_id !== memberId ? -1 : 1) * Number(o.total_price ?? 0), status: "پرداخت: " + (o.payment_status ?? "نامشخص") })),
     ...transactions.map(t => ({ id: String(t.id), date: String(t.transaction_date), title: t.transaction_type === "receipt" ? "اعتبار فروش خالص" : t.transaction_type === "commission" ? "کارمزد ترابار (۵٪)" : t.transaction_type === "payout" ? "واریز به حساب بانکی / برداشت از مانده" : "اصلاح حساب", detail: String(t.description ?? "") + (t.reference_code ? " · شناسه پیگیری: " + t.reference_code : ""), amount: ["commission", "payout"].includes(String(t.transaction_type)) ? -Number(t.amount ?? 0) : Number(t.amount ?? 0), status: t.transaction_type === "payout" ? (t.payout_status === "success" ? "واریز موفق" : t.payout_status === "failed" ? "ناموفق" : t.payout_status === "in_progress" ? "در حال انجام" : "در انتظار واریز") + (t.processed_at ? " · " + fmtDate(t.processed_at) : "") : "ثبت‌شده" })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [orders, transactions]);
   const filtered = entries.filter(e => (!from || e.date.slice(0, 10) >= from) && (!to || e.date.slice(0, 10) <= to));
