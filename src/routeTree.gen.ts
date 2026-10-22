@@ -30,6 +30,7 @@ import { Route as ProfessionalPurchaseRouteImport } from './routes/professional-
 import { Route as OrdersCompletedPreviewRouteImport } from './routes/orders-completed-preview'
 import { Route as OrdersCurrentPreviewRouteImport } from './routes/orders-current-preview'
 import { Route as RequestsRouteImport } from './routes/requests'
+import { Route as ProductsRouteImport } from './routes/products'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as SellerAccountPreviewRouteImport } from './routes/seller-account-preview'
@@ -144,6 +145,11 @@ const RequestsRoute = RequestsRouteImport.update({
   path: '/requests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
+  '/products': typeof ProductsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rules': typeof RulesRoute
   '/seller-account-preview': typeof SellerAccountPreviewRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
+  '/products': typeof ProductsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rules': typeof RulesRoute
   '/seller-account-preview': typeof SellerAccountPreviewRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/orders-completed-preview': typeof OrdersCompletedPreviewRoute
   '/orders-current-preview': typeof OrdersCurrentPreviewRoute
   '/requests': typeof RequestsRoute
+  '/products': typeof ProductsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rules': typeof RulesRoute
   '/seller-account-preview': typeof SellerAccountPreviewRoute
@@ -303,6 +312,7 @@ export interface FileRouteTypes {
     | '/orders-completed-preview'
     | '/orders-current-preview'
     | '/requests'
+    | '/products'
     | '/reset-password'
     | '/rules'
     | '/seller-account-preview'
@@ -397,6 +407,7 @@ export interface RootRouteChildren {
   OrdersCompletedPreviewRoute: typeof OrdersCompletedPreviewRoute
   OrdersCurrentPreviewRoute: typeof OrdersCurrentPreviewRoute
   RequestsRoute: typeof RequestsRoute
+  ProductsRoute: typeof ProductsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RulesRoute: typeof RulesRoute
   SellerAccountPreviewRoute: typeof SellerAccountPreviewRoute
@@ -556,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -637,6 +655,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersCompletedPreviewRoute: OrdersCompletedPreviewRoute,
   OrdersCurrentPreviewRoute: OrdersCurrentPreviewRoute,
   RequestsRoute: RequestsRoute,
+  ProductsRoute: ProductsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RulesRoute: RulesRoute,
   SellerAccountPreviewRoute: SellerAccountPreviewRoute,
