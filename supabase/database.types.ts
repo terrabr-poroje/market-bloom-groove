@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_recovery_codes: {
+        Row: {
+          auth_user_id: string
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          used_at: string | null
+        }
+        Insert: {
+          auth_user_id: string
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          used_at?: string | null
+        }
+        Update: {
+          auth_user_id?: string
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       admin_user_cities: {
         Row: {
           admin_user_id: string
@@ -242,6 +269,11 @@ export type Database = {
       }
       loads: {
         Row: {
+          ad_end_date: string | null
+          ad_start_date: string | null
+          archived_at: string | null
+          archived_by: string | null
+          archived_previous_status: string | null
           city: string
           contact_phone: string | null
           count: number | null
@@ -263,6 +295,8 @@ export type Database = {
           quality: string | null
           quantity: number
           ready_date: string
+          response_end_time: string | null
+          response_start_time: string | null
           role: string
           sale_type: string | null
           seller_type: string | null
@@ -273,6 +307,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ad_end_date?: string | null
+          ad_start_date?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_previous_status?: string | null
           city: string
           contact_phone?: string | null
           count?: number | null
@@ -294,6 +333,8 @@ export type Database = {
           quality?: string | null
           quantity: number
           ready_date: string
+          response_end_time?: string | null
+          response_start_time?: string | null
           role: string
           sale_type?: string | null
           seller_type?: string | null
@@ -304,6 +345,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ad_end_date?: string | null
+          ad_start_date?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_previous_status?: string | null
           city?: string
           contact_phone?: string | null
           count?: number | null
@@ -325,6 +371,8 @@ export type Database = {
           quality?: string | null
           quantity?: number
           ready_date?: string
+          response_end_time?: string | null
+          response_start_time?: string | null
           role?: string
           sale_type?: string | null
           seller_type?: string | null
@@ -352,6 +400,7 @@ export type Database = {
           created_at: string
           id: string
           member_id: string
+          request_note: string | null
           role_code: string
         }
         Insert: {
@@ -361,6 +410,7 @@ export type Database = {
           created_at?: string
           id?: string
           member_id: string
+          request_note?: string | null
           role_code: string
         }
         Update: {
@@ -370,6 +420,7 @@ export type Database = {
           created_at?: string
           id?: string
           member_id?: string
+          request_note?: string | null
           role_code?: string
         }
         Relationships: [
@@ -384,11 +435,14 @@ export type Database = {
       }
       members: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           auth_user_id: string | null
           city: string
           email: string | null
           full_name: string
           id: string
+          is_archived: boolean
           joined_at: string
           phone: string | null
           products: string | null
@@ -396,11 +450,14 @@ export type Database = {
           verification_status: string | null
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           auth_user_id?: string | null
           city: string
           email?: string | null
           full_name: string
           id?: string
+          is_archived?: boolean
           joined_at?: string
           phone?: string | null
           products?: string | null
@@ -408,11 +465,14 @@ export type Database = {
           verification_status?: string | null
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           auth_user_id?: string | null
           city?: string
           email?: string | null
           full_name?: string
           id?: string
+          is_archived?: boolean
           joined_at?: string
           phone?: string | null
           products?: string | null
@@ -469,6 +529,7 @@ export type Database = {
           delivery_status: string
           delivery_type: string | null
           id: string
+          invoice_number: number
           load_id: string
           notes: string | null
           paid_at: string | null
@@ -499,6 +560,7 @@ export type Database = {
           delivery_status?: string
           delivery_type?: string | null
           id?: string
+          invoice_number?: number
           load_id: string
           notes?: string | null
           paid_at?: string | null
@@ -529,6 +591,7 @@ export type Database = {
           delivery_status?: string
           delivery_type?: string | null
           id?: string
+          invoice_number?: number
           load_id?: string
           notes?: string | null
           paid_at?: string | null
@@ -616,6 +679,75 @@ export type Database = {
           },
         ]
       }
+      platform_financial_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string
+          entry_status: string
+          entry_type: string
+          external_reference: string | null
+          id: string
+          idempotency_key: string | null
+          member_id: string | null
+          occurred_at: string | null
+          order_id: string | null
+          provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          entry_status?: string
+          entry_type: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key?: string | null
+          member_id?: string | null
+          occurred_at?: string | null
+          order_id?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          entry_status?: string
+          entry_type?: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key?: string | null
+          member_id?: string | null
+          occurred_at?: string | null
+          order_id?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_financial_ledger_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_financial_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_requests: {
         Row: {
           buyer_member_id: string | null
@@ -629,6 +761,7 @@ export type Database = {
           quality_requirements: string | null
           quantity: number
           quantity_unit: string
+          request_number: number
           status: string
           updated_at: string
         }
@@ -644,6 +777,7 @@ export type Database = {
           quality_requirements?: string | null
           quantity: number
           quantity_unit?: string
+          request_number?: number
           status?: string
           updated_at?: string
         }
@@ -659,6 +793,7 @@ export type Database = {
           quality_requirements?: string | null
           quantity?: number
           quantity_unit?: string
+          request_number?: number
           status?: string
           updated_at?: string
         }
@@ -675,6 +810,239 @@ export type Database = {
             columns: ["load_id"]
             isOneToOne: false
             referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rating_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          rating_id: string
+          sender_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          rating_id: string
+          sender_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          rating_id?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_messages_rating_id_fkey"
+            columns: ["rating_id"]
+            isOneToOne: false
+            referencedRelation: "ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ratings: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          order_id: string
+          review_text: string | null
+          reviewer_member_id: string
+          score: number
+          target_load_id: string | null
+          target_member_id: string | null
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          order_id: string
+          review_text?: string | null
+          reviewer_member_id: string
+          score: number
+          target_load_id?: string | null
+          target_member_id?: string | null
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          order_id?: string
+          review_text?: string | null
+          reviewer_member_id?: string
+          score?: number
+          target_load_id?: string | null
+          target_member_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_reviewer_member_id_fkey"
+            columns: ["reviewer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_target_load_id_fkey"
+            columns: ["target_load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_target_member_id_fkey"
+            columns: ["target_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_bank_accounts: {
+        Row: {
+          account_holder_name: string
+          bank_name: string
+          created_at: string
+          iban: string
+          id: string
+          member_id: string
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          account_holder_name: string
+          bank_name: string
+          created_at?: string
+          iban: string
+          id?: string
+          member_id: string
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          account_holder_name?: string
+          bank_name?: string
+          created_at?: string
+          iban?: string
+          id?: string
+          member_id?: string
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_bank_accounts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_financial_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          member_id: string
+          order_id: string | null
+          payout_status: string
+          processed_at: string | null
+          processed_by: string | null
+          reference_code: string | null
+          transaction_date: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          member_id: string
+          order_id?: string | null
+          payout_status?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reference_code?: string | null
+          transaction_date?: string
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          member_id?: string
+          order_id?: string | null
+          payout_status?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reference_code?: string | null
+          transaction_date?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_financial_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_financial_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_visits: {
+        Row: {
+          id: string
+          member_id: string | null
+          route: string
+          user_id: string
+          visited_at: string
+        }
+        Insert: {
+          id?: string
+          member_id?: string | null
+          route: string
+          user_id: string
+          visited_at?: string
+        }
+        Update: {
+          id?: string
+          member_id?: string | null
+          route?: string
+          user_id?: string
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visits_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -900,14 +1268,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      site_visit_summary: {
+        Row: {
+          total_visits: number | null
+          unique_visitors: number | null
+          visitors_last_24_hours: number | null
+          visits_last_24_hours: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_storefront_member: {
+        Args: { p_member_id: string }
+        Returns: {
+          city: string
+          full_name: string
+          id: string
+          role: string
+          verification_status: string
+        }[]
+      }
+      terrabar_admin_archive_load: {
+        Args: { p_load_id: string }
+        Returns: undefined
+      }
+      terrabar_admin_archive_member: {
+        Args: { p_member_id: string }
+        Returns: undefined
+      }
+      terrabar_admin_create_payout: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_member_id: string
+          p_reference_code?: string
+        }
+        Returns: string
+      }
+      terrabar_admin_restore_load: {
+        Args: { p_load_id: string }
+        Returns: undefined
+      }
+      terrabar_admin_restore_member: {
+        Args: { p_member_id: string }
+        Returns: undefined
+      }
+      terrabar_admin_update_payout_status: {
+        Args: {
+          p_reference_code?: string
+          p_status: string
+          p_transaction_id: string
+        }
+        Returns: string
+      }
       terrabar_is_city_manager: {
         Args: { target_city: string }
         Returns: boolean
       }
       terrabar_is_main_admin: { Args: never; Returns: boolean }
+      terrabar_order_pricing_valid: {
+        Args: {
+          p_load_id: string
+          p_price: number
+          p_quantity: number
+          p_sale_type: string
+          p_total: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
