@@ -189,12 +189,6 @@ function MemberHome() {
           })}
         </div>
 
-        {sellingApproved && <Link to="/professional-purchase" className="group mt-4 flex min-h-24 items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4 text-right shadow-sm transition hover:border-primary/60 hover:shadow-md">
-          <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><ShoppingBasket className="size-7" aria-hidden="true" /></span>
-          <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground">خرید ویژه حرفه‌ای</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">فقط بارهای موجود با نوع فروش «ویژه حرفه‌ای»؛ این بارها در بازارهای عادی نمایش داده نمی‌شوند</span></span>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground"><ArrowLeft className="size-5" aria-hidden="true" /></span>
-        </Link>}
-
         {isProfessional && <>
           <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات فروش حرفه‌ای</h2>
           {!sellingApproved && <div className="mb-3 flex items-start gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
