@@ -9,6 +9,13 @@ export function useAuth() {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(true);
+  // Never leave the whole app blocked forever if Supabase session/role checks stall.
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadingTimedOut(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -129,7 +136,7 @@ export function useAuth() {
     session,
     user: session?.user ?? null,
     roles,
-    loading: loading || (Boolean(session?.user) && rolesLoading),
+    loading: !loadingTimedOut && (loading || (Boolean(session?.user) && rolesLoading)),
     isAdmin: roles.includes('admin'),
     canAnnounce: roles.includes('supplier') || roles.includes('seller'),
   };
