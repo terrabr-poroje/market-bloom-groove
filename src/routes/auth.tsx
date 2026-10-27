@@ -78,6 +78,10 @@ function AuthPage() {
     event.preventDefault();
     try {
     setBusy(true);
+    const networkWatchdog = window.setTimeout(() => {
+      setBusy(false);
+      setError("ارتباط با سرور پاسخ نداد. لطفاً اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
+    }, 15000);
     setError("");
     setNotice("");
     const normalizedPhone = normalizeIranPhone(phone);
@@ -139,6 +143,7 @@ function AuthPage() {
       console.error("[Terrabar auth] sendCode failed:", error);
       setError("ارتباط با سرور پاسخ نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
     } finally {
+      window.clearTimeout(networkWatchdog);
       setBusy(false);
     }
   }
@@ -147,6 +152,10 @@ function AuthPage() {
     event.preventDefault();
     try {
     setBusy(true);
+    const networkWatchdog = window.setTimeout(() => {
+      setBusy(false);
+      setError("ارتباط با سرور پاسخ نداد. لطفاً اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
+    }, 15000);
     setError("");
     setNotice("");
     const normalizedPhone = normalizeIranPhone(phone);
@@ -259,6 +268,7 @@ function AuthPage() {
       console.error("[Terrabar auth] verifyCode failed:", error);
       setError("ارتباط با سرور پاسخ نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
     } finally {
+      window.clearTimeout(networkWatchdog);
       setBusy(false);
     }
   }
