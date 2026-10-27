@@ -49,7 +49,7 @@ function AuthPage() {
   const roleParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("role") : null;
   const fixedRole = roleParam === "supplier" ? "supplier" : roleParam === "seller" || roleParam === "bar_seller" ? "bar_seller" : roleParam === "buyer" ? "buyer" : null;
   const roleTitle = fixedRole === "buyer" ? "خریدار" : fixedRole === "bar_seller" ? "بارفروش" : fixedRole === "supplier" ? "تأمین‌کننده" : null;
-  const { user, loading, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [adminLogin, setAdminLogin] = useState(false);
@@ -248,8 +248,6 @@ function AuthPage() {
       else void navigate({ to: "/member-home" });
     }, 900);
   }
-
-  if (loading) return <section className="py-16 text-center text-sm text-muted-foreground">در حال بررسی حساب…</section>;
 
   if (user && !codeSent && !busy && !error) {
     return (
