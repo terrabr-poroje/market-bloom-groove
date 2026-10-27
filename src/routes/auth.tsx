@@ -76,6 +76,7 @@ function AuthPage() {
 
   async function sendCode(event: FormEvent) {
     event.preventDefault();
+    try {
     setBusy(true);
     setError("");
     setNotice("");
@@ -134,10 +135,17 @@ function AuthPage() {
       setNotice(authMethod === "phone" ? "کد یک‌بارمصرف پیامکی ارسال شد." : "کد عددی تأیید به ایمیل شما ارسال شد؛ صندوق ورودی و پوشه هرزنامه را بررسی کنید.");
     }
     setBusy(false);
+    } catch (error) {
+      console.error("[Terrabar auth] sendCode failed:", error);
+      setError("ارتباط با سرور پاسخ نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
+    try {
     setBusy(true);
     setError("");
     setNotice("");
@@ -247,6 +255,12 @@ function AuthPage() {
       if (safeNext) window.location.assign(safeNext);
       else void navigate({ to: "/member-home" });
     }, 900);
+    } catch (error) {
+      console.error("[Terrabar auth] verifyCode failed:", error);
+      setError("ارتباط با سرور پاسخ نداد. اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (user && !codeSent && !busy && !error) {
