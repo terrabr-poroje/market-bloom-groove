@@ -117,9 +117,12 @@ function MemberHome() {
   const title = primaryRole === "supplier" ? "تأمین‌کننده" : primaryRole === "seller" ? "بارفروش و حجره‌دار" : "خریدار";
   const isProfessional = hasSupplierRole || hasSellerRole;
 
-  const buyerOptions = [
+  const shoppingOptions = [
     { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
     { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
+  ];
+
+  const accountOptions = [
     { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
     { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
   ];
@@ -176,17 +179,33 @@ function MemberHome() {
           </div>
         </header>
 
-        <h2 className="mb-3 text-lg font-extrabold text-foreground">امکانات خرید و حساب</h2>
-        <div className="grid grid-cols-1 gap-3 sm:gap-4">
-          {buyerOptions.map((option) => {
-            const Icon = option.icon;
-            return <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">
-              <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-5" aria-hidden="true" /></span>
-            </Link>;
-          })}
-        </div>
+        <section aria-labelledby="member-shopping-heading">
+          <h2 id="member-shopping-heading" className="mb-3 text-lg font-extrabold text-foreground">بازار و خرید</h2>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            {shoppingOptions.map((option) => {
+              const Icon = option.icon;
+              return <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">
+                <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-5" aria-hidden="true" /></span>
+              </Link>;
+            })}
+          </div>
+        </section>
+
+        <section aria-labelledby="member-account-heading" className="mt-7">
+          <h2 id="member-account-heading" className="mb-3 text-lg font-extrabold text-foreground">پیگیری و امور مالی</h2>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            {accountOptions.map((option) => {
+              const Icon = option.icon;
+              return <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">
+                <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-5" aria-hidden="true" /></span>
+              </Link>;
+            })}
+          </div>
+        </section>
 
         {sellingApproved && <Link to="/professional-purchase" className="group mt-4 flex min-h-24 items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4 text-right shadow-sm transition hover:border-primary/60 hover:shadow-md">
           <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><ShoppingBasket className="size-7" aria-hidden="true" /></span>
