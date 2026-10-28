@@ -63,6 +63,7 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
   const [cityAccessReady, setCityAccessReady] = useState(false);
   const [myDirectRequests, setMyDirectRequests] = useState<MyDirectRequest[]>([]);
   const [myOrders, setMyOrders] = useState<MyOrder[]>([]);
+  const [trackingView, setTrackingView] = useState<"all" | "orders" | "requests">("all");
   const [loadingMyRequests, setLoadingMyRequests] = useState(false);
   const [myRequestError, setMyRequestError] = useState("");
   const [liveLoads, setLiveLoads] = useState<Load[]>([]);
@@ -541,11 +542,26 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
             <div className="flex gap-2"><Link to="/cart" className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground"><ShoppingCart className="size-4"/>ادامه خرید / سبد</Link><a href="#market-loads" className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-semibold">بازگشت به بازار</a></div>
           </div>
           {myRequestError && <p role="alert" className="mb-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{myRequestError}</p>}
+          <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3" role="tablist" aria-label="دسته‌بندی پیگیری">
+            <button type="button" role="tab" aria-selected={trackingView === "all"} onClick={() => setTrackingView("all")} className={`rounded-xl border p-3 text-right transition-colors ${trackingView === "all" ? "border-primary bg-accent/60" : "border-border bg-card hover:bg-muted/50"}`}>
+              <span className="block text-sm font-bold">همه موارد</span><span className="mt-1 block text-xs text-muted-foreground">{faNumber(myOrders.length + myDirectRequests.length)} مورد</span>
+            </button>
+            <button type="button" role="tab" aria-selected={trackingView === "orders"} onClick={() => setTrackingView("orders")} className={`rounded-xl border p-3 text-right transition-colors ${trackingView === "orders" ? "border-primary bg-accent/60" : "border-border bg-card hover:bg-muted/50"}`}>
+              <span className="block text-sm font-bold">خریدهای ثبت‌شده</span><span className="mt-1 block text-xs text-muted-foreground">{faNumber(myOrders.length)} فاکتور</span>
+            </button>
+            <button type="button" role="tab" aria-selected={trackingView === "requests"} onClick={() => setTrackingView("requests")} className={`rounded-xl border p-3 text-right transition-colors ${trackingView === "requests" ? "border-primary bg-accent/60" : "border-border bg-card hover:bg-muted/50"}`}>
+              <span className="block text-sm font-bold">درخواست‌های تأمین</span><span className="mt-1 block text-xs text-muted-foreground">{faNumber(myDirectRequests.length)} درخواست</span>
+            </button>
+          </div>
           {loadingMyRequests ? <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">در حال دریافت سفارش‌ها…</p> : <>
+            {trackingView !== "requests" && <>
             <h3 className="mb-2 font-bold">خریدهای ثبت‌شده</h3>
             {myOrders.length ? <div className="mb-5 space-y-2">{myOrders.map(order=><article key={order.id} className="rounded-xl border border-border bg-card p-3 sm:p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">فاکتور شماره {faNumber(order.invoice_number)}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("fa-IR")} · {faNumber(order.quantity)} {order.unit==="package"?"بسته":order.unit}</p></div><span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-primary">{orderStatusLabels[order.status] || order.status || "در حال بررسی"}</span></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"><span>پرداخت: {paymentStatusLabels[order.payment_status] || order.payment_status || "نامشخص"}</span>{order.total_price != null && <span>مبلغ: {faNumber(order.total_price)} تومان</span>}{order.delivery_status && <span>تحویل: {deliveryStatusLabels[order.delivery_status] || order.delivery_status}</span>}</div><div className="mt-3 flex flex-wrap gap-2"><Link to="/cart" className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground">ادامه خرید</Link><a href="#market-loads" className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold">انتخاب محصول دیگر</a></div></article>)}</div> : <p className="mb-5 rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">هنوز خریدی ثبت نکرده‌اید. از بازار محصول انتخاب کنید و به سبد خرید بروید.</p>}
+            </>}
+            {trackingView !== "orders" && <>
             <h3 className="mb-2 font-bold">درخواست‌های تأمین چندمحصولی</h3>
             {myDirectRequests.length ? <div className="space-y-2">{myDirectRequests.map(request=><article key={request.id} className="rounded-xl border border-border bg-card p-3 sm:p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">درخواست شماره {faNumber(request.request_number)} · {request.product_type} · {faNumber(request.quantity)} {request.quantity_unit==="kg"?"کیلوگرم":request.quantity_unit==="ton"?"تن":"بسته"}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(request.created_at).toLocaleDateString("fa-IR")}{request.quality_requirements ? ` · ${request.quality_requirements}` : ""}</p></div><span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-primary">{directStatusLabels[request.status] || request.status}</span></div>{request.notes && <p className="mt-2 text-xs text-muted-foreground">{request.notes}</p>}<div className="mt-3 flex gap-2"><a href="#direct-order" className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold">ثبت درخواست جدید</a><a href="#market-loads" className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground">ادامه خرید از بازار</a></div></article>)}</div> : <p className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">درخواستی برای تأمین ثبت نشده است.</p>}
+            </>}
           </>}
         </div>
       </section>
