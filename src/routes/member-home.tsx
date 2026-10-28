@@ -157,6 +157,14 @@ function MemberHome() {
       enabled: sellingApproved,
       style: "bg-teal-50 text-teal-800",
     },
+    {
+      title: "مدیریت بارها",
+      description: sellingApproved ? "مدیریت بارهایی که در ویترین اختصاصی شما نمایش داده می‌شوند" : "برای فعال‌شدن مدیریت ویترین، تأیید عضویت لازم است",
+      icon: ClipboardList,
+      to: "/announce",
+      enabled: sellingApproved,
+      style: "bg-sky-50 text-sky-800",
+    },
   ];
 
   return (
