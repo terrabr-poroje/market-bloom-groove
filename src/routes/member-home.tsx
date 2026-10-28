@@ -116,16 +116,22 @@ function MemberHome() {
   const title = primaryRole === "supplier" ? "تأمین‌کننده" : primaryRole === "seller" ? "بارفروش و حجره‌دار" : "خریدار";
   const isProfessional = hasSupplierRole || hasSellerRole;
 
-  const memberOptions = [
+  const accountOptions = [
     { title: "حساب کاربری", icon: UserRound, to: "/account" },
+    { title: "امور مالی و فاکتورها", icon: WalletCards, to: "/seller-accounting-preview" },
+  ];
+
+  const buyingOptions = [
     { title: "درخواست خرید", icon: ShoppingBasket, to: "/requests" },
     { title: "درخواست سفارش", icon: ClipboardList, to: "/requests" },
     { title: "خرید ویژه حرفه ای", icon: ShoppingBasket, to: "/professional-purchase" },
     { title: "پیگیری خرید و سفارش", icon: PackageCheck, to: "/orders" },
+  ];
+
+  const sellingOptions = [
     { title: "اعلام بار", icon: PackagePlus, to: "/announce" },
     { title: "مدیریت بار ها", icon: ClipboardList, to: "/announce" },
     { title: "ویترین فروش اختصاصی", icon: Store, to: sellingApproved ? `/store/${memberId}` : "/membership" },
-    { title: "امور مالی و فاکتورها", icon: WalletCards, to: "/seller-accounting-preview" },
   ];
 
   const buyerOptions = [
@@ -134,8 +140,35 @@ function MemberHome() {
     { title: "پیگیری خرید و سفارش", icon: PackageCheck, to: "/orders" },
   ];
 
-  const visibleOptions = isProfessional ? memberOptions : buyerOptions;
+  const renderOptions = (options: typeof accountOptions) => options.map((option) => {
+    const Icon = option.icon;
+    return (
+      <Link
+        key={option.title}
+        to={option.to as any}
+        className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-28 sm:px-5"
+      >
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-800 sm:size-14">
+          <Icon className="size-6 sm:size-7" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1 text-base font-extrabold text-foreground sm:text-lg">{option.title}</span>
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+        </span>
+      </Link>
+    );
+  });
 
+  const renderSection = (heading: string, options: typeof accountOptions) => (
+    <section aria-label={heading} className="mt-6 first:mt-0">
+      <h2 className="mb-3 text-lg font-extrabold text-foreground">{heading}</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {renderOptions(options)}
+      </div>
+    </section>
+  );
+
+  const visibleBuyerOptions = buyerOptions;
   return (
     <main dir="rtl" className="min-h-[70vh] bg-market-surface px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
@@ -147,30 +180,18 @@ function MemberHome() {
           <p className="mt-2 text-sm leading-7 text-emerald-50/90">{name ? `خوش آمدید، ${name}.` : "به ترابار خوش آمدید."}</p>
         </header>
 
-        {isProfessional && (
-          <h2 className="mb-4 text-lg font-extrabold text-foreground">امکانات فروش حرفه‌ای</h2>
+        {isProfessional ? (
+          <>
+            {renderSection("حساب کاربری", accountOptions)}
+            {renderSection("امکانات خرید", buyingOptions)}
+            {renderSection("امکانات فروش", sellingOptions)}
+          </>
+        ) : (
+          <>
+            {renderSection("حساب کاربری", visibleBuyerOptions.filter((option) => option.title === "حساب کاربری"))}
+            {renderSection("امکانات خرید", visibleBuyerOptions.filter((option) => option.title !== "حساب کاربری"))}
+          </>
         )}
-
-        <section aria-label={isProfessional ? "امکانات صفحه اصلی عضو حرفه‌ای" : "امکانات خریدار"} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {visibleOptions.map((option) => {
-            const Icon = option.icon;
-            return (
-              <Link
-                key={option.title}
-                to={option.to as any}
-                className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-28 sm:px-5"
-              >
-                <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-800 sm:size-14">
-                  <Icon className="size-6 sm:size-7" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1 text-base font-extrabold text-foreground sm:text-lg">{option.title}</span>
-                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary">
-                  <ArrowLeft className="size-4" aria-hidden="true" />
-                </span>
-              </Link>
-            );
-          })}
-        </section>
       </div>
     </main>
   );
