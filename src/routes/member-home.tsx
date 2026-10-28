@@ -119,7 +119,7 @@ function MemberHome() {
 
   const accountOptions = [
     { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
-    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
+    { title: "امور مالی و فاکتورها", description: "گردش حساب، فاکتورها، ثبت حساب بانکی و درخواست تسویه", icon: WalletCards, to: "/seller-accounting-preview", style: "bg-violet-50 text-violet-800" },
   ];
 
   const buyerOptions = [
