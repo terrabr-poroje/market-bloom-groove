@@ -539,7 +539,8 @@ function AnnouncePage() {
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
         <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Megaphone className="size-6 text-primary" />اعلام بار جدید</h1>
         <p className="mt-2 text-sm text-muted-foreground">اعلام بار فقط برای عضویت حرفه‌ای تأییدشده فعال است. تأمین‌کننده فقط در «ویژه حرفه‌ای» و بارفروش در بخش‌های مجاز از جمله «ویژه حرفه‌ای» بار اعلام می‌کند.</p>
-        <div className="mt-6 border-t border-border pt-5">
+        {false && <div>
+<div className="mt-6 border-t border-border pt-5">
           <h2 className="text-lg font-bold">درخواست‌های سفارش برای بارهای من</h2>
           {loadingIncomingOrders ? <p className="mt-3 text-sm text-muted-foreground">در حال دریافت درخواست‌ها…</p> : incomingOrders.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">درخواست سفارشی برای بارهای شما ثبت نشده است.</p> : (
             <ul className="mt-3 grid gap-3">
@@ -606,6 +607,7 @@ function AnnouncePage() {
           )}
           {manageError && <p role="alert" className="mt-3 text-sm text-destructive">{manageError}</p>}
         </div>
+        </div>}
         {saved ? (
           <div className="mt-8 text-center"><CheckCircle2 className="mx-auto mb-3 size-12 text-primary" /><p className="font-bold">بار شما با موفقیت منتشر شد</p><p className="mt-2 text-sm text-muted-foreground">آگهی شما اکنون در فهرست بارهای فعال بازار نمایش داده می‌شود.</p><Button asChild className="mt-6"><Link to="/">بازگشت به بازار</Link></Button></div>
         ) : (
