@@ -29,6 +29,13 @@ function MemberHome() {
   const [roleData, setRoleData] = useState<RoleHomeData | null>(null);
   const [roleCheckDone, setRoleCheckDone] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [pageWaitExpired, setPageWaitExpired] = useState(false);
+
+  // Independent page-level fallback in case the shared auth loading flag never clears.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPageWaitExpired(true), 12000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -102,8 +109,15 @@ function MemberHome() {
     };
   }, [user?.id]);
 
-  if (loading || !roleCheckDone) {
+  if (!pageWaitExpired && (loading || !roleCheckDone)) {
     return <main dir="rtl" className="site-container py-16 text-center text-sm text-muted-foreground">در حال آماده‌سازی صفحه حساب شما…</main>;
+  }
+
+  if (pageWaitExpired && loading && !roleData) {
+    return <main dir="rtl" className="site-container py-16 text-center" role="alert">
+      <p className="text-sm text-destructive">بررسی ورود طول کشید و صفحه حساب آماده نشد. لطفاً دوباره تلاش کنید.</p>
+      <button type="button" onClick={() => window.location.reload()} className="mt-5 inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">تلاش مجدد</button>
+    </main>;
   }
 
   if (!user) {
