@@ -30,6 +30,9 @@ function SellerAccountingPage() {
   const [notice, setNotice] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  const [requestingPayout, setRequestingPayout] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -42,16 +45,18 @@ function SellerAccountingPage() {
         return;
       }
       const id = String(member.id);
-      const [b, o, t] = await Promise.all([
+      const [b, o, t, p] = await Promise.all([
         (supabase as any).from("seller_bank_accounts").select("id,bank_name,account_holder_name,iban,verification_status").eq("member_id", id).maybeSingle(),
         (supabase as any).from("orders").select("id,invoice_number,seller_member_id,buyer_member_id,total_price,created_at,status,payment_status,delivery_status").or(`seller_member_id.eq.${id},buyer_member_id.eq.${id}`).order("created_at", { ascending: false }),
         (supabase as any).from("seller_financial_transactions").select("id,order_id,transaction_type,amount,description,reference_code,transaction_date,payout_status,processed_at").eq("member_id", id).order("transaction_date", { ascending: false }),
+        (supabase as any).from("seller_payout_requests").select("id,amount,status,requested_at,transfer_reference,admin_note").eq("member_id", id).order("requested_at", { ascending: false }),
       ]);
       if (!active) return;
       if (b.error) setError("خواندن حساب بانکی ناموفق بود: " + b.error.message);
       else if (b.data) { setBank(b.data); setBankName(b.data.bank_name); setHolder(b.data.account_holder_name); setIban(b.data.iban); }
       if (o.error) setError("خواندن سفارش‌ها ناموفق بود: " + o.error.message); else setOrders(o.data ?? []);
       if (t.error) setError("خواندن تراکنش‌ها ناموفق بود: " + t.error.message); else setTransactions(t.data ?? []);
+      if (p.error) setError("خواندن درخواست‌های تسویه ناموفق بود: " + p.error.message); else setPayoutRequests(p.data ?? []);
       setMemberId(id); setBusy(false);
     }
     if (!loading) void load();
@@ -73,6 +78,24 @@ function SellerAccountingPage() {
     ...transactions.map(t => ({ id: String(t.id), date: String(t.transaction_date), title: t.transaction_type === "receipt" ? "اعتبار فروش خالص" : t.transaction_type === "commission" ? "کارمزد ترابار (۵٪)" : t.transaction_type === "payout" ? "واریز به حساب بانکی / برداشت از مانده" : "اصلاح حساب", detail: String(t.description ?? "") + (t.reference_code ? " · شناسه پیگیری: " + t.reference_code : ""), amount: ["commission", "payout"].includes(String(t.transaction_type)) ? -Number(t.amount ?? 0) : Number(t.amount ?? 0), status: t.transaction_type === "payout" ? (t.payout_status === "success" ? "واریز موفق" : t.payout_status === "failed" ? "ناموفق" : t.payout_status === "in_progress" ? "در حال انجام" : "در انتظار واریز") + (t.processed_at ? " · " + fmtDate(t.processed_at) : "") : "ثبت‌شده" })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [orders, transactions]);
   const filtered = entries.filter(e => (!from || e.date.slice(0, 10) >= from) && (!to || e.date.slice(0, 10) <= to));
+
+  async function requestPayout(e: FormEvent) {
+    e.preventDefault(); setError(""); setNotice("");
+    const amount = Number(payoutAmount.replace(/[٬,\s]/g, ""));
+    if (!bank || bank.verification_status !== "verified") { setError("ابتدا باید حساب بانکی شما توسط مدیر تأیید شود."); return; }
+    if (!Number.isFinite(amount) || amount <= 0 || amount > availableBalance) { setError("مبلغ درخواست باید مثبت و حداکثر برابر مانده قابل تسویه باشد."); return; }
+    setRequestingPayout(true);
+    const result = await (supabase as any).rpc("terrabar_request_seller_payout", { p_amount: Math.round(amount * 100) / 100, p_bank_account_id: bank.id });
+    setRequestingPayout(false);
+    if (result.error) { setError("ثبت درخواست تسویه انجام نشد: " + result.error.message); return; }
+    setPayoutAmount(""); setNotice("درخواست تسویه ثبت شد و مانده آن رزرو شده است؛ این پیام به معنی واریز وجه نیست.");
+    const [tx, requests] = await Promise.all([
+      (supabase as any).from("seller_financial_transactions").select("id,order_id,transaction_type,amount,description,reference_code,transaction_date,payout_status,processed_at").eq("member_id", memberId).order("transaction_date", { ascending: false }),
+      (supabase as any).from("seller_payout_requests").select("id,amount,status,requested_at,transfer_reference,admin_note").eq("member_id", memberId).order("requested_at", { ascending: false }),
+    ]);
+    if (!tx.error) setTransactions(tx.data ?? []);
+    if (!requests.error) setPayoutRequests(requests.data ?? []);
+  }
 
   async function saveBank(e: FormEvent) {
     e.preventDefault(); setError(""); setNotice("");
@@ -111,6 +134,19 @@ function SellerAccountingPage() {
       <div className="mb-4 rounded-2xl bg-emerald-950 p-5 text-white"><p className="text-sm text-emerald-100">جمع حساب · فروش قطعی تحویل‌شده</p><p className="mt-2 text-3xl font-black">{money(salesTotal)}</p><p className="mt-2 text-xs leading-5 text-emerald-100">مجموع ناخالص سفارش‌های پرداخت‌شده و تحویل‌شده.</p></div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">کارمزد ترابار (۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(commissionTotal || Math.round(salesTotal * 0.05 * 100) / 100)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">سهم خالص فروشنده (۹۵٪)</p><p className="mt-2 text-xl font-extrabold">{money(netSalesTotal)}</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950"><p className="text-sm">مانده قابل تسویه پس از کسر تسویه‌های در انتظار</p><p className="mt-2 text-xl font-extrabold">{money(due)}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"><p className="text-sm">دریافتی خالص ثبت‌شده</p><p className="mt-2 text-xl font-extrabold">{money(receiptsTotal)}</p><p className="mt-1 text-xs">تسویه‌های موفق بانکی: {money(payoutsTotal)}</p></div></div>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">رسیدها فقط از دفتر مالی خوانده می‌شوند؛ کاربر نمی‌تواند خودش دریافتی ثبت کند.</p>
+    </section>
+    <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><Wallet className="size-5" /> ۳. درخواست تسویه</h2>
+      <p className="mb-3 text-sm leading-6 text-muted-foreground">مانده قابل تسویه: <strong>{money(availableBalance)}</strong>. درخواست فقط با حساب بانکی تأییدشده ثبت می‌شود و مبلغ تا تعیین تکلیف، رزرو خواهد شد.</p>
+      <form onSubmit={requestPayout} className="flex flex-col gap-3 sm:flex-row">
+        <label className="flex-1 space-y-2 text-sm font-semibold">مبلغ درخواستی (تومان)
+          <input className="w-full rounded-lg border border-input bg-background px-3 py-3 font-normal" inputMode="numeric" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} placeholder="مثلاً ۵۰۰۰۰۰" required />
+        </label>
+        <button disabled={requestingPayout || !bank || bank.verification_status !== "verified" || availableBalance <= 0} className="self-end rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground disabled:opacity-50">{requestingPayout ? "در حال ثبت…" : "ثبت درخواست تسویه"}</button>
+      </form>
+      {(!bank || bank.verification_status !== "verified") && <p className="mt-2 text-xs text-amber-700">برای فعال‌شدن درخواست، ابتدا اطلاعات حساب بانکی را ثبت کنید تا مدیر آن را تأیید کند.</p>}
+      <h3 className="mb-3 mt-5 font-bold">سوابق درخواست‌های تسویه</h3>
+      {payoutRequests.length === 0 ? <p className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">درخواستی ثبت نشده است.</p> : <div className="space-y-2">{payoutRequests.map(p => <article key={p.id} className="rounded-lg border border-border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{money(Number(p.amount))}</strong><span>{p.status === "success" ? "واریز موفق" : p.status === "in_progress" ? "در حال واریز" : p.status === "failed" ? "ناموفق" : "در انتظار بررسی"}</span></div><p className="mt-1 text-xs text-muted-foreground">{fmtDate(p.requested_at)}{p.transfer_reference ? " · شناسه پیگیری: " + p.transfer_reference : ""}</p>{p.admin_note && <p className="mt-1 text-xs">توضیح مدیر: {p.admin_note}</p>}</article>)}</div>}
     </section>
     <section className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold"><Landmark className="size-5" /> اتصال به درگاه پرداخت و دریافت صورت‌حساب</h2><p className="text-sm leading-7 text-muted-foreground">اتصال واقعی به درگاه هنوز برای این پروژه پیکربندی نشده است؛ برای فعال‌سازی باید درگاه مورد تأیید ترابار و کلیدهای امن آن در سمت سرور تنظیم و تأیید بازگشت پرداخت پیاده‌سازی شود. این صفحه فعلاً هیچ پرداختی انجام نمی‌دهد و وضعیت پرداخت را از روی کلیک کاربر تغییر نمی‌دهد.</p><button type="button" disabled className="mt-3 w-full cursor-not-allowed rounded-xl border border-border bg-muted px-4 py-3 text-sm font-bold text-muted-foreground">اتصال به درگاه — پس از پیکربندی فعال می‌شود</button></section><section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold"><FileText className="size-5" /> صورت‌حساب</h2>
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="space-y-2 text-sm">از تاریخ<input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="date" value={from} onChange={e => setFrom(e.target.value)} /></label><label className="space-y-2 text-sm">تا تاریخ<input className="w-full rounded-lg border border-input bg-background px-3 py-2" type="date" value={to} onChange={e => setTo(e.target.value)} /></label></div>
