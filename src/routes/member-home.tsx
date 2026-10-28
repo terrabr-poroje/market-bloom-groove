@@ -159,9 +159,9 @@ function MemberHome() {
     },
     {
       title: "مدیریت بارها",
-      description: sellingApproved ? "مدیریت بارهایی که در ویترین اختصاصی شما نمایش داده می‌شوند" : "برای فعال‌شدن مدیریت ویترین، تأیید عضویت لازم است",
+      description: sellingApproved ? "ویرایش، فعال یا غیرفعال‌کردن و حذف بارهای اعلام‌شده خودتان" : "برای فعال‌شدن مدیریت بارها، تأیید عضویت لازم است",
       icon: ClipboardList,
-      to: "/announce",
+      to: "/manage-loads",
       enabled: sellingApproved,
       style: "bg-sky-50 text-sky-800",
     },
