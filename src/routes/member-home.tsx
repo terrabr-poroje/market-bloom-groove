@@ -121,7 +121,6 @@ function MemberHome() {
     { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
     { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
     { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
-    ...((supplierApproved || sellerApproved) ? [{ title: "خرید ویژه حرفه‌ای", description: "مشاهده و خرید بارهای موجود ویژه حرفه‌ای فقط در بازار مستقل حرفه‌ای", icon: ShoppingBasket, to: "/professional-purchase", style: "bg-amber-50 text-amber-800" }] : []),
     { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
   ];
 
