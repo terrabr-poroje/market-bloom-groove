@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, UserRound, WalletCards, ShoppingBasket, PackageCheck, Store, PackagePlus, ClipboardList } from "lucide-react";
 import { pageHead } from "@/lib/marketplace";
 
@@ -11,25 +11,25 @@ const sections = [
   {
     title: "حساب کاربری",
     items: [
-      { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, style: "bg-emerald-50 text-emerald-800" },
-      { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, style: "bg-violet-50 text-violet-800" },
+      { to: "/account", title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, style: "bg-emerald-50 text-emerald-800" },
+      { to: "/account#finance", title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, style: "bg-violet-50 text-violet-800" },
     ],
   },
   {
     title: "امکانات خرید",
     items: [
-      { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, style: "bg-lime-50 text-lime-800" },
-      { title: "درخواست سفارش", description: "ثبت و پیگیری درخواست تأمین محصولات", icon: PackageCheck, style: "bg-sky-50 text-sky-800" },
-      { title: "خرید ویژه حرفه‌ای", description: "مشاهده بارهای ویژه حرفه‌ای", icon: ShoppingBasket, style: "bg-amber-50 text-amber-800" },
-      { title: "پیگیری خرید و سفارش", description: "مشاهده فاکتورها و وضعیت سفارش‌ها و درخواست‌ها", icon: PackageCheck, style: "bg-sky-50 text-sky-800" },
+      { to: "/requests", title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, style: "bg-lime-50 text-lime-800" },
+      { to: "/orders", title: "درخواست سفارش", description: "ثبت و پیگیری درخواست تأمین محصولات", icon: PackageCheck, style: "bg-sky-50 text-sky-800" },
+      { to: "/professional-purchase", title: "خرید ویژه حرفه‌ای", description: "مشاهده بارهای ویژه حرفه‌ای", icon: ShoppingBasket, style: "bg-amber-50 text-amber-800" },
+      { to: "/orders", title: "پیگیری خرید و سفارش", description: "مشاهده فاکتورها و وضعیت سفارش‌ها و درخواست‌ها", icon: PackageCheck, style: "bg-sky-50 text-sky-800" },
     ],
   },
   {
     title: "امکانات فروش",
     items: [
-      { title: "اعلام بار", description: "ثبت بار جدید برای فروش", icon: PackagePlus, style: "bg-teal-50 text-teal-800" },
-      { title: "مدیریت بارها", description: "مدیریت بارهای ثبت‌شده", icon: ClipboardList, style: "bg-sky-50 text-sky-800" },
-      { title: "ویترین فروش اختصاصی", description: "مشاهده ویترین فروش", icon: Store, style: "bg-amber-50 text-amber-800" },
+      { to: "/announce", title: "اعلام بار", description: "ثبت بار جدید برای فروش", icon: PackagePlus, style: "bg-teal-50 text-teal-800" },
+      { to: "/announce", title: "مدیریت بارها", description: "مدیریت بارهای ثبت‌شده", icon: ClipboardList, style: "bg-sky-50 text-sky-800" },
+      { to: "/membership", title: "ویترین فروش اختصاصی", description: "مشاهده ویترین فروش", icon: Store, style: "bg-amber-50 text-amber-800" },
     ],
   },
 ];
@@ -53,11 +53,11 @@ function PreviewMemberHome() {
               {section.items.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.title} className="flex min-h-20 items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-right sm:gap-4 sm:px-4">
+                  <Link key={item.title} to={item.to as any} className="group flex min-h-20 items-center gap-3 rounded-xl border border-border bg-card px-3 py-3 text-right transition hover:border-emerald-500/50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:gap-4 sm:px-4">
                     <span className={`grid size-11 shrink-0 place-items-center rounded-lg ${item.style}`}><Icon className="size-6" aria-hidden="true" /></span>
                     <span className="min-w-0 flex-1"><span className="block font-extrabold text-foreground">{item.title}</span><span className="mt-1 block text-sm leading-5 text-muted-foreground">{item.description}</span></span>
-                    <ArrowLeft className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                  </div>
+                    <ArrowLeft className="size-5 shrink-0 text-muted-foreground transition group-hover:text-primary" aria-hidden="true" />
+                  </Link>
                 );
               })}
             </div>
