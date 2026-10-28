@@ -212,6 +212,15 @@ function AnnouncePage() {
     setEditingLoad(load);
   }
 
+  useEffect(() => {
+    if (loadingOwnedLoads || editingLoad) return;
+    const requestedLoadId = new URLSearchParams(window.location.search).get('editLoad');
+    if (!requestedLoadId) return;
+    const requestedLoad = ownedLoads.find(load => load.id === requestedLoadId);
+    if (requestedLoad) void startEditLoad(requestedLoad);
+    else if (ownedLoads.length) setManageError('بار موردنظر در فهرست بارهای شما پیدا نشد.');
+  }, [loadingOwnedLoads, ownedLoads, editingLoad]);
+
   async function saveEditedLoad(event: FormEvent) {
     event.preventDefault();
     if (!editingLoad) return;
