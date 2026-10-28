@@ -26,7 +26,7 @@ type SaleSectionKey = typeof salesSections[number]['key'];
 function allowedSaleSections(role: string): SaleSectionKey[] {
   return role === 'supplier' ? ['professional'] : ['retail', 'wholesale', 'special', 'professional'];
 }
-type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; origin: string | null; quality: string | null; quantity: number; count: number | null; price: number; status: string; package_type: string | null; package_weight: number | null; min_order_quantity: number | null; ready_date: string | null; description: string | null; created_at: string };
+type OwnedLoad = { id: string; name: string; product_type: string; engine: string | null; city: string; origin: string | null; quality: string | null; quantity: number; count: number | null; price: number; status: string; package_type: string | null; package_weight: number | null; min_order_quantity: number | null; ready_date: string | null; ad_start_date: string | null; ad_end_date: string | null; response_start_time: string | null; response_end_time: string | null; description: string | null; created_at: string };
 type IncomingOrder = { id: string; load_id: string; customer_name: string; customer_city: string; quantity: number; unit: string; price: number; total_price: number; delivery_address: string | null; delivery_type: string | null; status: string; payment_status: string; delivery_status: string; notes: string | null; created_at: string };
 const loadStatusLabels: Record<string, string> = { pending: 'در انتظار تأیید', active: 'فعال', inactive: 'غیرفعال', rejected: 'رد شده', sold_out: 'تمام‌شده', expired: 'منقضی‌شده' };
 const orderStatusLabels: Record<string, string> = { pending: 'در انتظار پاسخ شما', accepted: 'تأیید شده توسط فروشنده', rejected: 'رد شده توسط فروشنده' };
@@ -122,7 +122,7 @@ function AnnouncePage() {
   const [manageError, setManageError] = useState('');
   const [busyLoadId, setBusyLoadId] = useState('');
   const [editingLoad, setEditingLoad] = useState<OwnedLoad | null>(null);
-  const [editValues, setEditValues] = useState({ product: '', variety: '', quality: 'standard', origin: '', city: '', packageType: 'کارتن', weight: '', count: '', minimum: '', price: '', ready: '', description: '' });
+  const [editValues, setEditValues] = useState({ product: '', variety: '', quality: 'standard', origin: '', city: '', packageType: 'کارتن', weight: '', count: '', minimum: '', price: '', ready: '', adStart: '', adEnd: '', responseStart: '08:00', responseEnd: '18:00', description: '' });
   const [editTiers, setEditTiers] = useState<Record<SaleSectionKey, { enabled: boolean; price: string; minimum: string }>>({ retail: { enabled: true, price: '', minimum: '1' }, wholesale: { enabled: false, price: '', minimum: '2' }, special: { enabled: false, price: '', minimum: '2' }, professional: { enabled: false, price: '', minimum: '5' } });
   const set = (key: keyof typeof form) => (value: string) => setForm(prev => ({ ...prev, [key]: value }));
   const toggleSaleSection = (key: SaleSectionKey, checked: boolean) => {
@@ -149,7 +149,7 @@ function AnnouncePage() {
       setSaleSectionsEnabled(allowedSections[0] ? [allowedSections[0]] : []);
       setSaleMinimums(prev => ({ ...prev, professional: '5', retail: '1', wholesale: '2', special: '2' }));
       const [{ data, error: listError }, { data: orderData, error: orderListError }] = await Promise.all([
-        (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
+        (supabase as any).from('loads').select('id, name, product_type, engine, city, origin, quality, quantity, count, price, status, package_type, package_weight, min_order_quantity, ready_date, ad_start_date, ad_end_date, response_start_time, response_end_time, description, created_at').or('member_id.eq.' + member.id + ',owner_member_id.eq.' + member.id).order('created_at', { ascending: false }),
         (supabase as any).from('orders').select('id, load_id, customer_name, customer_city, quantity, unit, price, total_price, delivery_address, delivery_type, status, payment_status, delivery_status, notes, created_at').eq('seller_member_id', member.id).order('created_at', { ascending: false }),
       ]);
       if (!active) return;
@@ -207,6 +207,10 @@ function AnnouncePage() {
       minimum: String(load.min_order_quantity ?? 1),
       price: String(load.price ?? ''),
       ready: load.ready_date || new Date().toISOString().slice(0, 10),
+      adStart: load.ad_start_date || new Date().toISOString().slice(0, 10),
+      adEnd: load.ad_end_date || load.ad_start_date || new Date().toISOString().slice(0, 10),
+      responseStart: (load.response_start_time || '08:00').slice(0, 5),
+      responseEnd: (load.response_end_time || '18:00').slice(0, 5),
       description: load.description || '',
     });
     setEditingLoad(load);
@@ -256,6 +260,10 @@ function AnnouncePage() {
       min_order_quantity: minimum,
       price,
       ready_date: editValues.ready,
+      ad_start_date: editValues.adStart,
+      ad_end_date: editValues.adEnd,
+      response_start_time: editValues.responseStart,
+      response_end_time: editValues.responseEnd,
       description: editValues.description.trim() || null,
     }).eq('id', editingLoad.id);
     if (updateError) {
@@ -523,6 +531,60 @@ function AnnouncePage() {
         <Button asChild className="mt-6"><Link to="/membership">ثبت یا پیگیری درخواست عضویت</Link></Button>
       </div></section>
     );
+  }
+
+  if (editingLoad) {
+    return <section className="bg-market-surface py-12"><div className="site-container max-w-2xl">
+      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+        <h1 className="text-2xl font-extrabold">ویرایش کامل اعلام بار</h1>
+        <p className="mt-2 text-sm text-muted-foreground">بار انتخاب‌شده با اطلاعات فعلی باز شده است. تغییرات را بررسی و ذخیره کنید.</p>
+        <form onSubmit={saveEditedLoad} className="mt-6 grid gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="field-label">نام محصول<input required className="field-input" value={editValues.product} onChange={e => setEditValues(p => ({...p, product:e.target.value}))} /></label>
+            <label className="field-label">رقم / نوع<input required className="field-input" value={editValues.variety} onChange={e => setEditValues(p => ({...p, variety:e.target.value}))} /></label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="field-label">درجه کیفیت<select className="field-input" value={editValues.quality} onChange={e => setEditValues(p => ({...p, quality:e.target.value}))}>{qualityValues.map((q,i) => <option key={q} value={q}>{qualities[i]}</option>)}</select></label>
+            <JalaliDateField label="زمان آماده بودن (شمسی)" value={editValues.ready} onChange={v => setEditValues(p => ({...p, ready:v}))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <JalaliDateField label="شروع نمایش آگهی (شمسی)" value={editValues.adStart} min={localIsoDate()} onChange={v => setEditValues(p => ({...p, adStart:v, adEnd:p.adEnd < v ? v : p.adEnd}))} />
+            <JalaliDateField label="پایان نمایش آگهی (شمسی)" value={editValues.adEnd} min={editValues.adStart || localIsoDate()} onChange={v => setEditValues(p => ({...p, adEnd:v}))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="field-label">پاسخ‌گویی از ساعت<input required type="time" className="field-input" value={editValues.responseStart} onChange={e => setEditValues(p => ({...p, responseStart:e.target.value}))} /></label>
+            <label className="field-label">پاسخ‌گویی تا ساعت<input required type="time" min={editValues.responseStart} className="field-input" value={editValues.responseEnd} onChange={e => setEditValues(p => ({...p, responseEnd:e.target.value}))} /></label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="field-label">شهر مبدأ بار<input required className="field-input" value={editValues.origin} onChange={e => setEditValues(p => ({...p, origin:e.target.value}))} /></label>
+            <label className="field-label">شهر محل عرضه<input required className="field-input" value={editValues.city} onChange={e => setEditValues(p => ({...p, city:e.target.value}))} /></label>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="field-label">نوع بسته‌بندی<select className="field-input" value={editValues.packageType} onChange={e => setEditValues(p => ({...p, packageType:e.target.value}))}>{['کارتن','سبد','کیسه','جعبه','بسته‌بندی فله','بسته‌بندی اختصاصی'].map(v => <option key={v}>{v}</option>)}</select></label>
+            <label className="field-label">وزن هر بسته (کیلو)<input required type="number" min="0.1" step="0.1" className="field-input" value={editValues.weight} onChange={e => setEditValues(p => ({...p, weight:e.target.value}))} /></label>
+            <label className="field-label">موجودی (بسته)<input required type="number" min="1" step="1" className="field-input" value={editValues.count} onChange={e => setEditValues(p => ({...p, count:e.target.value}))} /></label>
+          </div>
+          <label className="field-label">حداقل سفارش (بسته)<input required type="number" min="1" step="1" className="field-input" value={editValues.minimum} onChange={e => setEditValues(p => ({...p, minimum:e.target.value}))} /></label>
+          <fieldset className="grid gap-3 rounded-lg border border-border p-4">
+            <legend className="px-2 font-bold">بخش‌های فروش، قیمت و حداقل سفارش هر بخش</legend>
+            {salesSections.map(section => {
+              const allowed = allowedSaleSections(memberRole).includes(section.key);
+              const tier = editTiers[section.key];
+              return <div key={section.key} className="grid gap-3 rounded-md border border-border p-3">
+                <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={tier.enabled} disabled={!allowed} onChange={e => setEditTiers(p => ({...p, [section.key]: {...p[section.key], enabled:e.target.checked}}))} />{section.label}</label>
+                {tier.enabled && <div className="grid grid-cols-2 gap-3">
+                  <label className="field-label">قیمت هر کیلو (تومان)<input required type="number" min="10000" step="100" className="field-input" value={tier.price} onChange={e => setEditTiers(p => ({...p, [section.key]: {...p[section.key], price:e.target.value}}))} /></label>
+                  <label className="field-label">حداقل بسته<input required type="number" min="1" step="1" className="field-input" value={tier.minimum} onChange={e => setEditTiers(p => ({...p, [section.key]: {...p[section.key], minimum:e.target.value}}))} /></label>
+                </div>}
+              </div>;
+            })}
+          </fieldset>
+          <label className="field-label">توضیحات<textarea className="field-input min-h-24" value={editValues.description} onChange={e => setEditValues(p => ({...p, description:e.target.value}))} /></label>
+          {manageError && <p role="alert" className="text-sm text-destructive">{manageError}</p>}
+          <div className="flex flex-wrap gap-2"><Button type="submit" disabled={Boolean(busyLoadId)}>{busyLoadId === editingLoad.id ? 'در حال ذخیره…' : 'ذخیره همه تغییرات'}</Button><Button type="button" variant="outline" onClick={() => { setEditingLoad(null); window.location.assign('/manage-loads'); }}>انصراف</Button></div>
+        </form>
+      </div>
+    </div></section>;
   }
 
   return (
