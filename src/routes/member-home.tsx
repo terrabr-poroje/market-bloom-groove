@@ -117,16 +117,20 @@ function MemberHome() {
   const title = primaryRole === "supplier" ? "تأمین‌کننده" : primaryRole === "seller" ? "بارفروش و حجره‌دار" : "خریدار";
   const isProfessional = hasSupplierRole || hasSellerRole;
 
-  const buyerOptions = [
+  const accountOptions = [
     { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
+    { title: "امور مالی و فاکتورها", description: "گردش حساب، فاکتورها، ثبت حساب بانکی و درخواست تسویه", icon: WalletCards, to: "/seller-accounting-preview", style: "bg-violet-50 text-violet-800" },
+  ];
+
+  const buyerOptions = [
     { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
-    { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
-    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
+    { title: "درخواست سفارش", description: "ثبت و پیگیری درخواست تأمین محصولات", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
+    { title: "پیگیری خرید و سفارش", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: ClipboardList, to: "/orders", style: "bg-sky-50 text-sky-800" },
   ];
 
   const professionalOptions = [
     ...(hasSupplierRole ? [{
-      title: supplierApproved ? "ویترین فروش اختصاصی تأمین‌کننده" : "ویترین فروش اختصاصی تأمین‌کننده",
+      title: "ویترین فروش اختصاصی",
       description: supplierApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
       icon: Store,
       to: supplierApproved ? `/store/${memberId}` : "/membership",
@@ -134,7 +138,7 @@ function MemberHome() {
       style: "bg-amber-50 text-amber-800",
     }] : []),
     ...(hasSellerRole ? [{
-      title: "ویترین فروش اختصاصی بارفروش",
+      title: "ویترین فروش اختصاصی",
       description: sellerApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
       icon: Store,
       to: sellerApproved ? `/store/${memberId}` : "/membership",
@@ -146,7 +150,7 @@ function MemberHome() {
   const sellingApproved = (hasSupplierRole && supplierApproved) || (hasSellerRole && sellerApproved);
   const sellingOptions = [
     {
-      title: "اعلام بار و مدیریت بارها",
+      title: "اعلام بار",
       description: sellingApproved ? "ثبت بار جدید و مدیریت آگهی‌های فروش" : "پس از تأیید عضویت فعال می‌شود؛ خرید شما همچنان در دسترس است",
       icon: PackagePlus,
       to: "/announce",
@@ -154,7 +158,7 @@ function MemberHome() {
       style: "bg-teal-50 text-teal-800",
     },
     {
-      title: "مدیریت ویترین فروش",
+      title: "مدیریت بارها",
       description: sellingApproved ? "مدیریت بارهایی که در ویترین اختصاصی شما نمایش داده می‌شوند" : "برای فعال‌شدن مدیریت ویترین، تأیید عضویت لازم است",
       icon: ClipboardList,
       to: "/announce",
@@ -176,7 +180,19 @@ function MemberHome() {
           </div>
         </header>
 
-        <h2 className="mb-3 text-lg font-extrabold text-foreground">امکانات خرید و حساب</h2>
+        <h2 className="mb-3 text-lg font-extrabold text-foreground">حساب کاربری</h2>
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          {accountOptions.map((option) => {
+            const Icon = option.icon;
+            return <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">
+              <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-5" aria-hidden="true" /></span>
+            </Link>;
+          })}
+        </div>
+
+        <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات خرید</h2>
         <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {buyerOptions.map((option) => {
             const Icon = option.icon;
@@ -195,7 +211,7 @@ function MemberHome() {
         </Link>}
 
         {isProfessional && <>
-          <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات فروش حرفه‌ای</h2>
+          <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات فروش</h2>
           {!sellingApproved && <div className="mb-3 flex items-start gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
             <Clock3 className="mt-0.5 size-5 shrink-0" />
             <div><strong>عضویت شما در انتظار تأیید است.</strong><p>امکانات خرید فعال است؛ اعلام بار و مدیریت ویترین فروش پس از تأیید مدیریت فعال می‌شوند.</p><Link to="/membership" className="mt-2 inline-flex font-bold underline">پیگیری درخواست عضویت</Link></div>
