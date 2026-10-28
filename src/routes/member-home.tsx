@@ -32,6 +32,11 @@ function MemberHome() {
 
   useEffect(() => {
     let active = true;
+    const loadingTimer = window.setTimeout(() => {
+      if (!active) return;
+      setLoadError("بارگذاری اطلاعات حساب طول کشید. اتصال را بررسی کنید و دوباره تلاش کنید.");
+      setRoleCheckDone(true);
+    }, 10000);
     async function loadRoleData() {
       setRoleCheckDone(false);
       setLoadError("");
@@ -90,8 +95,11 @@ function MemberHome() {
       setRoleCheckDone(true);
     }
 
-    void loadRoleData();
-    return () => { active = false; };
+    void loadRoleData().finally(() => window.clearTimeout(loadingTimer));
+    return () => {
+      active = false;
+      window.clearTimeout(loadingTimer);
+    };
   }, [user?.id]);
 
   if (loading || !roleCheckDone) {
