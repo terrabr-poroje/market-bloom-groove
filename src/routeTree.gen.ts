@@ -25,6 +25,7 @@ import { Route as LoginBuyerRouteImport } from './routes/login-buyer'
 import { Route as LoginSellerRouteImport } from './routes/login-seller'
 import { Route as LoginSupplierRouteImport } from './routes/login-supplier'
 import { Route as MemberHomeRouteImport } from './routes/member-home'
+import { Route as ManageLoadsRouteImport } from './routes/manage-loads'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as ProfessionalPurchaseRouteImport } from './routes/professional-purchase'
 import { Route as OrdersCompletedPreviewRouteImport } from './routes/orders-completed-preview'
@@ -115,6 +116,8 @@ const LoginSupplierRoute = LoginSupplierRouteImport.update({
   path: '/login-supplier',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManageLoadsRoute = ManageLoadsRouteImport.update({ id: '/manage-loads', path: '/manage-loads', getParentRoute: () => rootRouteImport } as any)
+
 const MemberHomeRoute = MemberHomeRouteImport.update({
   id: '/member-home',
   path: '/member-home',
@@ -386,6 +389,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  ManageLoadsRoute: typeof ManageLoadsRoute
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
@@ -420,6 +424,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/manage-loads': {
+      id: '/manage-loads'
+      path: '/manage-loads'
+      fullPath: '/manage-loads'
+      preLoaderRoute: typeof ManageLoadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -649,6 +660,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginBuyerRoute: LoginBuyerRoute,
   LoginSellerRoute: LoginSellerRoute,
   LoginSupplierRoute: LoginSupplierRoute,
+  ManageLoadsRoute: ManageLoadsRoute,
   MemberHomeRoute: MemberHomeRoute,
   MembershipRoute: MembershipRoute,
   ProfessionalPurchaseRoute: ProfessionalPurchaseRoute,
