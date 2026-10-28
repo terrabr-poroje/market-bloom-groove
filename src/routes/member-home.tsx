@@ -130,7 +130,7 @@ function MemberHome() {
 
   const professionalOptions = [
     ...(hasSupplierRole ? [{
-      title: supplierApproved ? "ویترین فروش اختصاصی تأمین‌کننده" : "ویترین فروش اختصاصی تأمین‌کننده",
+      title: "ویترین فروش اختصاصی",
       description: supplierApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
       icon: Store,
       to: supplierApproved ? `/store/${memberId}` : "/membership",
@@ -138,7 +138,7 @@ function MemberHome() {
       style: "bg-amber-50 text-amber-800",
     }] : []),
     ...(hasSellerRole ? [{
-      title: "ویترین فروش اختصاصی بارفروش",
+      title: "ویترین فروش اختصاصی",
       description: sellerApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
       icon: Store,
       to: sellerApproved ? `/store/${memberId}` : "/membership",
