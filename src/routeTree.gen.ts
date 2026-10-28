@@ -25,6 +25,7 @@ import { Route as LoginBuyerRouteImport } from './routes/login-buyer'
 import { Route as LoginSellerRouteImport } from './routes/login-seller'
 import { Route as LoginSupplierRouteImport } from './routes/login-supplier'
 import { Route as MemberHomeRouteImport } from './routes/member-home'
+import { Route as ManageLoadsRouteImport } from './routes/manage-loads'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as ProfessionalPurchaseRouteImport } from './routes/professional-purchase'
 import { Route as OrdersCompletedPreviewRouteImport } from './routes/orders-completed-preview'
@@ -115,6 +116,8 @@ const LoginSupplierRoute = LoginSupplierRouteImport.update({
   path: '/login-supplier',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManageLoadsRoute = ManageLoadsRouteImport.update({ id: '/manage-loads', path: '/manage-loads', getParentRoute: () => rootRouteImport } as any)
+
 const MemberHomeRoute = MemberHomeRouteImport.update({
   id: '/member-home',
   path: '/member-home',
@@ -402,6 +405,7 @@ export interface RootRouteChildren {
   LoginSellerRoute: typeof LoginSellerRoute
   LoginSupplierRoute: typeof LoginSupplierRoute
   MemberHomeRoute: typeof MemberHomeRoute
+  ManageLoadsRoute: typeof ManageLoadsRoute
   MembershipRoute: typeof MembershipRoute
   ProfessionalPurchaseRoute: typeof ProfessionalPurchaseRoute
   OrdersCompletedPreviewRoute: typeof OrdersCompletedPreviewRoute
@@ -523,6 +527,13 @@ declare module '@tanstack/react-router' {
       path: '/login-supplier'
       fullPath: '/login-supplier'
       preLoaderRoute: typeof LoginSupplierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage-loads': {
+      id: '/manage-loads'
+      path: '/manage-loads'
+      fullPath: '/manage-loads'
+      preLoaderRoute: typeof ManageLoadsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/member-home': {
@@ -650,6 +661,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginSellerRoute: LoginSellerRoute,
   LoginSupplierRoute: LoginSupplierRoute,
   MemberHomeRoute: MemberHomeRoute,
+  ManageLoadsRoute: ManageLoadsRoute,
   MembershipRoute: MembershipRoute,
   ProfessionalPurchaseRoute: ProfessionalPurchaseRoute,
   OrdersCompletedPreviewRoute: OrdersCompletedPreviewRoute,
