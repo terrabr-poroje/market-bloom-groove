@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Existing Supabase schema types are stale. */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, Pencil, Trash2, X, Save, Package } from "lucide-react";
+import { ArrowRight, Pencil, Trash2, X, Save, Package, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/manage-loads")({
   component: ManageLoadsPage,
 });
 
+type LoadImage = { id: string; storage_path: string; url: string };
 type Load = {
   id: string; name: string; product_type: string; engine: string | null; city: string;
   origin: string | null; quality: string | null; quantity: number; count: number | null;
@@ -33,6 +34,9 @@ function ManageLoadsPage() {
   const [loadingLoads, setLoadingLoads] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Load | null>(null);
+  const [loadImages, setLoadImages] = useState<LoadImage[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [form, setForm] = useState({ product: "", variety: "", quality: "standard", city: "", origin: "", packageType: "کارتن", weight: "", count: "", minimum: "", description: "" });
 
   async function refresh() {
@@ -56,8 +60,16 @@ function ManageLoadsPage() {
 
   useEffect(() => { void refresh(); }, [user?.id]);
 
-  function startEdit(load: Load) {
+  async function startEdit(load: Load) {
     setEditing(load);
+    setPhotoFiles([]); setRemovedImageIds([]); setLoadImages([]);
+    const { data: imageRows } = await (supabase as any).from("load_images").select("id, storage_path").eq("load_id", load.id).order("display_order", { ascending: true });
+    const resolvedImages: LoadImage[] = [];
+    for (const image of imageRows ?? []) {
+      const { data: signed } = await supabase.storage.from("terrabar-load-images").createSignedUrl(image.storage_path, 3600);
+      resolvedImages.push({ id: image.id, storage_path: image.storage_path, url: signed?.signedUrl ?? "" });
+    }
+    setLoadImages(resolvedImages);
     setForm({
       product: load.product_type || load.name || "", variety: load.engine || "",
       quality: load.quality || "standard", city: load.city || "", origin: load.origin || "",
@@ -90,8 +102,48 @@ function ManageLoadsPage() {
       count, min_quantity: minimum * weight, min_order_quantity: minimum,
       description: form.description.trim() || null,
     }).eq("id", editing.id).or("member_id.eq." + member.id + ",owner_member_id.eq." + member.id);
-    if (updateError) setError("ویرایش ذخیره نشد؛ دسترسی و اطلاعات بار را بررسی کنید.");
-    else { setEditing(null); await refresh(); setError("تغییرات بار ذخیره شد."); }
+    if (updateError) {
+      setError("ویرایش ذخیره نشد؛ دسترسی و اطلاعات بار را بررسی کنید.");
+      setBusy(false); return;
+    }
+    const removed = loadImages.filter(image => removedImageIds.includes(image.id));
+    if (removed.length) {
+      const { error: removeRowsError } = await (supabase as any).from("load_images").delete().in("id", removed.map(image => image.id)).eq("load_id", editing.id);
+      if (removeRowsError) { setError("مشخصات بار ذخیره شد، اما حذف عکس‌های انتخاب‌شده انجام نشد."); setBusy(false); return; }
+      await supabase.storage.from("terrabar-load-images").remove(removed.map(image => image.storage_path));
+    }
+    const retainedCount = loadImages.length - removedImageIds.length;
+    if (retainedCount + photoFiles.length > 5) {
+      setError("مجموع عکس‌های بار حداکثر ۵ عدد می‌تواند باشد.");
+      setBusy(false); return;
+    }
+    if (photoFiles.length) {
+      const imageRows: { load_id: string; storage_path: string; display_order: number }[] = [];
+      for (const [index, file] of photoFiles.entries()) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+          setError("هر عکس باید JPG، PNG یا WebP و حداکثر ۱۰ مگابایت باشد.");
+          setBusy(false); return;
+        }
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = user!.id + "/" + editing.id + "/" + crypto.randomUUID() + "-" + safeName;
+        const { error: uploadError } = await supabase.storage.from("terrabar-load-images").upload(path, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          const uploadedPaths = imageRows.map(image => image.storage_path);
+          if (uploadedPaths.length) await supabase.storage.from("terrabar-load-images").remove(uploadedPaths);
+          setError("بارگذاری عکس جدید انجام نشد: " + uploadError.message);
+          setBusy(false); return;
+        }
+        imageRows.push({ load_id: editing.id, storage_path: path, display_order: retainedCount + index });
+      }
+      const { error: insertImagesError } = await (supabase as any).from("load_images").insert(imageRows);
+      if (insertImagesError) {
+        await supabase.storage.from("terrabar-load-images").remove(imageRows.map(image => image.storage_path));
+        setError("عکس‌ها بارگذاری شدند، اما ثبت آن‌ها برای بار انجام نشد.");
+        setBusy(false); return;
+      }
+    }
+    setEditing(null); setLoadImages([]); setPhotoFiles([]); setRemovedImageIds([]);
+    await refresh(); setError("تغییرات بار و عکس‌ها ذخیره شد.");
     setBusy(false);
   }
 
@@ -153,6 +205,18 @@ function ManageLoadsPage() {
         <label className="field-label">تعداد بسته موجود<input className="field-input" type="number" min="1" step="1" required value={form.count} onChange={e => setForm(p => ({ ...p, count: e.target.value }))} /></label>
         <label className="field-label">حداقل سفارش (بسته)<input className="field-input" type="number" min="1" step="1" required value={form.minimum} onChange={e => setForm(p => ({ ...p, minimum: e.target.value }))} /></label>
       </div>
+      <section className="grid gap-3">
+        <h3 className="text-sm font-bold">عکس‌های بار</h3>
+        <p className="text-xs text-muted-foreground">تا ۵ عکس؛ JPG، PNG یا WebP، حداکثر ۱۰ مگابایت برای هر عکس. عکس‌های انتخاب‌شده برای حذف، هنگام ذخیره حذف می‌شوند.</p>
+        {loadImages.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{loadImages.map(image => {
+          const marked = removedImageIds.includes(image.id);
+          return <div key={image.id} className={"relative overflow-hidden rounded-xl border " + (marked ? "border-destructive opacity-50" : "border-border")}>
+            {image.url ? <img src={image.url} alt="عکس بار" className="h-28 w-full object-cover" /> : <div className="grid h-28 place-items-center text-xs text-muted-foreground">پیش‌نمایش در دسترس نیست</div>}
+            <button type="button" disabled={busy} onClick={() => setRemovedImageIds(ids => marked ? ids.filter(id => id !== image.id) : [...ids, image.id])} className="w-full border-t border-border px-2 py-2 text-xs font-bold">{marked ? "لغو حذف عکس" : "حذف این عکس"}</button>
+          </div>;
+        })}</div>}
+        <label className="field-label"><span className="inline-flex items-center gap-2"><ImagePlus className="size-4" />افزودن عکس یا عکس‌های جدید</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={e => setPhotoFiles(Array.from(e.target.files ?? []).slice(0, Math.max(0, 5 - (loadImages.length - removedImageIds.length))))} className="field-input" /><span className="text-xs text-muted-foreground">{photoFiles.length ? photoFiles.length + " عکس جدید انتخاب شده" : "برای تغییر عکس، عکس فعلی را حذف و عکس جدید را انتخاب کنید."}</span></label>
+      </section>
       <label className="field-label">توضیحات<textarea className="field-input min-h-24" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></label>
       <div className="flex gap-2"><Button type="submit" disabled={busy}><Save className="ml-2 size-4" />ذخیره تغییرات</Button><Button type="button" variant="outline" onClick={() => setEditing(null)}>انصراف</Button></div>
     </form>}
