@@ -660,6 +660,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginBuyerRoute: LoginBuyerRoute,
   LoginSellerRoute: LoginSellerRoute,
   LoginSupplierRoute: LoginSupplierRoute,
+  ManageLoadsRoute: ManageLoadsRoute,
   MemberHomeRoute: MemberHomeRoute,
   MembershipRoute: MembershipRoute,
   ProfessionalPurchaseRoute: ProfessionalPurchaseRoute,
