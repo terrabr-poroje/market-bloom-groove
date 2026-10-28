@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Uses the audited production members/member_roles schema. */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ClipboardList, Package, ShieldCheck, Store, UserRound } from "lucide-react";
+import { ArrowLeft, Package, ShieldCheck, Store, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, signOut } from "@/lib/auth";
 import { pageHead } from "@/lib/marketplace";
-import { RatingForm } from "@/components/rating-form";
 
 export const Route = createFileRoute("/account")({
-  head: () => pageHead("حساب کاربری من", "مدیریت پروفایل، عضویت‌ها، بارها و سفارش‌های حساب ترابار."),
+  head: () => pageHead("حساب کاربری من", "مدیریت اطلاعات شخصی، عضویت‌ها و بارهای ثبت‌شده در ترابار."),
   component: AccountPage,
 });
 
@@ -81,7 +80,7 @@ function AccountPage() {
   }
 
   if (loading || busy) return <section className="site-container py-16 text-center text-sm text-muted-foreground">در حال بارگذاری حساب کاربری…</section>;
-  if (!user) return <section className="site-container max-w-xl py-16 text-center"><UserRound className="mx-auto size-10 text-primary" /><h1 className="mt-4 text-2xl font-extrabold">ورود به حساب کاربری</h1><p className="mt-2 text-sm text-muted-foreground">برای مشاهده پروفایل، عضویت‌ها، بارها و سفارش‌ها ابتدا وارد شوید.</p><Button asChild className="mt-6"><Link to="/auth">ورود / ثبت‌نام</Link></Button></section>;
+  if (!user) return <section className="site-container max-w-xl py-16 text-center"><UserRound className="mx-auto size-10 text-primary" /><h1 className="mt-4 text-2xl font-extrabold">ورود به حساب کاربری</h1><p className="mt-2 text-sm text-muted-foreground">برای مشاهده اطلاعات پروفایل و عضویت‌ها ابتدا وارد شوید.</p><Button asChild className="mt-6"><Link to="/auth">ورود / ثبت‌نام</Link></Button></section>;
 
   return (
     <section className="bg-market-surface py-8 sm:py-12">
