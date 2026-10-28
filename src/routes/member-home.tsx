@@ -117,51 +117,42 @@ function MemberHome() {
   const title = primaryRole === "supplier" ? "تأمین‌کننده" : primaryRole === "seller" ? "بارفروش و حجره‌دار" : "خریدار";
   const isProfessional = hasSupplierRole || hasSellerRole;
 
-  const buyerOptions = [
-    { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
-    { title: "درخواست خرید", description: "جست‌وجوی بار و انتخاب محصولات موردنیاز", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
-    { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
-    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
-  ];
-
-  const professionalOptions = [
-    ...(hasSupplierRole ? [{
-      title: supplierApproved ? "ویترین فروش اختصاصی تأمین‌کننده" : "ویترین فروش اختصاصی تأمین‌کننده",
-      description: supplierApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
-      icon: Store,
-      to: supplierApproved ? `/store/${memberId}` : "/membership",
-      enabled: supplierApproved,
-      style: "bg-amber-50 text-amber-800",
-    }] : []),
-    ...(hasSellerRole ? [{
-      title: "ویترین فروش اختصاصی بارفروش",
-      description: sellerApproved ? "مشاهده بارهای فعال خود و بازکردن ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش شما فعال می‌شود",
-      icon: Store,
-      to: sellerApproved ? `/store/${memberId}` : "/membership",
-      enabled: sellerApproved,
-      style: "bg-amber-50 text-amber-800",
-    }] : []),
-  ];
-
   const sellingApproved = (hasSupplierRole && supplierApproved) || (hasSellerRole && sellerApproved);
-  const sellingOptions = [
-    {
-      title: "اعلام بار و مدیریت بارها",
-      description: sellingApproved ? "ثبت بار جدید و مدیریت آگهی‌های فروش" : "پس از تأیید عضویت فعال می‌شود؛ خرید شما همچنان در دسترس است",
-      icon: PackagePlus,
-      to: "/announce",
-      enabled: sellingApproved,
-      style: "bg-teal-50 text-teal-800",
-    },
-    {
-      title: "مدیریت ویترین فروش",
-      description: sellingApproved ? "مدیریت بارهایی که در ویترین اختصاصی شما نمایش داده می‌شوند" : "برای فعال‌شدن مدیریت ویترین، تأیید عضویت لازم است",
-      icon: ClipboardList,
-      to: "/announce",
-      enabled: sellingApproved,
-      style: "bg-sky-50 text-sky-800",
-    },
+
+  const accountOptions = [
+    { title: "حساب کاربری", description: "مشاهده و تکمیل اطلاعات حساب و عضویت‌ها", icon: UserRound, to: "/account", style: "bg-emerald-50 text-emerald-800" },
+    { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
+    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و سوابق مالی حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
   ];
+
+  const shoppingOptions = [
+    { title: "درخواست خرید و مشاهده بارها", description: "جست‌وجوی بار، انتخاب محصول و ثبت درخواست خرید", icon: ShoppingBasket, to: "/requests", style: "bg-lime-50 text-lime-800" },
+    ...((sellingApproved) ? [{
+      title: "خرید ویژه حرفه‌ای",
+      description: "فقط بارهای موجود با نوع فروش «ویژه حرفه‌ای» در بازار مستقل حرفه‌ای",
+      icon: ShoppingBasket,
+      to: "/professional-purchase",
+      style: "bg-amber-50 text-amber-800",
+    }] : []),
+  ];
+
+  const professionalOptions = (hasSupplierRole || hasSellerRole) ? [{
+    title: "ویترین فروش اختصاصی من",
+    description: sellingApproved ? "مشاهده بارهای فعال حساب در ویترین اختصاصی" : "پس از تأیید عضویت، ویترین فروش فعال می‌شود",
+    icon: Store,
+    to: sellingApproved ? `/store/${memberId}` : "/membership",
+    enabled: sellingApproved,
+    style: "bg-amber-50 text-amber-800",
+  }] : [];
+
+  const sellingOptions = [{
+    title: "اعلام بار و مدیریت بارها",
+    description: sellingApproved ? "ثبت بار جدید و مدیریت آگهی‌های فروش در یک بخش" : "پس از تأیید عضویت فعال می‌شود؛ امکانات خرید همچنان در دسترس است",
+    icon: PackagePlus,
+    to: "/announce",
+    enabled: sellingApproved,
+    style: "bg-teal-50 text-teal-800",
+  }];
 
   return (
     <main dir="rtl" className="min-h-[70vh] bg-market-surface px-4 py-8 sm:py-12">
@@ -176,42 +167,52 @@ function MemberHome() {
           </div>
         </header>
 
-        <h2 className="mb-3 text-lg font-extrabold text-foreground">امکانات خرید و حساب</h2>
-        <div className="grid grid-cols-1 gap-3 sm:gap-4">
-          {buyerOptions.map((option) => {
-            const Icon = option.icon;
-            return <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">
-              <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-5" aria-hidden="true" /></span>
-            </Link>;
-          })}
-        </div>
+        <section aria-labelledby="account-tools-heading">
+          <h2 id="account-tools-heading" className="mb-3 text-lg font-extrabold text-foreground">حساب کاربری و پیگیری</h2>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            {accountOptions.map((option) => {
+              const Icon = option.icon;
+              return <Link key={option.title} to={option.to as any} className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:gap-5 sm:px-6">
+                <span className={`grid size-12 shrink-0 place-items-center rounded-xl sm:size-14 ${option.style}`}><Icon className="size-6 sm:size-7" aria-hidden="true" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-base font-extrabold text-foreground sm:text-lg">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-4" aria-hidden="true" /></span>
+              </Link>;
+            })}
+          </div>
+        </section>
 
-        {sellingApproved && <Link to="/professional-purchase" className="group mt-4 flex min-h-24 items-center gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4 text-right shadow-sm transition hover:border-primary/60 hover:shadow-md">
-          <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800"><ShoppingBasket className="size-7" aria-hidden="true" /></span>
-          <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground">خرید ویژه حرفه‌ای</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">فقط بارهای موجود با نوع فروش «ویژه حرفه‌ای»؛ این بارها در بازارهای عادی نمایش داده نمی‌شوند</span></span>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground"><ArrowLeft className="size-5" aria-hidden="true" /></span>
-        </Link>}
+        <section aria-labelledby="shopping-tools-heading" className="mt-7">
+          <h2 id="shopping-tools-heading" className="mb-3 text-lg font-extrabold text-foreground">خرید و مشاهده بارها</h2>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            {shoppingOptions.map((option) => {
+              const Icon = option.icon;
+              return <Link key={option.title} to={option.to as any} className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:gap-5 sm:px-6">
+                <span className={`grid size-12 shrink-0 place-items-center rounded-xl sm:size-14 ${option.style}`}><Icon className="size-6 sm:size-7" aria-hidden="true" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-base font-extrabold text-foreground sm:text-lg">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-foreground transition group-hover:bg-accent group-hover:text-primary"><ArrowLeft className="size-4" aria-hidden="true" /></span>
+              </Link>;
+            })}
+          </div>
+        </section>
 
         {isProfessional && <>
-          <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">امکانات فروش حرفه‌ای</h2>
+          <h2 className="mb-3 mt-7 text-lg font-extrabold text-foreground">فروش و مدیریت بار</h2>
           {!sellingApproved && <div className="mb-3 flex items-start gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
             <Clock3 className="mt-0.5 size-5 shrink-0" />
-            <div><strong>عضویت شما در انتظار تأیید است.</strong><p>امکانات خرید فعال است؛ اعلام بار و مدیریت ویترین فروش پس از تأیید مدیریت فعال می‌شوند.</p><Link to="/membership" className="mt-2 inline-flex font-bold underline">پیگیری درخواست عضویت</Link></div>
+            <div><strong>عضویت حرفه‌ای شما در انتظار تأیید است.</strong><p>خرید و پیگیری سفارش‌ها در دسترس است؛ ویترین فروش و اعلام بار پس از تأیید مدیریت فعال می‌شوند.</p><Link to="/membership" className="mt-2 inline-flex font-bold underline">پیگیری درخواست عضویت</Link></div>
           </div>}
           <div className="grid grid-cols-1 gap-3 sm:gap-4">
             {[...professionalOptions, ...sellingOptions].map((option) => {
               const Icon = option.icon;
               const enabled = option.enabled !== false;
-              const content = <>
-                <span className={`grid size-14 shrink-0 place-items-center rounded-xl sm:size-16 ${option.style}`}><Icon className="size-7 sm:size-8" aria-hidden="true" /></span>
-                <span className="min-w-0 flex-1"><span className="block text-lg font-extrabold text-foreground sm:text-xl">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
-                {enabled ? <span className="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-foreground"><ArrowLeft className="size-5" aria-hidden="true" /></span> : <span className="grid size-9 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-800"><ShieldCheck className="size-5" aria-hidden="true" /></span>}
+              const card = <>
+                <span className={`grid size-12 shrink-0 place-items-center rounded-xl sm:size-14 ${option.style}`}><Icon className="size-6 sm:size-7" aria-hidden="true" /></span>
+                <span className="min-w-0 flex-1"><span className="block text-base font-extrabold text-foreground sm:text-lg">{option.title}</span><span className="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span></span>
+                {enabled ? <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-foreground"><ArrowLeft className="size-4" aria-hidden="true" /></span> : <span className="grid size-8 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-800"><ShieldCheck className="size-4" aria-hidden="true" /></span>}
               </>;
               return enabled
-                ? <Link key={option.title} to={option.to as any} className="group flex min-h-28 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-5 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-32 sm:gap-5 sm:px-6">{content}</Link>
-                : <div key={option.title} aria-disabled="true" className="flex min-h-28 cursor-not-allowed items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-5 text-right opacity-80 sm:min-h-32 sm:gap-5 sm:px-6">{content}</div>;
+                ? <Link key={option.title} to={option.to as any} className="group flex min-h-24 items-center gap-4 rounded-2xl border border-border bg-card px-4 py-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:gap-5 sm:px-6">{card}</Link>
+                : <div key={option.title} aria-disabled="true" className="flex min-h-24 cursor-not-allowed items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-4 text-right opacity-80 sm:gap-5 sm:px-6">{card}</div>;
             })}
           </div>
         </>}
