@@ -124,7 +124,7 @@ function MemberHome() {
 
   const accountOptions = [
     { title: "پیگیری سفارش‌ها و درخواست‌ها", description: "مشاهده شماره فاکتور، شماره پیگیری و وضعیت خریدها و درخواست‌های تأمین در یک بخش", icon: PackageCheck, to: "/orders", style: "bg-sky-50 text-sky-800" },
-    { title: "امور مالی و فاکتورها", description: "مشاهده مبالغ سفارش‌ها و وضعیت پرداخت در سوابق حساب", icon: WalletCards, to: "/account#finance", style: "bg-violet-50 text-violet-800" },
+    { title: "امور مالی و فاکتورها", description: "مشاهده صورت‌حساب، گردش مالی، کارمزد و اطلاعات حساب بانکی", icon: WalletCards, to: "/seller-accounting-preview", style: "bg-violet-50 text-violet-800" },
   ];
 
   const professionalOptions = [
