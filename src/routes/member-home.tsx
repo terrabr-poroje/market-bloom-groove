@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   UserRound, ShoppingBasket, PackagePlus, ArrowLeft, Sprout,
-  BookOpenText, LifeBuoy, ShieldCheck, Store, Clock3, ClipboardList, WalletCards, PackageCheck,
+  BookOpenText, LifeBuoy, ShieldCheck, Store, Clock3, WalletCards, PackageCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
