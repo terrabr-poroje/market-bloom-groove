@@ -233,9 +233,6 @@ function AnnouncePage() {
     const allowedSections = allowedSaleSections(memberRole);
     const enabled = salesSections.filter(section => allowedSections.includes(section.key) && editTiers[section.key].enabled);
     if (!editValues.product.trim() || !editValues.variety.trim() || !editValues.city.trim() || !editValues.origin.trim() ||
-        !editValues.ready || !editValues.adStart || !editValues.adEnd ||
-        editValues.adStart < localIsoDate() || editValues.adEnd < editValues.adStart ||
-        !editValues.responseStart || !editValues.responseEnd || editValues.responseEnd <= editValues.responseStart ||
         !Number.isFinite(weight) || weight <= 0 || !Number.isInteger(count) || count < 1 ||
         !Number.isInteger(minimum) || minimum < 1 || minimum > count || !Number.isFinite(price) || price <= 0 ||
         !enabled.length || salesSections.some(section => editTiers[section.key].enabled && !allowedSections.includes(section.key)) || enabled.some(section => {
@@ -274,29 +271,23 @@ function AnnouncePage() {
       setBusyLoadId('');
       return;
     }
+    const { error: clearTierError } = await (supabase as any).from('load_price_tiers').delete().eq('load_id', editingLoad.id);
+    if (clearTierError) {
+      setManageError('اطلاعات اصلی ذخیره شد، اما به‌روزرسانی قیمت‌های اختصاصی ناموفق بود. بار را دوباره بررسی کنید.');
+      setBusyLoadId('');
+      return;
+    }
     const tierRows = enabled.map(section => ({
       load_id: editingLoad.id, sale_type: section.key,
       unit_price: Number(editTiers[section.key].price),
       minimum_packages: Number(editTiers[section.key].minimum),
       min_quantity: Number(editTiers[section.key].minimum) * weight, max_quantity: null,
     }));
-    // Upsert enabled tiers first: never delete the previous prices before replacements are saved.
-    const { error: upsertTierError } = await (supabase as any).from('load_price_tiers')
-      .upsert(tierRows, { onConflict: 'load_id,sale_type' });
-    if (upsertTierError) {
-      setManageError('اطلاعات اصلی ذخیره شد، اما قیمت‌های قبلی حفظ شدند؛ ذخیره قیمت‌های جدید ناموفق بود.');
+    const { error: insertTierError } = await (supabase as any).from('load_price_tiers').insert(tierRows);
+    if (insertTierError) {
+      setManageError('اطلاعات اصلی ذخیره شد، اما ذخیره قیمت‌های بخش فروش ناموفق بود؛ بار را بررسی کنید.');
       setBusyLoadId('');
       return;
-    }
-    const disabledSections = allowedSections.filter(key => !enabled.some(section => section.key === key));
-    for (const key of disabledSections) {
-      const { error: removeTierError } = await (supabase as any).from('load_price_tiers')
-        .delete().eq('load_id', editingLoad.id).eq('sale_type', key);
-      if (removeTierError) {
-        setManageError('قیمت‌های جدید ذخیره شدند، اما حذف یکی از بخش‌های غیرفعال کامل نشد؛ بار را بررسی کنید.');
-        setBusyLoadId('');
-        return;
-      }
     }
     setOwnedLoads(items => items.map(item => item.id === editingLoad.id ? {
       ...item, name: [editValues.product.trim(), editValues.variety.trim()].join(' '),
