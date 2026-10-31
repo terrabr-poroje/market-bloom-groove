@@ -2,15 +2,14 @@
 name: Deploy approved Terrabar production release
 
 on:
-  push:
-    branches:
-      - main
+  # Manual release only; automatic production deployment is handled by deploy-terrabar-cloudflare.yml.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: terrabar-production-deployment
+  group: terrabar-production-deploy
   cancel-in-progress: false
 
 jobs:
@@ -111,7 +110,7 @@ jobs:
           set -euo pipefail
           for base in https://terrabar.ir https://www.terrabar.ir; do
             for route in / /auth /announce /requests /cart /professional-purchase; do
-              result="$(curl --silent --show-error --output /tmp/terrabar-production.html --write-out '%{http_code} %{time_total}' --retry 5 --retry-delay 2 --retry-connrefused "${base}${route}")"
+              result="$(curl --silent --show-error --location --output /tmp/terrabar-production.html --write-out '%{http_code} %{time_total}' --retry 5 --retry-delay 2 --retry-connrefused "${base}${route}")"
               code="${result%% *}"
               elapsed="${result##* }"
               if [ "$code" != "200" ]; then
