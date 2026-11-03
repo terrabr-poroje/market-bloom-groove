@@ -14,8 +14,11 @@
 - شاخه اصلی فعلی: `main`.
 - شاخه آزمایشی این سند از commit فوق ساخته شده و در زمان بررسی با main یکسان بوده است.
 - اپلیکیشن از Vite/TanStack Start و React استفاده می‌کند؛ اسکریپت‌های `build`، `lint` و `test` در package.json تعریف شده‌اند.
-- در مخزن workflowهای انتشار Cloudflare Worker وجود دارند که با push به main اجرا می‌شوند. بنابراین merge به main می‌تواند سایت زنده را منتشر کند.
+- workflow انتشار Cloudflare Worker با push به `main` اجرا می‌شود؛ ادغام به main می‌تواند سایت زنده را منتشر کند.
+- سرویس Render متصل با نام `terrabar-preview` در پلن Free و منطقه Frankfurt است؛ شاخه `main` را با auto-deploy دنبال می‌کند و آدرس آن `https://terrabar-preview.onrender.com` است. این سرویس طبق نام و URL، محیط preview است و نباید با مسیر انتشار Worker تولید یکی فرض شود.
 - workflow زمان‌بندی‌شده دریافت snapshot اسکیمای Supabase به علت نامعتبر بودن `SUPABASE_ACCESS_TOKEN` شکست خورده است. مقدار secret نباید در لاگ یا چت چاپ شود.
+- Security Advisor در بررسی 2026-11-03: هفت جدول RLS-enabled بدون policy (سطح INFO؛ ممکن است عمدی و بسته باشند)، هفت تابع `SECURITY DEFINER` قابل‌اجرا برای نقش authenticated (سطح WARN)، و محافظت رمزهای افشاشده غیرفعال (سطح WARN) گزارش کرده است. نام توابع شامل `get_storefront_member`، توابع archive/restore مدیریتی، `terrabar_order_pricing_valid` و `terrabar_request_seller_payout` است؛ قبل از هر تغییر باید بدنه و مجوز هر تابع جداگانه بازبینی شود.
+- Performance Advisor شش FK بدون ایندکس، دو هشدار بهینه‌سازی RLS، سیزده مورد چند policy مجاز و سی‌ویک ایندکس استفاده‌نشده را گزارش کرده است. این موارد به‌تنهایی مجوز حذف یا تغییر ایندکس/policy نیستند.
 - فایل `AGENTS.md` هنوز دستورهای قدیمی Lovable Cloud را دارد و با معماری جاری Supabase/Cloudflare/Render هم‌راستا نیست. پیش از تکیه بر آن باید در یک تغییر مستقل و بازبینی‌شده اصلاح شود.
 - workflowهای بررسی کد وجود دارند، اما اجرای موفق build/lint/test به‌تنهایی معادل آزمون واقعی ورود، سفارش، پرداخت یا مجوزهای RLS نیست.
 
@@ -64,6 +67,7 @@
 ## کارهای انجام‌نشده و موانع
 - جایگزینی امن `SUPABASE_ACCESS_TOKEN` نامعتبر در GitHub Actions؛ این کار باید از تنظیمات امن GitHub انجام شود و token هرگز در چت فرستاده نشود.
 - بازبینی جزئی هشدارهای Security Advisor در Supabase.
-- روشن‌کردن رابطه واقعی Render preview با Cloudflare Worker production و تعیین اینکه کدام محیط مرجع است.
+- تعیین مرز دقیق Render preview در برابر Cloudflare Worker production و تعریف روش preview ایزوله که هیچ deploy به main یا production نداشته باشد.
+- بازبینی بدنه و grantهای هفت تابع SECURITY DEFINER و تعیین عمدی‌بودن هفت جدول بدون policy؛ هیچ policy یا تابعی هنوز تغییر نکرده است.
 - بررسی دقیق دسترسی‌ها و هزینه API مدل و میزبان عامل.
 - هیچ عامل پایدار، API key، Worker جدید یا سرویس پولی در این مرحله ایجاد نشده است.
