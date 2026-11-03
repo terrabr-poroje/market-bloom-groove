@@ -20,14 +20,14 @@ function jsonOk(): Response {
 
 function normalizeIranianMobile(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const digits = value.replace(/\\D/g, "");
+  const digits = value.replace(/\D/g, "");
   let normalized: string;
-  if (digits.startsWith("0098")) normalized = `+${digits.slice(2)}`;
-  else if (digits.startsWith("98")) normalized = `+${digits}`;
-  else if (digits.startsWith("0")) normalized = `+98${digits.slice(1)}`;
-  else if (digits.startsWith("9") && digits.length === 10) normalized = `+98${digits}`;
+  if (digits.startsWith("0098")) normalized = \`+\${digits.slice(2)}\`;
+  else if (digits.startsWith("98")) normalized = \`+\${digits}\`;
+  else if (digits.startsWith("0")) normalized = \`+98\${digits.slice(1)}\`;
+  else if (digits.startsWith("9") && digits.length === 10) normalized = \`+98\${digits}\`;
   else return null;
-  return /^\\+989\\d{9}$/.test(normalized) ? normalized : null;
+  return /^\+989\d{9}$/.test(normalized) ? normalized : null;
 }
 
 function verifyHook(payload: string, headers: Headers, secretList: string): unknown {
@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
 
   const recipient = normalizeIranianMobile(event?.user?.phone);
   const otp = typeof event?.sms?.otp === "string" ? event.sms.otp : "";
-  if (!recipient || !/^\\d{4,8}$/.test(otp)) {
+  if (!recipient || !/^\d{4,8}$/.test(otp)) {
     return jsonError(400, "Invalid SMS hook payload");
   }
 
@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         sending_type: "webservice",
         from_number: fromNumber,
-        message: `کد ورود ترابار: ${otp}`,
+        message: \`کد ورود ترابار: \${otp}\`,
         params: { recipients: [recipient] },
       }),
       signal: controller.signal,
@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
       | null;
 
     if (!providerResponse.ok || providerResult?.meta?.status !== true) {
-      const errorCode = providerResult?.meta?.message_code ?? `http_${providerResponse.status}`;
+      const errorCode = providerResult?.meta?.message_code ?? \`http_\${providerResponse.status}\`;
       await db.from("sms_hook_events").update({
         status: "failed",
         error_code: String(errorCode).slice(0, 80),
