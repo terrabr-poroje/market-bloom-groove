@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
 
   const hookSecrets = Deno.env.get("SEND_SMS_HOOK_SECRETS") ?? "";
   const apiKey = Deno.env.get("IPPANEL_API_KEY") ?? "";
-  const fromNumber = (Deno.env.get("IPPANEL_FROM_NUMBER") ?? "3000505").trim();
+  const fromNumber = "3000505";
   const patternCode = (Deno.env.get("IPPANEL_PATTERN_CODE") ?? "").trim();
   const patternParamName = (Deno.env.get("IPPANEL_PATTERN_PARAM_NAME") ?? "").trim();
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -62,8 +62,7 @@ Deno.serve(async (req: Request) => {
   const missingConfig = [
     !hookSecrets && "SEND_SMS_HOOK_SECRETS",
     !apiKey && "IPPANEL_API_KEY",
-    !fromNumber && "IPPANEL_FROM_NUMBER",
-    (fromNumber && !senderIsValid) && "IPPANEL_FROM_NUMBER_FORMAT",
+    !senderIsValid && "IPPANEL_DEFAULT_FROM_NUMBER_FORMAT",
     !patternCode && "IPPANEL_PATTERN_CODE",
     !patternParamName && "IPPANEL_PATTERN_PARAM_NAME",
     (patternParamName && !patternParamIsValid) && "IPPANEL_PATTERN_PARAM_NAME_FORMAT",
