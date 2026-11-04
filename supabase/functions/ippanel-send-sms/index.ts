@@ -55,8 +55,8 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const webhookId = req.headers.get("webhook-id");
 
-  const senderDigits = fromNumber.replace(/\\D/g, "");
-  const senderIsValid = /^\\d{5,15}$/.test(senderDigits);
+  const senderDigits = fromNumber.replace(/\D/g, "");
+  const senderIsValid = /^\d{5,15}$/.test(senderDigits);
   const normalizedFromNumber = senderDigits.startsWith("98") ? "+" + senderDigits : "+98" + senderDigits;
   const patternParamIsValid = /^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(patternParamName);
   const missingConfig = [
