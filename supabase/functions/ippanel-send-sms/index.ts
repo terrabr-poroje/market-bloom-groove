@@ -48,14 +48,16 @@ Deno.serve(async (req: Request) => {
 
   const hookSecrets = Deno.env.get("SEND_SMS_HOOK_SECRETS") ?? "";
   const apiKey = Deno.env.get("IPPANEL_API_KEY") ?? "";
-  const fromNumber = (Deno.env.get("IPPANEL_FROM_NUMBER") ?? "").trim();
+  const fromNumber = (Deno.env.get("IPPANEL_FROM_NUMBER") ?? "3000505").trim();
   const patternCode = (Deno.env.get("IPPANEL_PATTERN_CODE") ?? "").trim();
   const patternParamName = (Deno.env.get("IPPANEL_PATTERN_PARAM_NAME") ?? "").trim();
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const webhookId = req.headers.get("webhook-id");
 
-  const senderIsValid = /^\\+?\\d{5,15}$/.test(fromNumber);
+  const senderDigits = fromNumber.replace(/\\D/g, "");
+  const senderIsValid = /^\\d{5,15}$/.test(senderDigits);
+  const normalizedFromNumber = senderDigits.startsWith("98") ? "+" + senderDigits : "+98" + senderDigits;
   const patternParamIsValid = /^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(patternParamName);
   const missingConfig = [
     !hookSecrets && "SEND_SMS_HOOK_SECRETS",
@@ -116,7 +118,7 @@ Deno.serve(async (req: Request) => {
       headers: { "Authorization": apiKey, "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
         sending_type: "pattern",
-        from_number: fromNumber.startsWith("+") ? fromNumber : "+" + fromNumber,
+        from_number: normalizedFromNumber,
         code: patternCode,
         recipients: [recipient],
         params: { [patternParamName]: otp },
