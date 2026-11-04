@@ -48,13 +48,28 @@ Deno.serve(async (req: Request) => {
 
   const hookSecrets = Deno.env.get("SEND_SMS_HOOK_SECRETS") ?? "";
   const apiKey = Deno.env.get("IPPANEL_API_KEY") ?? "";
-  const fromNumber = normalizeIranianMobile(Deno.env.get("IPPANEL_FROM_NUMBER"));
+  const fromNumber = (Deno.env.get("IPPANEL_FROM_NUMBER") ?? "").trim();
+  const patternCode = (Deno.env.get("IPPANEL_PATTERN_CODE") ?? "").trim();
+  const patternParamName = (Deno.env.get("IPPANEL_PATTERN_PARAM_NAME") ?? "").trim();
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const webhookId = req.headers.get("webhook-id");
 
-  if (!hookSecrets || !apiKey || !fromNumber || !supabaseUrl || !serviceRoleKey) {
-    console.error("SMS hook configuration is incomplete");
+  const senderIsValid = /^\\+?\\d{5,15}$/.test(fromNumber);
+  const patternParamIsValid = /^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(patternParamName);
+  const missingConfig = [
+    !hookSecrets && "SEND_SMS_HOOK_SECRETS",
+    !apiKey && "IPPANEL_API_KEY",
+    !fromNumber && "IPPANEL_FROM_NUMBER",
+    (fromNumber && !senderIsValid) && "IPPANEL_FROM_NUMBER_FORMAT",
+    !patternCode && "IPPANEL_PATTERN_CODE",
+    !patternParamName && "IPPANEL_PATTERN_PARAM_NAME",
+    (patternParamName && !patternParamIsValid) && "IPPANEL_PATTERN_PARAM_NAME_FORMAT",
+    !supabaseUrl && "SUPABASE_URL",
+    !serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter(Boolean);
+  if (missingConfig.length > 0) {
+    console.error("SMS hook configuration is incomplete", { missing: missingConfig });
     return jsonError(500, "SMS provider is not configured");
   }
   if (!webhookId || webhookId.length > 200) return jsonError(400, "Missing or invalid webhook ID");
@@ -100,10 +115,11 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: { "Authorization": apiKey, "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
-        sending_type: "webservice",
-        from_number: fromNumber,
-        message: "کد ورود ترابار: " + otp,
-        params: { recipients: [recipient] },
+        sending_type: "pattern",
+        from_number: fromNumber.startsWith("+") ? fromNumber : "+" + fromNumber,
+        code: patternCode,
+        recipients: [recipient],
+        params: { [patternParamName]: otp },
       }),
       signal: controller.signal,
     });
