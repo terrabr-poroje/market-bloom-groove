@@ -123,7 +123,15 @@ jobs:
               if (!response || !response.ok()) throw new Error(name + ': homepage failed');
               await page.getByRole('link', { name: /شروع همکاری/ }).click();
               await page.waitForURL('**/auth', { timeout: 15000 });
-              await page.getByRole('link', { name: /جست‌وجوی بار/ }).count().catch(() => 0);
+              const signupTab = page.getByRole('button', { name: 'ثبت‌نام', exact: true }).first();
+              await signupTab.click();
+              if (!(await page.getByPlaceholder('نام کامل شما').isVisible())) {
+                throw new Error(name + ': signup button did not reveal the registration form');
+              }
+              await page.getByRole('button', { name: 'ورود', exact: true }).click();
+              if (await page.getByPlaceholder('نام کامل شما').isVisible()) {
+                throw new Error(name + ': login button did not switch the form');
+              }
               await page.goto(base + '/requests', { waitUntil: 'networkidle', timeout: 60000 });
               if (!(await page.locator('body').innerText()).includes('ترابار')) throw new Error(name + ': requests page content missing');
               if (pageErrors.length || failedScripts.length) throw new Error(name + ': page errors=' + JSON.stringify(pageErrors) + ' failed scripts=' + JSON.stringify(failedScripts));
