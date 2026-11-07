@@ -90,15 +90,18 @@ jobs:
             grep -qE '<script[^>]+type="module"|modulepreload' /tmp/page.html
             echo "PASS HTML $route"
           done
-          asset="$(grep -oE 'src="[^"]+\.js"' /tmp/page.html | head -1 | cut -d '"' -f2)"
-          test -n "$asset"
-          curl --fail --silent --show-error "$base$asset" -o /tmp/client.js
-          grep -q 'supabase-js' /tmp/client.js || grep -q 'createClient' /tmp/client.js
-          if grep -q 'tb_tbl_' /tmp/client.js; then
+          index_asset="$(grep -aoE 'src="[^"]+\\.js"' /tmp/page.html | head -1 | cut -d '"' -f2)"
+          test -n "$index_asset"
+          curl --fail --silent --show-error "$base$index_asset" -o /tmp/index.js
+          client_asset="$(grep -aoE 'client-[A-Za-z0-9_-]+\\.js' /tmp/index.js | head -1)"
+          test -n "$client_asset"
+          curl --fail --silent --show-error "$base/assets/$client_asset" -o /tmp/client.js
+          grep -aq 'supabase-js.traceContextExtractor' /tmp/client.js
+          if grep -aq 'tb_tbl_' /tmp/client.js; then
             echo "::error::Preview bundle contains the old localStorage mock database."
             exit 1
           fi
-          echo "PASS real client bundle; mock localStorage database is absent"
+          echo "PASS real Supabase client bundle; mock localStorage database is absent"
 
       - name: Verify Chromium and Safari-WebKit navigation and hydration
         run: |
