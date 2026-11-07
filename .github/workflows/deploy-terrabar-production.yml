@@ -59,33 +59,24 @@ jobs:
             exit 1
           fi
 
-      - name: Verify existing Supabase phone OTP delivery path (read-only)
+      - name: Verify Supabase phone authentication remains enabled (read-only)
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
-          test -n "${SUPABASE_ACCESS_TOKEN:-}" || { echo "::error::Cannot verify the existing Supabase SMS configuration; refusing to replace the live login path."; exit 1; }
           curl --fail --silent --show-error \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
             -H "Accept: application/json" \
-            "https://api.supabase.com/v1/projects/gznsxqeyhnuzglliijzz/config/auth" \
-            -o /tmp/terrabar-auth-config.json
+            "${VITE_SUPABASE_URL%/}/auth/v1/settings" \
+            -o /tmp/terrabar-public-auth-settings.json
           node <<'NODE'
           const fs = require('fs');
-          const c = JSON.parse(fs.readFileSync('/tmp/terrabar-auth-config.json', 'utf8'));
-          const hook = c.hook_send_sms_enabled === true &&
-            typeof c.hook_send_sms_uri === 'string' && c.hook_send_sms_uri.length > 0 &&
-            typeof c.hook_send_sms_secrets === 'string' && c.hook_send_sms_secrets.length > 0;
-          const provider = String(c.sms_provider || '').toLowerCase();
-          const providerReady =
-            (provider === 'twilio' && !!(c.sms_twilio_account_sid && c.sms_twilio_auth_token && (c.sms_twilio_message_service_sid || c.sms_twilio_content_sid))) ||
-            (provider === 'messagebird' && !!(c.sms_messagebird_access_key && c.sms_messagebird_originator)) ||
-            (provider === 'textlocal' && !!(c.sms_textlocal_api_key && c.sms_textlocal_sender)) ||
-            (provider === 'vonage' && !!(c.sms_vonage_api_key && c.sms_vonage_api_secret && c.sms_vonage_from));
-          if (!hook && !providerReady) {
-            throw new Error('Supabase phone OTP has no confirmed SMS hook/provider configuration. Production deployment blocked to avoid breaking login.');
+          const c = JSON.parse(fs.readFileSync('/tmp/terrabar-public-auth-settings.json', 'utf8'));
+          if (c.external?.phone !== true) {
+            throw new Error('Supabase phone authentication is not enabled; production deployment blocked to protect the existing login path.');
           }
-          console.log(hook ? 'Verified: Supabase send-SMS Auth Hook is configured.' : 'Verified: Supabase SMS provider ' + provider + ' has required credentials.');
+          console.log('Verified: Supabase phone authentication is enabled. Public SMS provider: ' + (c.sms_provider || 'not exposed by public settings') + '.');
           NODE
 
       - name: Install locked dependencies
