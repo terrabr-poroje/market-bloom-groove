@@ -17,11 +17,11 @@ ALTER TABLE "sessions" RENAME TO "_legacy_inferred_sessions";
 ALTER TABLE "site_visits" RENAME TO "_legacy_inferred_site_visits";
 ALTER TABLE "users" RENAME TO "_legacy_inferred_users";
 
-CREATE TABLE auth_users (id TEXT PRIMARY KEY, phone TEXT UNIQUE, email TEXT UNIQUE, phone_confirmed_at TEXT, email_confirmed_at TEXT, password_hash TEXT, user_metadata TEXT, app_metadata TEXT, last_sign_in_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, disabled_at TEXT);
+CREATE TABLE auth_users (id TEXT PRIMARY KEY, phone TEXT UNIQUE, email TEXT UNIQUE, phone_confirmed_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, disabled_at TEXT);
 CREATE TABLE auth_sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES auth_users(id), token_hash TEXT NOT NULL UNIQUE, expires_at INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, last_seen_at TEXT);
 CREATE INDEX d1_idx_auth_sessions_user_expires ON auth_sessions(user_id, expires_at);
-CREATE TABLE otp_challenges (id TEXT PRIMARY KEY, phone TEXT NOT NULL, identifier TEXT NOT NULL, channel TEXT NOT NULL CHECK (channel IN ('sms','email')), code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, consumed_at TEXT, request_ip_hash TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
-CREATE INDEX d1_idx_otp_phone_expiry ON otp_challenges(identifier, channel, expires_at);
+CREATE TABLE otp_challenges (id TEXT PRIMARY KEY, phone TEXT NOT NULL, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, consumed_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX d1_idx_otp_phone_expiry ON otp_challenges(phone, expires_at);
 CREATE TABLE schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE id_sequences (sequence_name TEXT PRIMARY KEY, current_value INTEGER NOT NULL DEFAULT 0);
 
