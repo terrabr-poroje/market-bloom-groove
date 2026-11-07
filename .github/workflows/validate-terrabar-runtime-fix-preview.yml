@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: terrabar-runtime-fix-preview
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-test-preview:
