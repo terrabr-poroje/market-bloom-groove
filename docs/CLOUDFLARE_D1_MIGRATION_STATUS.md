@@ -98,3 +98,20 @@ The production custom domain is attached to Worker `terraba-arash`, which has D1
 - Work is isolated to `migration/cloudflare-d1-completion` for the completion effort. Do not commit further changes to `main` during migration.
 - No production Worker script, DNS, ParsPack settings, SMS.ir settings, or Supabase tables were changed by this audit.
 - Do not deploy the branch to the production domain or disable Supabase before the blockers above are resolved and the isolated preview passes.
+
+
+## Staging execution — 2026-11-07
+
+- Applied a clean, data-free schema to staging database `terrabar-staging-20261107` (`af210eb2-44c3-4280-baf5-106ede7c7cdf`) only.
+- The clean staging schema was built from the authoritative schema definitions while omitting the 13 `ALTER TABLE ... RENAME TO _legacy_inferred_*` statements. Those statements assume pre-existing tables and must not be run against a newly created empty database.
+- Applied `0002_cloudflare_auth_support.sql` after the clean baseline.
+- Read-only verification: 35 application/system tables present (including Cloudflare's `_cf_KV`), `members=0`, `loads=0`, `orders=0`; `PRAGMA foreign_key_check` returned no violations. No production records were copied.
+- Added `cloudflare/migrations/0001_clean_d1_baseline.sql` to this branch so the clean staging setup is reproducible. The original `0001_authoritative_schema.sql` remains unchanged for its original pre-existing-schema use case.
+- This verifies schema installation only. It does not verify application CRUD, auth, authorization, SMS.ir, ParsPack, payments, or deployment.
+
+## Newly confirmed implementation gaps
+
+- `src/start.ts` still installs `attachSupabaseAuth`; `src/lib/auth.ts` dynamically imports the Supabase client for session restoration and role queries; `src/routes/auth.tsx` imports the Supabase client directly.
+- `src/lib/cloudflare-auth.server.ts` is not integrated into Start middleware or the application auth client. Its current implementation is not yet production-ready: it uses bearer-token session handling rather than the agreed HttpOnly cookie model, OTP verification lacks an atomic compare-and-consume guard against concurrent replay, and there is no effective IP/identifier-wide attempt throttle. It also explicitly returns 503 for email OTP/recovery.
+- The SMS.ir adapter in that file must be checked against the existing live SMS.ir configuration without reading or exposing secret values. No SMS test was sent during this staging schema operation.
+- Therefore the staging database is schema-ready, but the application remains Supabase-dependent and no preview Worker was deployed.
