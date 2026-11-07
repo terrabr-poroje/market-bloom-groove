@@ -517,7 +517,7 @@ CREATE INDEX IF NOT EXISTS "d1_idx_ratings_target_member_id" ON "ratings" (targe
 CREATE UNIQUE INDEX IF NOT EXISTS "d1_ratings_one_review_per_order_target" ON "ratings" (order_id, reviewer_member_id, target_type);
 CREATE UNIQUE INDEX IF NOT EXISTS "d1_seller_bank_accounts_member_id_key" ON "seller_bank_accounts" (member_id);
 CREATE INDEX IF NOT EXISTS "d1_idx_seller_financial_transactions_order_id" ON "seller_financial_transactions" (order_id);
-CREATE UNIQUE INDEX IF NOT EXISTS "d1_seller_finance_one_order_receipt_or_commission" ON "seller_financial_transactions" (order_id, transaction_type) WHERE ((order_id IS NOT NULL) AND (transaction_type = ANY (ARRAY['receipt', 'commission'])));
+CREATE UNIQUE INDEX IF NOT EXISTS "d1_seller_finance_one_order_receipt_or_commission" ON "seller_financial_transactions" (order_id, transaction_type) WHERE ((order_id IS NOT NULL) AND (transaction_type IN ('receipt', 'commission')));
 CREATE INDEX IF NOT EXISTS "d1_seller_financial_transactions_member_date_idx" ON "seller_financial_transactions" (member_id, transaction_date DESC);
 CREATE INDEX IF NOT EXISTS "d1_seller_payout_requests_member_date_idx" ON "seller_payout_requests" (member_id, requested_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS "d1_seller_payout_requests_transaction_id_key" ON "seller_payout_requests" (transaction_id);
