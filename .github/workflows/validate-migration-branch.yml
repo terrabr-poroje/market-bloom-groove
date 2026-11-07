@@ -73,7 +73,7 @@ jobs:
             }
           ];
           config.compatibility_flags = [...new Set([...(config.compatibility_flags || []), 'nodejs_compat'])];
-          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\\n');
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
           const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
           if (verified.name !== 'terrabar-market-preview' || (verified.routes || []).length !== 0 ||
               verified.d1_databases?.[0]?.database_id !== 'af210eb2-44c3-4280-baf5-106ede7c7cdf') {
