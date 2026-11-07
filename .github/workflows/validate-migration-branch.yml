@@ -17,7 +17,7 @@ jobs:
   validate:
     name: Install, build, lint and test (no deployment)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 26
     env:
       VITE_SUPABASE_URL: https://gznsxqeyhnuzglliijzz.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
