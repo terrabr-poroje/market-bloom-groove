@@ -146,10 +146,10 @@ jobs:
                 exit 1
               }
             done
-            index_asset="$(grep -aoE 'src="[^"]+\\.js"' /tmp/terrabar-production.html | head -1 | cut -d '"' -f2)"
+            index_asset="$(grep -aoE 'src="[^"]+\.js"' /tmp/terrabar-production.html | head -1 | cut -d '"' -f2)"
             test -n "$index_asset"
             curl --fail --silent --show-error "${base}${index_asset}" -o /tmp/terrabar-index.js
-            client_asset="$(grep -aoE 'client-[A-Za-z0-9_-]+\\.js' /tmp/terrabar-index.js | head -1)"
+            client_asset="$(grep -aoE 'client-[A-Za-z0-9_-]+\.js' /tmp/terrabar-index.js | head -1)"
             test -n "$client_asset"
             curl --fail --silent --show-error "${base}/assets/${client_asset}" -o /tmp/terrabar-client.js
             grep -aq 'supabase-js.traceContextExtractor' /tmp/terrabar-client.js
