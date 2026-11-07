@@ -27,7 +27,7 @@ function ResetPasswordPage() {
     const applyRecoverySession = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive || !data.session) return;
-      const { data: admin, error: adminError } = await supabase
+      const { data: admin, error: adminError } = await (supabase as any)
         .from("admin_users")
         .select("admin_role, is_active")
         .eq("auth_user_id", data.session.user.id)
@@ -116,7 +116,7 @@ function ResetPasswordPage() {
       setError("نشست بازیابی پیدا نشد. ایمیل را باز کنید و دوباره روی لینک بازیابی بزنید.");
       setBusy(false); return;
     }
-    const { data: admin, error: adminError } = await supabase
+    const { data: admin, error: adminError } = await (supabase as any)
       .from("admin_users")
       .select("admin_role, is_active")
       .eq("auth_user_id", sessionData.session.user.id)

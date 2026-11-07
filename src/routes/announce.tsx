@@ -430,7 +430,7 @@ function AnnouncePage() {
     }
     const offeredCity = actualMemberRole === 'supplier' ? form.city.trim() : String(member.city).trim();
     const originCity = form.province.trim();
-    const firstSaleSection = roleValidSaleSections[0];
+    const firstSaleSection = roleValidSaleSections[0]!;
     const canonicalPrice = Number(salePrices[firstSaleSection]);
     const canonicalMinimum = Number(saleMinimums[firstSaleSection]);
     const { data: insertedLoad, error: insertError } = await (supabase as any).from('loads').insert({

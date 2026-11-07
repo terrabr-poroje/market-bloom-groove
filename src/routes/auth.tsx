@@ -76,9 +76,10 @@ function AuthPage() {
 
   async function sendCode(event: FormEvent) {
     event.preventDefault();
+    let networkWatchdog: number | undefined;
     try {
     setBusy(true);
-    const networkWatchdog = window.setTimeout(() => {
+    networkWatchdog = window.setTimeout(() => {
       setBusy(false);
       setError("ارتباط با سرور پاسخ نداد. لطفاً اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
     }, 15000);
@@ -150,9 +151,10 @@ function AuthPage() {
 
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
+    let networkWatchdog: number | undefined;
     try {
     setBusy(true);
-    const networkWatchdog = window.setTimeout(() => {
+    networkWatchdog = window.setTimeout(() => {
       setBusy(false);
       setError("ارتباط با سرور پاسخ نداد. لطفاً اتصال اینترنت یا VPN را بررسی کنید و دوباره تلاش کنید.");
     }, 15000);

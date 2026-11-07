@@ -42,7 +42,7 @@ const jalaliToIsoDate = (value: string): string | null => {
   const end = Date.UTC(jy + 623, 0, 1);
   for (let time = start; time < end; time += 86400000) {
     const parts = Object.fromEntries(fmt.formatToParts(new Date(time)).filter(p => p.type !== "literal").map(p => [p.type, Number(p.value)]));
-    if (parts.year === jy && parts.month === jm && parts.day === jd) return new Date(time).toISOString().slice(0, 10);
+    if (parts["year"] === jy && parts["month"] === jm && parts["day"] === jd) return new Date(time).toISOString().slice(0, 10);
   }
   return null;
 };
@@ -228,7 +228,7 @@ export function Requests({ ordersOnly = false, professionalOnly = false }: { ord
           const category = /گوجه|پیاز|خیار|سیب‌زمینی|بادمجان|فلفل/.test(product) ? "صیفی‌جات" : /سبزی|جعفری|گشنیز|شوید|کاهو/.test(product) ? "سبزیجات" : "میوه";
           const rowTiers = (tiers ?? []).filter((tier: any) => String(tier.load_id) === String(row.id));
           const legacyType = String(row.sale_type || "regular");
-          const saleOptions = rowTiers.length ? [...new Set(rowTiers.map((tier: any) => String(tier.sale_type)))].map((key: string) => {
+          const saleOptions = rowTiers.length ? [...new Set(rowTiers.map((tier: any) => String(tier.sale_type)))].map((key: any) => {
             const labels: Record<string, string> = { retail: "خرده‌فروشی", wholesale: "عمده‌فروشی", special: "فروش ویژه", professional: "ویژه حرفه‌ای", regular: "فروش عادی", pro: "ویژه حرفه‌ای" };
             const typedTiers = rowTiers.filter((tier: any) => String(tier.sale_type) === key);
             const breaks = typedTiers.map((tier: any) => ({ minQuantity: Math.max(1, Number(tier.min_quantity ?? tier.minimum_packages ?? 1)), maxQuantity: tier.max_quantity == null ? null : Number(tier.max_quantity), price: Number(tier.unit_price) })).sort((a: any, b: any) => a.minQuantity - b.minQuantity);
