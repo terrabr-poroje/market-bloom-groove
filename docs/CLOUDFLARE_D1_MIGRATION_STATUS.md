@@ -20,6 +20,7 @@ Last checked: 2026-11-07
 ## Schema migration
 - Live Supabase public schema inventory: 28 tables.
 - Authoritative D1 schema migration: `cloudflare/migrations/0001_authoritative_schema.sql`.
+- Additive auth support migration: `cloudflare/migrations/0002_cloudflare_auth_support.sql` (adds the fields used by OTP, sessions, admin login throttling and the visit summary view).
 - Migration was tested against a clean temporary D1 after cloning the 13 pre-existing inferred tables. All 117 SQL statements succeeded; `PRAGMA foreign_key_check` returned no violations.
 - On production D1, the 13 prior inferred tables were retained with `_legacy_inferred_` prefixes. No old table was dropped.
 - Production D1 currently has 28 authoritative public application tables, Cloudflare auth/session/OTP tables, sequence/migration tables, plus retained legacy tables.
@@ -58,7 +59,10 @@ Counts below were independently read from live Supabase and Cloudflare D1 after 
 | outgoing_messages | 0 | 0 |
 | sms_hook_events | 9 | 9 |
 
-The three existing admin recovery-code rows were already present in D1; their secret hashes were not re-exported. Auth user IDs were compared and match exactly. Counts and foreign-key checks are verification checkpoints, not a substitute for application-level testing.
+The three existing admin recovery-code rows were already present in D1 and their count matches Supabase; their secret hashes were not re-exported. The two Supabase Auth user IDs were compared with D1 and match exactly. The source Supabase tables were not changed or deleted. Auth user IDs were compared and match exactly. Counts and foreign-key checks are verification checkpoints, not a substitute for application-level testing.
+
+## Current code/runtime gap
+The production custom domain is attached to Worker `terraba-arash`, which has D1 binding `DB` pointing to `traabar-db`. However, the deployed Worker bundle and the GitHub source still contain Supabase client/auth/data calls. The D1 schema and initial data transfer do not by themselves switch the running application to D1. No Cloudflare production Worker deployment or DNS change has been made.
 
 ## Not complete — blocking items before cutover
 1. Migrate all remaining browser and server Supabase data calls to Cloudflare server functions/D1. The source still imports `@supabase/supabase-js`; routes/components use `supabase.from(...)` and `supabase.auth.*`.
