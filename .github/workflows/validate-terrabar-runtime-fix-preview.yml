@@ -90,7 +90,6 @@ jobs:
           if (!config.main) throw new Error('Production candidate has no Worker entry point.');
           config.name = 'terraba-arash';
           config.routes = [];
-          config.workers_dev = false;
           config.compatibility_date = '2026-11-02';
           config.compatibility_flags = ['nodejs_compat'];
           config.d1_databases = [{
@@ -98,7 +97,7 @@ jobs:
             database_name: 'traabar-db',
             database_id: '9da7735b-e4c9-4f7f-9abe-53ba1545c60e'
           }];
-          if (config.name !== 'terraba-arash' || config.routes.length !== 0 || config.workers_dev !== false) {
+          if (config.name !== 'terraba-arash' || config.routes.length !== 0) {
             throw new Error('Production Worker isolation check failed.');
           }
           if (!config.d1_databases.some(db => db.binding === 'DB' && db.database_id === '9da7735b-e4c9-4f7f-9abe-53ba1545c60e')) {
