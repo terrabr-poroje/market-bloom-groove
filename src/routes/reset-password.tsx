@@ -11,6 +11,21 @@ export const Route = createFileRoute("/reset-password")({
 
 type Stage = "request" | "waiting" | "set" | "emergency";
 
+type AdminUserRecord = { admin_role: string; is_active: boolean };
+type AdminUsersQuery = {
+  select(columns: string): AdminUsersQuery;
+  eq(column: string, value: string | boolean): AdminUsersQuery;
+  maybeSingle(): Promise<{ data: AdminUserRecord | null; error: unknown }>;
+};
+type AdminUsersClient = {
+  from(table: "admin_users"): AdminUsersQuery;
+};
+
+function adminUsersClient() {
+  // admin_users is not included in the generated Supabase public Database types.
+  return supabase as unknown as AdminUsersClient;
+}
+
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -27,11 +42,7 @@ function ResetPasswordPage() {
     const applyRecoverySession = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive || !data.session) return;
-      // admin_users is not included in the generated Supabase public Database types.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // admin_users is not included in the generated Supabase public Database types.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: admin, error: adminError } = await (supabase as any)
+      const { data: admin, error: adminError } = await adminUsersClient()
         .from("admin_users")
         .select("admin_role, is_active")
         .eq("auth_user_id", data.session.user.id)
@@ -120,7 +131,7 @@ function ResetPasswordPage() {
       setError("نشست بازیابی پیدا نشد. ایمیل را باز کنید و دوباره روی لینک بازیابی بزنید.");
       setBusy(false); return;
     }
-    const { data: admin, error: adminError } = await (supabase as any)
+    const { data: admin, error: adminError } = await adminUsersClient()
       .from("admin_users")
       .select("admin_role, is_active")
       .eq("auth_user_id", sessionData.session.user.id)
