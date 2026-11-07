@@ -59,6 +59,26 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Supabase phone authentication remains enabled (read-only)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "apikey: ${VITE_SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Accept: application/json" \
+            "${VITE_SUPABASE_URL%/}/auth/v1/settings" \
+            -o /tmp/terrabar-public-auth-settings.json
+          node <<'NODE'
+          const fs = require('fs');
+          const c = JSON.parse(fs.readFileSync('/tmp/terrabar-public-auth-settings.json', 'utf8'));
+          if (c.external?.phone !== true) {
+            throw new Error('Supabase phone authentication is not enabled; production deployment blocked to protect the existing login path.');
+          }
+          console.log('Verified: Supabase phone authentication is enabled. Public SMS provider: ' + (c.sms_provider || 'not exposed by public settings') + '.');
+          NODE
+
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
 
@@ -75,29 +95,31 @@ jobs:
           const fs = require('fs');
           const path = '.output/server/wrangler.json';
           const config = JSON.parse(fs.readFileSync(path, 'utf8'));
-          config.name = 'terrabar-market';
-          config.routes = [
-            { pattern: 'terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' },
-            { pattern: 'www.terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' }
-          ];
           if (!config.main) {
             throw new Error('Refusing deployment: generated Worker entry point is missing.');
           }
+          // The live domains are already attached as Cloudflare Custom Domains to terraba-arash.
+          // Deploy to that exact Worker; do not create overlapping route rules or a second production Worker.
+          config.name = 'terraba-arash';
+          config.routes = [];
+          config.workers_dev = true;
+          config.compatibility_date = '2026-11-02';
+          config.compatibility_flags = ['nodejs_compat'];
+          // Preserve the existing D1 binding without running migrations or changing its data.
+          config.d1_databases = [{
+            binding: 'DB',
+            database_name: 'traabar-db',
+            database_id: '9da7735b-e4c9-4f7f-9abe-53ba1545c60e'
+          }];
           fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
           const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (verified.name !== 'terrabar-market') {
-            throw new Error('Refusing deployment: unexpected Worker name ' + verified.name);
+          if (verified.name !== 'terraba-arash' || (verified.routes || []).length !== 0 || verified.workers_dev !== true) {
+            throw new Error('Refusing deployment: production Worker identity or route isolation check failed.');
           }
-          const routes = verified.routes || [];
-          for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
-            if (!routes.some(route => route.pattern === hostname + '/*' && route.zone_id === '5abde3806e64424f9179eb509cabe824' && !route.custom_domain)) {
-              throw new Error('Refusing deployment: approved custom domain missing: ' + hostname);
-            }
+          if (!(verified.d1_databases || []).some(db => db.binding === 'DB' && db.database_id === '9da7735b-e4c9-4f7f-9abe-53ba1545c60e')) {
+            throw new Error('Refusing deployment: existing D1 binding was not preserved.');
           }
-          if (routes.some(route => !['terrabar.ir/*', 'www.terrabar.ir/*'].includes(route.pattern))) {
-            throw new Error('Refusing deployment: unexpected route found in production config');
-          }
-          console.log('Verified: Worker terrabar-market uses only the two approved zone-ID routes; existing DNS records are preserved.');
+          console.log('Verified: existing terraba-arash Worker, existing D1 binding, and no duplicate route rules. Custom Domains remain attached separately.');
           NODE
 
       - name: Deploy to the existing production Worker
@@ -106,7 +128,27 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: "980efee43cd0c6512bb7ffce38e319c6"
 
-      - name: Verify production routes return the Terrabar page
+      - name: Verify existing production Custom Domain bindings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/980efee43cd0c6512bb7ffce38e319c6/workers/domains" \
+            -o /tmp/terrabar-domains.json
+          node <<'NODE'
+          const fs = require('fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/terrabar-domains.json', 'utf8'));
+          if (!payload.success) throw new Error('Could not verify production Custom Domains.');
+          for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
+            const domain = (payload.result || []).find(item => item.hostname === hostname && item.service === 'terraba-arash' && item.environment === 'production' && item.enabled);
+            if (!domain) throw new Error('Existing Custom Domain is not attached to terraba-arash: ' + hostname);
+          }
+          console.log('PASS: both existing Custom Domains remain attached to terraba-arash.');
+          NODE
+
+      - name: Verify production routes and real Supabase client
         run: |
           set -euo pipefail
           for base in https://terrabar.ir https://www.terrabar.ir; do
@@ -119,10 +161,21 @@ jobs:
                 head -c 500 /tmp/terrabar-production.html || true
                 exit 1
               fi
-              echo "PASS ${base}${route}: HTTP 200, ${elapsed}s"
-              grep -q 'ترابار' /tmp/terrabar-production.html || {
+              grep -aq 'ترابار' /tmp/terrabar-production.html || {
                 echo "::error::${base}${route} response did not contain expected Terrabar page text."
                 exit 1
               }
             done
+            index_asset="$(grep -aoE 'src="[^"]+\.js"' /tmp/terrabar-production.html | head -1 | cut -d '"' -f2)"
+            test -n "$index_asset"
+            curl --fail --silent --show-error "${base}${index_asset}" -o /tmp/terrabar-index.js
+            client_asset="$(grep -aoE 'client-[A-Za-z0-9_-]+\.js' /tmp/terrabar-index.js | head -1)"
+            test -n "$client_asset"
+            curl --fail --silent --show-error "${base}/assets/${client_asset}" -o /tmp/terrabar-client.js
+            grep -aq 'supabase-js.traceContextExtractor' /tmp/terrabar-client.js
+            if grep -aq 'tb_tbl_' /tmp/terrabar-client.js; then
+              echo "::error::Production still serves the old mock localStorage backend."
+              exit 1
+            fi
+            echo "PASS ${base}: routes and real Supabase client verified"
           done

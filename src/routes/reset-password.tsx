@@ -11,6 +11,29 @@ export const Route = createFileRoute("/reset-password")({
 
 type Stage = "request" | "waiting" | "set" | "emergency";
 
+type ActiveAdmin = { admin_role: string; is_active: boolean };
+type ActiveAdminResult = { data: ActiveAdmin | null; error: { message: string } | null };
+type ActiveAdminTable = {
+  select: (columns: string) => {
+    eq: (column: string, value: string | boolean) => {
+      eq: (column: string, value: string | boolean) => {
+        maybeSingle: () => Promise<ActiveAdminResult>;
+      };
+    };
+  };
+};
+type ActiveAdminClient = { from: (table: "admin_users") => ActiveAdminTable };
+
+async function loadActiveAdmin(authUserId: string): Promise<ActiveAdminResult> {
+  const client = supabase as unknown as ActiveAdminClient;
+  return client
+    .from("admin_users")
+    .select("admin_role, is_active")
+    .eq("auth_user_id", authUserId)
+    .eq("is_active", true)
+    .maybeSingle();
+}
+
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -27,12 +50,7 @@ function ResetPasswordPage() {
     const applyRecoverySession = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive || !data.session) return;
-      const { data: admin, error: adminError } = await (supabase as any)
-        .from("admin_users")
-        .select("admin_role, is_active")
-        .eq("auth_user_id", data.session.user.id)
-        .eq("is_active", true)
-        .maybeSingle();
+      const { data: admin, error: adminError } = await loadActiveAdmin(data.session.user.id);
       if (!alive) return;
       if (adminError || !admin || !["main_admin", "city_manager"].includes(admin.admin_role)) {
         setError("این لینک برای حساب مدیر فعال ترابار معتبر نیست. از صفحه ورود، بازیابی را دوباره درخواست کنید.");
@@ -116,12 +134,7 @@ function ResetPasswordPage() {
       setError("نشست بازیابی پیدا نشد. ایمیل را باز کنید و دوباره روی لینک بازیابی بزنید.");
       setBusy(false); return;
     }
-    const { data: admin, error: adminError } = await (supabase as any)
-      .from("admin_users")
-      .select("admin_role, is_active")
-      .eq("auth_user_id", sessionData.session.user.id)
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data: admin, error: adminError } = await loadActiveAdmin(sessionData.session.user.id);
     if (adminError || !admin || !["main_admin", "city_manager"].includes(admin.admin_role)) {
       setError("این حساب مدیر فعال ترابار نیست؛ رمز تغییر نکرد.");
       setBusy(false); return;

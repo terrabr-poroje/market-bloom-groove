@@ -1,123 +1,16 @@
-name: Build and deploy Terrabar to Cloudflare
+name: Deprecated Terrabar Cloudflare deploy (disabled)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - "public/**"
-      - "package.json"
-      - "bun.lock"
-      - "bun.lockb"
-      - "vite.config.*"
-      - ".github/workflows/deploy-terrabar-cloudflare.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: terrabar-production-deploy
-  cancel-in-progress: false
-
 jobs:
-  build-and-deploy:
+  retired:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Validate approved Supabase settings
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Explain the single production deployment path
         run: |
-          set -euo pipefail
-          for name in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY; do
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Missing GitHub Actions secret: $name. Production was not changed."
-              exit 1
-            fi
-          done
-          if [ "${VITE_SUPABASE_URL%/}" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
-            echo "::error::Refusing deployment: Supabase URL is not the approved Terrabar project."
-            exit 1
-          fi
-
-      - name: Install locked dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build production app
-        run: bun run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-
-      - name: Lint application before production deployment
-        run: bun run lint
-
-      - name: Run automated tests before production deployment
-        run: bun run test
-
-      - name: Verify generated Cloudflare Worker config
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const fs = require('fs');
-          const path = '.output/server/wrangler.json';
-          if (!fs.existsSync(path)) {
-            throw new Error('Refusing deployment: generated Cloudflare Worker config is missing.');
-          }
-          const config = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (!config.main) {
-            throw new Error('Refusing deployment: generated Worker entry point is missing.');
-          }
-          config.name = 'terrabar-market';
-          config.routes = [
-            { pattern: 'terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' },
-            { pattern: 'www.terrabar.ir/*', zone_id: '5abde3806e64424f9179eb509cabe824' }
-          ];
-          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
-          const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
-          for (const hostname of ['terrabar.ir', 'www.terrabar.ir']) {
-            if (!(verified.routes || []).some(route => route.pattern === hostname + '/*' && route.zone_id === '5abde3806e64424f9179eb509cabe824' && !route.custom_domain)) {
-              throw new Error('Refusing deployment: approved Worker route missing for ' + hostname);
-            }
-          }
-          console.log('Verified existing Terrabar Worker routes; DNS records are preserved.');
-          NODE
-
-      - name: Deploy existing Terrabar Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: "980efee43cd0c6512bb7ffce38e319c6"
-        run: |
-          set -euo pipefail
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::Missing Cloudflare API token secret. Production was not changed."
-            exit 1
-          fi
-          bunx wrangler deploy --config .output/server/wrangler.json
-
-      - name: Smoke-test production routes
-        run: |
-          set -euo pipefail
-          for base in https://terrabar.ir https://www.terrabar.ir; do
-            for route in / /auth /member-home /account /account-preview /seller-account-preview /supplier-account-preview /login-buyer /login-seller /login-supplier /seller-accounting-preview /seller-orders-preview /seller-purchase-preview /orders-current-preview /orders-completed-preview /membership /announce /requests /cart /professional-purchase /admin-login /reset-password; do
-              status="000"
-              for attempt in 1 2 3 4 5 6; do
-                status="$(curl --silent --show-error --location --output /dev/null --write-out '%{http_code}' "$base$route" || true)"
-                if [ "$status" = "200" ]; then break; fi
-                echo "$base$route -> HTTP $status (attempt $attempt/6)"
-                sleep 4
-              done
-              echo "$base$route -> HTTP $status"
-              test "$status" = "200"
-            done
-          done
+          echo "This legacy workflow is intentionally disabled to prevent deploying a second Worker."
+          echo "Use deploy-terrabar-production.yml, which targets the existing terraba-arash Worker.";
