@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_URL: https://gznsxqeyhnuzglliijzz.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - name: Check out migration branch
@@ -33,12 +33,8 @@ jobs:
       - name: Verify required build configuration
         shell: bash
         run: |
-          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::Required GitHub Actions secrets VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY are not configured."
-            exit 1
-          fi
-          if [ "$VITE_SUPABASE_URL" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
-            echo "::error::The configured Supabase URL does not match the approved Terrabar project."
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Required GitHub Actions secret VITE_SUPABASE_PUBLISHABLE_KEY is not configured."
             exit 1
           fi
 
