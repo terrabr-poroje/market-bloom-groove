@@ -1,0 +1,55 @@
+name: Validate migration branch
+
+on:
+  push:
+    branches:
+      - migration/cloudflare-d1-completion
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-migration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Install, build, lint and test (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check out migration branch
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Verify required build configuration
+        shell: bash
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Required GitHub Actions secrets VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY are not configured."
+            exit 1
+          fi
+          if [ "$VITE_SUPABASE_URL" != "https://gznsxqeyhnuzglliijzz.supabase.co" ]; then
+            echo "::error::The configured Supabase URL does not match the approved Terrabar project."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
