@@ -115,3 +115,10 @@ The production custom domain is attached to Worker `terraba-arash`, which has D1
 - `src/lib/cloudflare-auth.server.ts` is not integrated into Start middleware or the application auth client. Its current implementation is not yet production-ready: it uses bearer-token session handling rather than the agreed HttpOnly cookie model, OTP verification lacks an atomic compare-and-consume guard against concurrent replay, and there is no effective IP/identifier-wide attempt throttle. It also explicitly returns 503 for email OTP/recovery.
 - The SMS.ir adapter in that file must be checked against the existing live SMS.ir configuration without reading or exposing secret values. No SMS test was sent during this staging schema operation.
 - Therefore the staging database is schema-ready, but the application remains Supabase-dependent and no preview Worker was deployed.
+
+## CI verification — 2026-11-07
+
+- GitHub Actions run [42384942179](https://github.com/terrabr-poroje/market-bloom-groove/actions/runs/42384942179) completed successfully on commit `e4bdb27bd8c3f5927d618e8837dd86060f4d9f3f`.
+- Locked dependency installation, production build, ESLint, and Vitest all completed successfully.
+- This is a source-quality gate only. It does not exercise a deployed preview Worker, Cloudflare D1 CRUD, SMS.ir delivery, browser auth/session cookies, role enforcement, ParsPack media, payments, or end-to-end business workflows.
+- No production deployment or production data/configuration change was performed.
