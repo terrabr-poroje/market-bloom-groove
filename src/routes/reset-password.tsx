@@ -27,7 +27,11 @@ function ResetPasswordPage() {
     const applyRecoverySession = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive || !data.session) return;
-      const { data: admin, error: adminError } = await (supabase as any)
+      // admin_users is not included in the generated Supabase public Database types.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // admin_users is not included in the generated Supabase public Database types.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: admin, error: adminError } = await (supabase as any)
         .from("admin_users")
         .select("admin_role, is_active")
         .eq("auth_user_id", data.session.user.id)
