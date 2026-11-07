@@ -74,5 +74,27 @@ The production custom domain is attached to Worker `terraba-arash`, which has D1
 7. Run complete route, permission, data-integrity, mobile/RTL, and production smoke tests on an isolated preview Worker.
 8. Only after approval and successful comparison, switch the production Worker. Do not disable or delete Supabase before this cutover is proven.
 
+
+## Independent live audit — 2026-11-07 (after owner authorized completion)
+
+- The completion branch is `migration/cloudflare-d1-completion`; it was advanced to the current reviewed source snapshot and the verified D1 migration/auth-support files were restored on this branch. The project agent is still connected to `main`, so no Lovable edits were attempted there.
+- Live Cloudflare Worker settings were read: Worker `terraba-arash` has the production custom domain `terrabar.ir` and D1 binding `DB` to the production database ID above. The Worker also has an `ASSETS` binding. This verifies the binding, not that application routes use D1.
+- The currently deployed Worker bundle was inspected and contains imports of the Supabase client and runtime calls such as `supabase.from("members")`. Therefore the live app remains Supabase-dependent.
+- Live production D1 currently reports 48 tables. Read-only spot checks returned: auth_users=2, auth_sessions=0, otp_challenges=0, members=1, member_roles=2, cities=155, loads=3, orders=7, audit_logs=1, sms_hook_events=9. These match the previously transferred source counts for the corresponding business tables. `PRAGMA foreign_key_check` returned no violations.
+- Current GitHub Cloudflare deployment workflow is still configured to trigger on `main`, requires the Supabase URL and publishable key, and rewrites the generated Worker name/routes to `terrabar-market`. This is not yet a safe Cloudflare-only deployment workflow for the live custom-domain Worker `terraba-arash`; do not trigger it.
+- Existing SMS.ir, ParsPack and content-provider settings were not read out, changed, reset, or replaced. Their values must be preserved through the eventual app migration.
+
+## Remaining cutover blockers confirmed by the live audit
+
+1. The production Worker is still executing a Supabase-dependent bundle.
+2. The app source must be migrated route-by-route to authenticated server-side D1 operations. A generic unrestricted Supabase/PostgREST compatibility proxy is not an acceptable substitute.
+3. Existing OTP/session support tables are empty in production D1; the login/session lifecycle must be implemented and tested before routing real users to it. Existing SMS.ir settings must be reused, not recreated.
+4. The deployment workflow must target the actual approved Worker and preserve its existing D1 binding and integration secrets; its current Supabase validation and alternate Worker name make it unsuitable for cutover.
+5. No isolated migrated preview Worker has yet passed the full auth, role, city-scope, order, finance, media, and admin smoke-test suite.
+
+**No production deployment, DNS change, secret change, Supabase shutdown, or production data mutation was performed during this audit.** The migration remains incomplete until the blockers above are resolved and verified.
+
 ## Change control
-This work is isolated to `migration/cloudflare-d1-only`. No production Worker script, DNS, ParsPack settings, SMS.ir settings, or Supabase tables were changed by this migration branch. Do not deploy the branch to the production domain before the blocking checklist is complete.
+- Work is isolated to `migration/cloudflare-d1-completion` for the completion effort. Do not commit further changes to `main` during migration.
+- No production Worker script, DNS, ParsPack settings, SMS.ir settings, or Supabase tables were changed by this audit.
+- Do not deploy the branch to the production domain or disable Supabase before the blockers above are resolved and the isolated preview passes.
