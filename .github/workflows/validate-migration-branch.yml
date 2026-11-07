@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - migration/cloudflare-d1-completion
+      - migration-fix-reset-password
   workflow_dispatch:
 
 permissions:
