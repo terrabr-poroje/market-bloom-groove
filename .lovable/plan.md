@@ -67,7 +67,8 @@ Browser -> TanStack server functions (Worker) -> D1 (env.DB)
 - Smoke script: each public route returns 200 and protected routes reject anonymous visitors.
 
 ## 4. Order of work
-1. Create the branch and add a "D1 migration" task to roadmap.md. That file can't be edited in this planning step.
+0. Gate: no changes or commits on main. Start only after the project is switched to `migration/cloudflare-d1-completion`. Then confirm the current branch name, check that the latest main snapshot and the Cloudflare migration assets are present, and report back.
+1. On that branch, add a "D1 migration" task to roadmap.md. Reuse the existing SMS.ir, ParsPack and content-provider settings as they are, and don't change any secrets.
 2. Read-only check that D1 tables and columns match what the code uses. Compare against `supabase/SCHEMA_BASELINE.md` and report differences. Nothing is altered.
 3. Config, db helper, session, OTP and SMS.ir, tested on staging with one test phone number.
 4. Authorization module and tests.
@@ -82,7 +83,7 @@ Browser -> TanStack server functions (Worker) -> D1 (env.DB)
 - SMS.ir: API key, template id, the template's parameter name (for example `Code`), and line number. Plus one test phone number.
 - ParsPack: endpoint, bucket, access key, secret key, region, and the public base URL for images.
 - Where current images live, and whether they are already copied to ParsPack.
-- How admin passwords move over: Supabase password hashes can't be exported to us. The options are a one-time reset or OTP-based admin login.
+- Admin sign-in (decided): existing admin accounts are kept, and their first sign-in on Cloudflare/D1 uses the SMS.ir one-time code that is already set up. No password reset. SMS.ir settings stay unchanged.
 - Users' existing Supabase sessions will end, so everyone signs in again at cutover. Please confirm that's acceptable.
 - Cloudflare: an API token with Workers and D1 edit rights, stored as a GitHub secret. Also whether the workflow's `LOUDFLARE_API_TOKEN` fallback typo should be removed.
 - Whether `liara.json` is still in use.
