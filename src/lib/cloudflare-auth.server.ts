@@ -6,7 +6,7 @@ type D1Statement = {
   run(): Promise<{ success?: boolean; meta?: { changes?: number }; error?: string }>;
 };
 type D1Database = { prepare(sql: string): D1Statement };
-type SmsBindingEnv = {
+export type SmsBindingEnv = {
   DB: D1Database;
   AUTH_JWT_SECRET?: string;
   SMS_IR_API_KEY?: string;
@@ -202,7 +202,7 @@ function toAuthUser(row: Record<string, unknown>) {
   };
 }
 
-async function getBearerUser(request: Request, env: SmsBindingEnv) {
+export async function getCloudflareAuthContext(request: Request, env: SmsBindingEnv) {
   const secret = env.AUTH_JWT_SECRET;
   if (!secret) return null;
   const header = request.headers.get("authorization") || "";
@@ -329,7 +329,7 @@ async function handleAuthRequest(request: Request, env: SmsBindingEnv): Promise<
   if (path === "/verify" && request.method === "POST") return verifyOtp(request, env);
   if (path === "/token" && request.method === "POST") return refreshSession(request, env);
   if (path === "/user" && request.method === "GET") {
-    const auth = await getBearerUser(request, env);
+    const auth = await getCloudflareAuthContext(request, env);
     if (!auth) return jsonResponse({ message: "Invalid JWT" }, 401, request);
     return jsonResponse(toAuthUser(auth.user), 200, request);
   }
