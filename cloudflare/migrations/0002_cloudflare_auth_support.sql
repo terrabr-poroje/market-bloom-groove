@@ -27,4 +27,4 @@ SELECT
   COUNT(DISTINCT CASE WHEN visited_at >= datetime('now', '-1 day') THEN COALESCE(user_id, member_id) END) AS visitors_last_24_hours
 FROM site_visits;
 
-INSERT INTO schema_migrations(id) VALUES ('0003_cloudflare_auth_support') ON CONFLICT DO NOTHING;
+INSERT INTO schema_migrations(id) VALUES ('0002_cloudflare_auth_support') ON CONFLICT DO NOTHING;
