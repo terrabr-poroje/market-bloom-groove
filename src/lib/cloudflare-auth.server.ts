@@ -233,7 +233,7 @@ async function sendOtp(request: Request, env: SmsBindingEnv): Promise<Response> 
   if (!existing && !createUser) return jsonResponse({ msg: "حساب کاربری پیدا نشد." }, 400, request);
   if (existing && existing.disabled_at) return jsonResponse({ msg: "این حساب غیرفعال است." }, 403, request);
 
-  const recent = await env.DB.prepare("SELECT created_at FROM otp_challenges WHERE identifier = ? AND channel = ? AND created_at >= datetime('now', ?) ORDER BY created_at DESC LIMIT 1")
+  const recent = await env.DB.prepare("SELECT created_at FROM otp_challenges WHERE identifier = ? AND channel = ? AND julianday(created_at) >= julianday('now', ?) ORDER BY created_at DESC LIMIT 1")
     .bind(identifier, channel, "-" + OTP_RESEND_SECONDS + " seconds").first<Record<string, unknown>>();
   if (recent) return jsonResponse({ msg: "برای دریافت کد جدید کمی صبر کنید." }, 429, request);
 
