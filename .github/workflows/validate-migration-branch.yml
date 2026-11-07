@@ -43,3 +43,41 @@ jobs:
 
       - name: Test
         run: bun run test
+
+      - name: Deploy isolated Cloudflare preview (staging D1 only)
+        if: github.event_name == 'push'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.LOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "980efee43cd0c6512bb7ffce38e319c6"
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::notice::Cloudflare token is not configured; isolated preview deployment was skipped. No production resources were changed."
+            exit 0
+          fi
+          node <<'NODE'
+          const fs = require('fs');
+          const path = '.output/server/wrangler.json';
+          if (!fs.existsSync(path)) throw new Error('Preview deployment blocked: generated Worker config is missing.');
+          const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (!config.main) throw new Error('Preview deployment blocked: Worker entry point is missing.');
+          config.name = 'terrabar-market-preview';
+          config.account_id = '980efee43cd0c6512bb7ffce38e319c6';
+          config.workers_dev = true;
+          config.routes = [];
+          config.d1_databases = [
+            {
+              binding: 'DB',
+              database_name: 'terrabar-staging-20261107',
+              database_id: 'af210eb2-44c3-4280-baf5-106ede7c7cdf'
+            }
+          ];
+          config.compatibility_flags = [...new Set([...(config.compatibility_flags || []), 'nodejs_compat'])];
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\\n');
+          const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (verified.name !== 'terrabar-market-preview' || (verified.routes || []).length !== 0 ||
+              verified.d1_databases?.[0]?.database_id !== 'af210eb2-44c3-4280-baf5-106ede7c7cdf') {
+            throw new Error('Preview deployment blocked: isolated Worker/D1 configuration verification failed.');
+          }
+          NODE
+          bunx wrangler deploy --config .output/server/wrangler.json
