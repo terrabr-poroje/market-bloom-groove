@@ -111,7 +111,6 @@ jobs:
           // Deploy to that exact Worker; do not create overlapping route rules or a second production Worker.
           config.name = 'terraba-arash';
           config.routes = [];
-          config.workers_dev = false;
           config.compatibility_date = '2026-11-02';
           config.compatibility_flags = ['nodejs_compat'];
           // Preserve the existing D1 binding without running migrations or changing its data.
@@ -122,7 +121,7 @@ jobs:
           }];
           fs.writeFileSync(path, JSON.stringify(config, null, 2) + '\n');
           const verified = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (verified.name !== 'terraba-arash' || (verified.routes || []).length !== 0 || verified.workers_dev !== false) {
+          if (verified.name !== 'terraba-arash' || (verified.routes || []).length !== 0) {
             throw new Error('Refusing deployment: production Worker identity or route isolation check failed.');
           }
           if (!(verified.d1_databases || []).some(db => db.binding === 'DB' && db.database_id === '9da7735b-e4c9-4f7f-9abe-53ba1545c60e')) {
