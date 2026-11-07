@@ -276,8 +276,18 @@ async function verifyOtp(request: Request, env: SmsBindingEnv): Promise<Response
   }
   const candidate = await sha256(String(env.AUTH_JWT_SECRET || "terrabar") + ":" + identifier + ":" + code);
   if (candidate !== challenge.code_hash) {
-    await env.DB.prepare("UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ?").bind(challenge.id).run();
+    await env.DB.prepare("UPDATE otp_challenges SET attempts = attempts + 1 WHERE id = ? AND consumed_at IS NULL AND attempts < ?")
+      .bind(challenge.id, OTP_MAX_ATTEMPTS).run();
     return jsonResponse({ msg: "کد تأیید معتبر نیست." }, 400, request);
+  }
+
+  // Atomically consume the challenge before creating a user/session.
+  // Concurrent verification requests can no longer reuse the same OTP.
+  const consumed = await env.DB.prepare(
+    "UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL AND expires_at > ? AND attempts < ?"
+  ).bind(new Date().toISOString(), challenge.id, Math.floor(Date.now() / 1000), OTP_MAX_ATTEMPTS).run();
+  if (!consumed.meta?.changes) {
+    return jsonResponse({ msg: "کد تأیید قبلاً استفاده شده یا منقضی شده است." }, 409, request);
   }
 
   let user = await env.DB.prepare(channel === "sms" ? "SELECT * FROM auth_users WHERE phone = ? LIMIT 1" : "SELECT * FROM auth_users WHERE lower(email) = ? LIMIT 1")
@@ -299,8 +309,6 @@ async function verifyOtp(request: Request, env: SmsBindingEnv): Promise<Response
       .bind(new Date().toISOString(), new Date().toISOString(), user.id).run();
     user[field] = new Date().toISOString();
   }
-  await env.DB.prepare("UPDATE otp_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL")
-    .bind(new Date().toISOString(), challenge.id).run();
   if (!user) return jsonResponse({ msg: "ساخت نشست کاربری انجام نشد." }, 500, request);
   await env.DB.prepare("UPDATE auth_users SET last_sign_in_at = ?, updated_at = ? WHERE id = ?")
     .bind(new Date().toISOString(), new Date().toISOString(), user.id).run();
