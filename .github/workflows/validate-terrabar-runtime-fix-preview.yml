@@ -79,6 +79,34 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
+      - name: Validate production Worker configuration without deploying it
+        run: |
+          set -euo pipefail
+          cp .output/server/wrangler.json /tmp/terrabar-production-candidate.json
+          node <<'NODE'
+          const fs = require('fs');
+          const path = '/tmp/terrabar-production-candidate.json';
+          const config = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (!config.main) throw new Error('Production candidate has no Worker entry point.');
+          config.name = 'terraba-arash';
+          config.routes = [];
+          config.workers_dev = false;
+          config.compatibility_date = '2026-11-02';
+          config.compatibility_flags = ['nodejs_compat'];
+          config.d1_databases = [{
+            binding: 'DB',
+            database_name: 'traabar-db',
+            database_id: '9da7735b-e4c9-4f7f-9abe-53ba1545c60e'
+          }];
+          if (config.name !== 'terraba-arash' || config.routes.length !== 0 || config.workers_dev !== false) {
+            throw new Error('Production Worker isolation check failed.');
+          }
+          if (!config.d1_databases.some(db => db.binding === 'DB' && db.database_id === '9da7735b-e4c9-4f7f-9abe-53ba1545c60e')) {
+            throw new Error('Existing D1 binding preservation check failed.');
+          }
+          console.log('PASS: production candidate targets existing terraba-arash; preserves D1; adds no duplicate routes.');
+          NODE
+
       - name: Lint and run automated tests
         run: |
           bun run lint
