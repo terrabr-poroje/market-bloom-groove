@@ -39,6 +39,37 @@ jobs:
           test -n "${CLOUDFLARE_API_TOKEN:-}" || { echo "::error::Missing Cloudflare deployment token"; exit 1; }
           test "${VITE_SUPABASE_URL%/}" = "https://gznsxqeyhnuzglliijzz.supabase.co" || { echo "::error::Wrong Supabase project"; exit 1; }
 
+      - name: Inspect existing Supabase phone OTP configuration (read-only)
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Accept: application/json" \
+            "https://api.supabase.com/v1/projects/gznsxqeyhnuzglliijzz/config/auth" \
+            -o /tmp/terrabar-auth-config.json
+          node <<'NODE'
+          const fs = require('fs');
+          const c = JSON.parse(fs.readFileSync('/tmp/terrabar-auth-config.json', 'utf8'));
+          const hook = c.hook_send_sms_enabled === true && !!c.hook_send_sms_uri && !!c.hook_send_sms_secrets;
+          const provider = String(c.sms_provider || '').toLowerCase();
+          const providerReady =
+            (provider === 'twilio' && !!(c.sms_twilio_account_sid && c.sms_twilio_auth_token && (c.sms_twilio_message_service_sid || c.sms_twilio_content_sid))) ||
+            (provider === 'messagebird' && !!(c.sms_messagebird_access_key && c.sms_messagebird_originator)) ||
+            (provider === 'textlocal' && !!(c.sms_textlocal_api_key && c.sms_textlocal_sender)) ||
+            (provider === 'vonage' && !!(c.sms_vonage_api_key && c.sms_vonage_api_secret && c.sms_vonage_from));
+          console.log(JSON.stringify({
+            smsHookEnabled: hook,
+            smsProvider: provider || 'none',
+            providerCredentialsConfigured: providerReady,
+            phoneOtpPathConfigured: hook || providerReady,
+            smsOtpLength: c.sms_otp_length ?? null,
+            smsAutoConfirm: c.sms_autoconfirm ?? null
+          }));
+          NODE
+
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
 
