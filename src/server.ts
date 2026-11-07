@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleCloudflareAuthRequest } from "./lib/cloudflare-auth.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -47,6 +48,12 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Route the isolated Cloudflare auth API directly to D1 before the app SSR handler.
+      // This keeps the existing application routes unchanged while the migration branch
+      // progressively replaces Supabase-backed auth and data workflows.
+      const authResponse = await handleCloudflareAuthRequest(request, env);
+      if (authResponse) return authResponse;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
