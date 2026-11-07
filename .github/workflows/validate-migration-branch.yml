@@ -19,8 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 26
     env:
-      VITE_SUPABASE_URL: https://gznsxqeyhnuzglliijzz.supabase.co
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      # Public build-time placeholders only. This workflow must not need live
+      # Supabase credentials and must never connect to production services.
+      VITE_SUPABASE_URL: https://example.invalid
+      VITE_SUPABASE_PUBLISHABLE_KEY: migration-build-placeholder
     steps:
       - name: Check out migration branch
         uses: actions/checkout@v4
@@ -29,14 +31,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
-      - name: Verify required build configuration
-        shell: bash
-        run: |
-          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::Required GitHub Actions secret VITE_SUPABASE_PUBLISHABLE_KEY is not configured."
-            exit 1
-          fi
 
       - name: Install locked dependencies
         run: bun install --frozen-lockfile
